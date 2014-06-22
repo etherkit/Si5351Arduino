@@ -12,7 +12,7 @@ This library has been written for the Arduino platform and has been successfully
 
 The Si5351 is a +3.3 V only part, so if you are not using a +3.3 V microcontroller, be sure you have some kind of level conversion strategy.
 
-Wire the SDA and SCL pins of the Si5351 to the corresponding pins on the Arduino. Use the pin assignments posted on the [Arduino Wire library page](http://arduino.cc/en/Reference/Wire). Since the I2C interface is set to 400 kHz, use 1 to 10 k&Omega; pullup resistors from +3.3 V to the SDA and SCL lines.
+Wire the SDA and SCL pins of the Si5351 to the corresponding pins on the Arduino. Use the pin assignments posted on the [Arduino Wire library page](http://arduino.cc/en/Reference/Wire). Since the I2C interface is set to 100 kHz, use 1 to 10 k&Omega; pullup resistors from +3.3 V to the SDA and SCL lines.
 
 Connect a 25 MHz or 27 MHz crystal with a load capacitance of 6, 8, or 10 pF to the Si5351 XA and XB pins. Locate the crystal as close to the Si5351 as possible and keep the traces as short as possible. Please use a SMT crystal. A crystal with leads will have too much stray capacitance.
 
@@ -31,7 +31,7 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
     Si5351 si5351;
 
-Now in the Setup() function, let's initialize communications with the Si5351 and specify the load capacitance of the reference crystal:
+Now in the init() function, let's initialize communications with the Si5351 and specify the load capacitance of the reference crystal:
 
     si5351.init(SI5351_CRYSTAL_LOAD_8PF);
 
