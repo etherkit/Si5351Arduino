@@ -31,7 +31,7 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
     Si5351 si5351;
 
-Now in the init() function, let's initialize communications with the Si5351 and specify the load capacitance of the reference crystal:
+Now in the Setup() function, let's initialize communications with the Si5351 and specify the load capacitance of the reference crystal:
 
     si5351.init(SI5351_CRYSTAL_LOAD_8PF);
 
