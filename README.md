@@ -132,5 +132,7 @@ TODO
 ----
  - [ ] Implement tuning below 1 MHz
  - [ ] Implement tuning above 150 MHz
+ - [ ] Implement phase register access
+ - [ ] Create an interface to the ref osc frequency
 
   [1]: http://www.silabs.com

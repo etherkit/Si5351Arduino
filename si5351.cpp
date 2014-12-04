@@ -441,6 +441,14 @@ void Si5351::set_correction(int32_t corr)
 }
 
 /*
+ * set_phase(enum si5351_clock clk, uint8_t phase)
+ */
+void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
+{
+	si5351_write(SI5351_CLK0_PHASE_OFFSET + (uint8_t)clk, phase);
+}
+
+/*
  * get_correction(void)
  *
  * Returns the oscillator correction factor stored
@@ -480,6 +488,24 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 	Wire.requestFrom(SI5351_BUS_BASE_ADDR, 1);
 
 	return Wire.read();
+}
+
+void Si5351::si5351_set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
+{
+  uint8_t reg_val = 0x0c;
+  uint8_t reg_val2;
+
+  reg_val2 = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
+
+  if(pll == SI5351_PLLA)
+  {
+    reg_val &= ~(SI5351_CLK_PLL_SELECT);
+  }
+  else if(pll == SI5351_PLLB)
+  {
+    reg_val |= SI5351_CLK_PLL_SELECT;
+  }
+  si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
 }
 
 /*********************/
@@ -749,22 +775,4 @@ void Si5351::si5351_update_int_status(struct Si5351IntStatus *int_status)
   int_status->LOL_B_STKY = (reg_val >> 6) & 0x01;
   int_status->LOL_A_STKY = (reg_val >> 5) & 0x01;
   int_status->LOS_STKY = (reg_val >> 4) & 0x01;
-}
-
-void Si5351::si5351_set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
-{
-  uint8_t reg_val = 0x0c;
-  uint8_t reg_val2;
-
-  reg_val2 = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
-
-  if(pll == SI5351_PLLA)
-  {
-    reg_val &= ~(SI5351_CLK_PLL_SELECT);
-  }
-  else if(pll == SI5351_PLLB)
-  {
-    reg_val |= SI5351_CLK_PLL_SELECT;
-  }
-  si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
 }

@@ -263,12 +263,14 @@ public:
   void drive_strength(enum si5351_clock, enum si5351_drive);
   void update_status(void);
   void set_correction(int32_t);
+  void set_phase(enum si5351_clock, uint8_t);
   int32_t get_correction(void);
   uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
   uint8_t si5351_write(uint8_t, uint8_t);
   uint8_t si5351_read(uint8_t);
   struct Si5351Status dev_status;
   struct Si5351IntStatus dev_int_status;
+  void si5351_set_ms_source(enum si5351_clock, enum si5351_pll);
 private:
   void rational_best_approximation(
           unsigned long, unsigned long,
@@ -279,7 +281,6 @@ private:
   uint32_t multisynth_recalc(uint32_t, uint32_t,struct Si5351RegSet *);
   void si5351_update_sys_status(struct Si5351Status *);
   void si5351_update_int_status(struct Si5351IntStatus *);
-  void si5351_set_ms_source(enum si5351_clock, enum si5351_pll);
   uint32_t ee_ref_correction;
   int32_t ref_correction;
   uint32_t plla_freq;
