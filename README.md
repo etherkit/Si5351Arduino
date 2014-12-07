@@ -134,5 +134,8 @@ TODO
  - [ ] Implement tuning above 150 MHz
  - [ ] Implement phase register access
  - [ ] Create an interface to the ref osc frequency
+ - [ ] Implement invert
+ - [ ] Implement power up/down
+ - [ ] Implement reset
 
   [1]: http://www.silabs.com
