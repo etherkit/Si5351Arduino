@@ -265,6 +265,7 @@ public:
   void set_correction(int32_t);
   void set_phase(enum si5351_clock, uint8_t);
   int32_t get_correction(void);
+  void Si5351::pll_reset(enum si5351_pll);
   uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
   uint8_t si5351_write(uint8_t, uint8_t);
   uint8_t si5351_read(uint8_t);

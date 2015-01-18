@@ -446,6 +446,8 @@ void Si5351::set_correction(int32_t corr)
 void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 {
 	si5351_write(SI5351_CLK0_PHASE_OFFSET + (uint8_t)clk, phase);
+	pll_reset(SI5351_PLLA);
+	pll_reset(SI5351_PLLB);
 }
 
 /*
@@ -457,6 +459,24 @@ void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 int32_t Si5351::get_correction(void)
 {
 	return eeprom_read_dword(&ee_ref_correction);
+}
+
+/*
+ * pll_reset(enum si5351_pll target_pll)
+ *
+ * target_pll - Which PLL to reset
+ *     (use the si5351_pll enum)
+ */
+void Si5351::pll_reset(enum si5351_pll target_pll)
+{
+	if(target_pll == SI5351_PLLA)
+ 	{
+    	si5351_write(SI5351_PLL_RESET, SI5351_PLL_RESET_A);
+	}
+	else if(target_pll == SI5351_PLLB)
+	{
+	    si5351_write(SI5351_PLL_RESET, SI5351_PLL_RESET_B);
+	}
 }
 
 
