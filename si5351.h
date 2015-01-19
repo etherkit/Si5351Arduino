@@ -37,7 +37,7 @@
 
 #define SI5351_BUS_BASE_ADDR				      0x60
 #define SI5351_XTAL_FREQ					        25000000
-#define SI5351_PLL_FIXED					        900000000
+#define SI5351_PLL_FIXED					        90000000000
 
 #define SI5351_PLL_VCO_MIN				      	600000000
 #define SI5351_PLL_VCO_MAX				      	900000000
@@ -257,15 +257,15 @@ class Si5351
 public:
   Si5351(void);
   void init(uint8_t);
-  void set_freq(uint32_t, uint32_t, enum si5351_clock);
-  void set_pll(uint32_t, enum si5351_pll);
+  void set_freq(uint64_t, uint64_t, enum si5351_clock);
+  void set_pll(uint64_t, enum si5351_pll);
   void clock_enable(enum si5351_clock, uint8_t);
   void drive_strength(enum si5351_clock, enum si5351_drive);
   void update_status(void);
   void set_correction(int32_t);
   void set_phase(enum si5351_clock, uint8_t);
   int32_t get_correction(void);
-  void Si5351::pll_reset(enum si5351_pll);
+  void pll_reset(enum si5351_pll);
   uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
   uint8_t si5351_write(uint8_t, uint8_t);
   uint8_t si5351_read(uint8_t);
@@ -274,12 +274,12 @@ public:
   void si5351_set_ms_source(enum si5351_clock, enum si5351_pll);
 private:
   void rational_best_approximation(
-          unsigned long, unsigned long,
-          unsigned long, unsigned long,
+          unsigned long long, unsigned long long,
+          unsigned long long, unsigned long long,
           unsigned long *, unsigned long *);
-  uint32_t pll_calc(uint32_t, struct Si5351RegSet *, int32_t);
-  uint32_t multisynth_calc(uint32_t, struct Si5351RegSet *);
-  uint32_t multisynth_recalc(uint32_t, uint32_t,struct Si5351RegSet *);
+  uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
+  uint64_t multisynth_calc(uint64_t, struct Si5351RegSet *);
+  uint64_t multisynth_recalc(uint64_t, uint64_t, struct Si5351RegSet *);
   void si5351_update_sys_status(struct Si5351Status *);
   void si5351_update_int_status(struct Si5351IntStatus *);
   uint32_t ee_ref_correction;
