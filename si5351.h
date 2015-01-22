@@ -177,6 +177,7 @@
 #define SI5351_XTAL_ENABLE		       		(1<<6)
 #define SI5351_MULTISYNTH_ENABLE	     	(1<<4)
 
+
 /* Macro definitions */
 
 /*
@@ -284,8 +285,8 @@ private:
   void si5351_update_int_status(struct Si5351IntStatus *);
   uint32_t ee_ref_correction;
   int32_t ref_correction;
-  uint32_t plla_freq;
-  uint32_t pllb_freq;
+  uint64_t plla_freq;
+  uint64_t pllb_freq;
 };
 
 #endif /* SI5351_H_ */

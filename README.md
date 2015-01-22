@@ -38,13 +38,13 @@ Now in the Setup() function, let's initialize communications with the Si5351 and
 Next, let's set the CLK0 output to 14 MHz and use a fixed PLL reference frequency (this allows for glitch-free tuning):
 
     si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-    si5351.set_freq(1400000000, SI5351_PLL_FIXED, SI5351_CLK0);
+    si5351.set_freq(140000000000, SI5351_PLL_FIXED, SI5351_CLK0);
 
 The second value passed in the above method is the desired driving PLL frequency. Entering a 0 will have the method choose a PLL frequency for you. If you would like to use a fixed PLL frequency to drive a multisynth (in order to ensure glitch-free tuning), set the desired PLL frequency first using the method below, then specify that frequency in the set_freq() method. The PLL frequency only needs to be set once. Any additional frequency changes only need to use the set_freq() method as long as you are using the same PLL frequency as before.
 
 Now let's set the CLK1 output to 20 MHz output, and let the Si5351 class pick a PLL frequency:
 
-    si5351.set_freq(2000000000, 0, SI5351_CLK1);
+    si5351.set_freq(200000000000, 0, SI5351_CLK1);
 
 In the main Loop(), we use the Serial port to monitor the status of the Si5351, using a method to update a public struct which holds the status bits:
 
@@ -130,13 +130,14 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 
 TODO
 ----
- - [ ] Implement tuning below 1 MHz
  - [ ] Implement tuning above 150 MHz
  - [ ] Implement phase register access
  - [ ] Create an interface to the ref osc frequency
  - [ ] Implement invert
  - [ ] Implement power up/down
  - [ ] Implement reset
+ - [ ] Implement clock disable state
+ - [x] Implement tuning below 1 MHz
  - [x] Implement sub-Hz tuning
  - [x] Implement PLL reset
 
