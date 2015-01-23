@@ -82,6 +82,8 @@ void Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
 	uint8_t set_pll = 0;
 	uint8_t r_div = SI5351_OUTPUT_CLK_DIV_1;
 	uint8_t reg_val;
+	uint8_t int_mode = 0;
+	uint8_t div_by_4 = 0;
 
 	// Bounds checking and see if we need to use the R divider
 
@@ -129,19 +131,24 @@ void Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
 	}
 	
 	// Upper bounds check
-	if(freq > SI5351_MULTISYNTH_DIVBY4_FREQ * 100ULL)
+	if(freq > SI5351_MULTISYNTH_MAX_FREQ * 100ULL)
 	{
-		freq = SI5351_MULTISYNTH_DIVBY4_FREQ * 100ULL;
-	}
-	
-	if(freq <= SI5351_MULTISYNTH_MAX_FREQ * 100ULL && freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * 100ULL)
-	{
-		// TODO:
+		freq = SI5351_MULTISYNTH_MAX_FREQ * 100ULL;
 	}
 	
 	// Calculate the synth parameters
+	// The PLL must be calculated and set by firmware when 150 MHz <= freq <= 160 MHz
+	if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * 100ULL)
+	{
+		// TODO: rechecking other MS dependent on this PLL
+		pll_freq = multisynth_calc(freq, &ms_reg);
+		set_pll = 1;
+		int_mode = 1;
+		div_by_4 = 1;
+
+	}
 	// If pll_freq is 0, let the algorithm pick a PLL frequency
-	if(pll_freq == 0)
+	else if(pll_freq == 0)
 	{
 		pll_freq = multisynth_calc(freq, &ms_reg);
 		set_pll = 1;
@@ -188,49 +195,49 @@ void Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
 
 	pll_calc(pll_freq, &pll_reg, ref_correction);
 
-	/* Derive the register values to write */
+	// Derive the register values to write
 
-	/* Prepare an array for parameters to be written to */
+	// Prepare an array for parameters to be written to
 	uint8_t *params = new uint8_t[20];
 	memset(params, 0, 20);
 	uint8_t i = 0;
 	uint8_t temp;
 
-	/* PLL parameters first */
+	// PLL parameters first
 
 	if(set_pll == 1)
 	{
-		/* Registers 26-27 */
+		// Registers 26-27 for PLLA
 		temp = ((pll_reg.p3 >> 8) & 0xFF);
 		params[i++] = temp;
 
 		temp = (uint8_t)(pll_reg.p3  & 0xFF);
 		params[i++] = temp;
 
-		/* Register 28 */
+		// Register 28 for PLLA
 		temp = (uint8_t)((pll_reg.p1 >> 16) & 0x03);
 		params[i++] = temp;
 
-		/* Registers 29-30 */
+		// Registers 29-30 for PLLA
 		temp = (uint8_t)((pll_reg.p1 >> 8) & 0xFF);
 		params[i++] = temp;
 
 		temp = (uint8_t)(pll_reg.p1  & 0xFF);
 		params[i++] = temp;
 
-		/* Register 31 */
+		// Register 31 for PLLA
 		temp = (uint8_t)((pll_reg.p3 >> 12) & 0xF0);
 		temp += (uint8_t)((pll_reg.p2 >> 16) & 0x0F);
 		params[i++] = temp;
 
-		/* Registers 32-33 */
+		// Registers 32-33 for PLLA
 		temp = (uint8_t)((pll_reg.p2 >> 8) & 0xFF);
 		params[i++] = temp;
 
 		temp = (uint8_t)(pll_reg.p2  & 0xFF);
 		params[i++] = temp;
 
-		/* Write the parameters */
+		// Write the parameters
 		if(target_pll == SI5351_PLLA)
 		{
 		  si5351_write_bulk(SI5351_PLLA_PARAMETERS, i, params);
@@ -243,109 +250,71 @@ void Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
 
 	delete params;
 
-	/* Now the multisynth parameters */
+	// Now the multisynth parameters
 	params = new uint8_t[20];
 	i = 0;
 
-	/* Registers 42-43 */
+	// Registers 42-43 for CLK0
 	temp = (uint8_t)((ms_reg.p3 >> 8) & 0xFF);
 	params[i++] = temp;
 
 	temp = (uint8_t)(ms_reg.p3  & 0xFF);
 	params[i++] = temp;
 
-	/* Register 44 */
-	/* TODO: add code for output divider */
+	// Register 44 for CLK0
 	temp = (uint8_t)((ms_reg.p1 >> 16) & 0x03);
 	params[i++] = temp;
 
-	/* Registers 45-46 */
+	// Registers 45-46 for CLK0
 	temp = (uint8_t)((ms_reg.p1 >> 8) & 0xFF);
 	params[i++] = temp;
 
 	temp = (uint8_t)(ms_reg.p1  & 0xFF);
 	params[i++] = temp;
 
-	/* Register 47 */
+	// Register 47 for CLK0
 	temp = (uint8_t)((ms_reg.p3 >> 12) & 0xF0);
 	temp += (uint8_t)((ms_reg.p2 >> 16) & 0x0F);
 	params[i++] = temp;
 
-	/* Registers 48-49 */
+	// Registers 48-49 for CLK0
 	temp = (uint8_t)((ms_reg.p2 >> 8) & 0xFF);
 	params[i++] = temp;
 
 	temp = (uint8_t)(ms_reg.p2  & 0xFF);
 	params[i++] = temp;
 
-	/* Write the parameters */
+	// Write the parameters
 	switch(clk)
 	{
 		case SI5351_CLK0:
 			si5351_write_bulk(SI5351_CLK0_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK0_PARAMETERS + 2);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK0_PARAMETERS + 2, reg_val);
 			break;
 		case SI5351_CLK1:
 			si5351_write_bulk(SI5351_CLK1_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK1_PARAMETERS + 2);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK1_PARAMETERS + 2, reg_val);
 			break;
 		case SI5351_CLK2:
 			si5351_write_bulk(SI5351_CLK2_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK2_PARAMETERS + 2);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK2_PARAMETERS + 2, reg_val);
 			break;
 		case SI5351_CLK3:
 			si5351_write_bulk(SI5351_CLK3_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK3_PARAMETERS + 2);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK3_PARAMETERS + 2, reg_val);
 			break;
 		case SI5351_CLK4:
 			si5351_write_bulk(SI5351_CLK4_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK4_PARAMETERS + 2);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK4_PARAMETERS + 2, reg_val);
 			break;
 		case SI5351_CLK5:
 			si5351_write_bulk(SI5351_CLK5_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK5_PARAMETERS + 2);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK5_PARAMETERS + 2, reg_val);
 			break;
 		case SI5351_CLK6:
 			si5351_write_bulk(SI5351_CLK6_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK6_7_OUTPUT_DIVIDER);
-			reg_val |= r_div;
-			si5351_write(SI5351_CLK6_7_OUTPUT_DIVIDER, reg_val);
 			break;
 		case SI5351_CLK7:
 			si5351_write_bulk(SI5351_CLK7_PARAMETERS, i, params);
-			si5351_set_ms_source(clk, target_pll);
-			// Set R divider
-			reg_val = si5351_read(SI5351_CLK6_7_OUTPUT_DIVIDER);
-			reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-			si5351_write(SI5351_CLK6_7_OUTPUT_DIVIDER, reg_val);
 			break;
 	}
+	
+	si5351_set_int(clk, int_mode);
+	si5351_ms_div(clk, r_div, div_by_4);
 
 	delete params;
 }
@@ -620,6 +589,23 @@ void Si5351::si5351_set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
   si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
 }
 
+void Si5351::si5351_set_int(enum si5351_clock clk, uint8_t int_mode)
+{
+	uint8_t reg_val;
+	reg_val = si5351_read(SI5351_CLK0_CTRL + clk);
+	
+	if(int_mode == 1)
+	{
+		reg_val |= (SI5351_CLK_INTEGER_MODE);
+	}
+	else
+	{
+		reg_val &= ~(SI5351_CLK_INTEGER_MODE);
+	}
+	
+	si5351_write(SI5351_CLK0_CTRL + clk, reg_val);
+}
+
 /*********************/
 /* Private functions */
 /*********************/
@@ -682,12 +668,12 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	uint64_t lltmp, rfrac, denom;
 	int64_t ref_temp;
 
-	/* Factor calibration value into nominal crystal frequency */
-	/* Measured in parts-per-ten million */
+	// Factor calibration value into nominal crystal frequency
+	// Measured in parts-per-ten million
 	ref_temp = (int64_t)((double)(correction / 100000.0) * (double)ref_freq) + ref_freq;
 	ref_freq = (uint64_t)ref_temp;
 
-	/* PLL bounds checking */
+	// PLL bounds checking
 	if (freq < SI5351_PLL_VCO_MIN * 100ULL)
 	{
 		freq = SI5351_PLL_VCO_MIN * 100ULL;
@@ -697,7 +683,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 		freq = SI5351_PLL_VCO_MAX * 100ULL;
 	}
 
-	/* Determine integer part of feedback equation */
+	// Determine integer part of feedback equation
 	a = freq / ref_freq;
 
 	if (a < SI5351_PLL_A_MIN)
@@ -709,7 +695,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 		freq = ref_freq * SI5351_PLL_A_MAX;
 	}
 
-	/* find best approximation for b/c = fVCO mod fIN */
+	// Find best approximation for b/c = fVCO mod fIN
 	denom = 1000ULL * 1000ULL;
 	lltmp = freq % ref_freq;
 	lltmp *= denom;
@@ -724,14 +710,14 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 				    SI5351_PLL_B_MAX, SI5351_PLL_C_MAX, &b, &c);
 	}
 
-	/* calculate parameters */
+	// Calculate parameters
 	p3  = c;
 	p2  = (128 * b) % c;
 	p1  = 128 * a;
 	p1 += (128 * b / c);
 	p1 -= 512;
 
-	/* recalculate rate by fIN * (a + b/c) */
+	// Recalculate rate by fIN * (a + b/c)
 	lltmp  = ref_freq;
 	lltmp *= b;
 	do_div(lltmp, c);
@@ -751,7 +737,7 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, struct Si5351RegSet *reg)
 	uint32_t a, b, c, p1, p2, p3;
 	uint8_t divby4;
 
-	/* Multisynth bounds checking */
+	// Multisynth bounds checking
 	if (freq > SI5351_MULTISYNTH_MAX_FREQ * 100ULL)
 	{
 		freq = SI5351_MULTISYNTH_MAX_FREQ * 100ULL;
@@ -762,14 +748,14 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, struct Si5351RegSet *reg)
 	}
 
 	divby4 = 0;
-	if (freq > SI5351_MULTISYNTH_DIVBY4_FREQ * 100ULL)
+	if (freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * 100ULL)
 	{
 		divby4 = 1;
 	}
 
-	/* Find largest integer divider for max */
-	/* VCO frequency and given target frequency */
-	if (divby4 == 0)
+	// Find largest integer divider for max
+	// VCO frequency and given target frequency
+	if(divby4 == 0)
 	{
 		lltmp = SI5351_PLL_VCO_MAX * 100ULL;
 		do_div(lltmp, freq);
@@ -784,16 +770,8 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, struct Si5351RegSet *reg)
 	c = 1;
 	pll_freq = a * freq;
 
-	/* Recalculate output frequency by fOUT = fIN / (a + b/c) */
-	/*
-	lltmp  = pll_freq;
-	lltmp *= c;
-	do_div(lltmp, a * c + b);
-	freq  = (unsigned long)lltmp;
-	*/
-
 	/* Calculate parameters */
-	if (divby4)
+	if (divby4 == 1)
 	{
 		p3 = 1;
 		p2 = 0;
@@ -821,7 +799,7 @@ uint64_t Si5351::multisynth_recalc(uint64_t freq, uint64_t pll_freq, struct Si53
 	uint32_t a, b, c, p1, p2, p3;
 	uint8_t divby4;
 
-	/* Multisynth bounds checking */
+	// Multisynth bounds checking
 	if (freq > SI5351_MULTISYNTH_MAX_FREQ * 100ULL)
 	{
 		freq = SI5351_MULTISYNTH_MAX_FREQ * 100ULL;
@@ -837,10 +815,9 @@ uint64_t Si5351::multisynth_recalc(uint64_t freq, uint64_t pll_freq, struct Si53
 		divby4 = 1;
 	}
 
-	/* Determine integer part of feedback equation */
+	// Determine integer part of feedback equation
 	a = pll_freq / freq;
 
-	/* TODO: not sure this is correct */
 	if (a < SI5351_MULTISYNTH_A_MIN)
 	{
 		freq = pll_freq / SI5351_MULTISYNTH_A_MIN;
@@ -850,7 +827,7 @@ uint64_t Si5351::multisynth_recalc(uint64_t freq, uint64_t pll_freq, struct Si53
 		freq = pll_freq / SI5351_MULTISYNTH_A_MAX;
 	}
 
-	/* find best approximation for b/c */
+	// Find best approximation for b/c
 	denom = 1000ULL * 1000ULL * 1000ULL;
 	lltmp = pll_freq % freq;
 	lltmp *= denom;
@@ -865,13 +842,13 @@ uint64_t Si5351::multisynth_recalc(uint64_t freq, uint64_t pll_freq, struct Si53
 				    SI5351_MULTISYNTH_B_MAX, SI5351_MULTISYNTH_C_MAX, &b, &c);
 	}
 
-	/* Recalculate output frequency by fOUT = fIN / (a + b/c) */
+	// Recalculate output frequency by fOUT = fIN / (a + b/c)
 	lltmp  = pll_freq;
 	lltmp *= c;
 	do_div(lltmp, a * c + b);
 	freq  = lltmp;
 
-	/* Calculate parameters */
+	// Calculate parameters
 	if (divby4)
 	{
 		p3 = 1;
@@ -900,7 +877,7 @@ void Si5351::si5351_update_sys_status(struct Si5351Status *status)
 
   reg_val = si5351_read(SI5351_DEVICE_STATUS);
 
-  /* Parse the register */
+  // Parse the register
   status->SYS_INIT = (reg_val >> 7) & 0x01;
   status->LOL_B = (reg_val >> 6) & 0x01;
   status->LOL_A = (reg_val >> 5) & 0x01;
@@ -914,9 +891,56 @@ void Si5351::si5351_update_int_status(struct Si5351IntStatus *int_status)
 
   reg_val = si5351_read(SI5351_DEVICE_STATUS);
 
-  /* Parse the register */
+  // Parse the register
   int_status->SYS_INIT_STKY = (reg_val >> 7) & 0x01;
   int_status->LOL_B_STKY = (reg_val >> 6) & 0x01;
   int_status->LOL_A_STKY = (reg_val >> 5) & 0x01;
   int_status->LOS_STKY = (reg_val >> 4) & 0x01;
+}
+
+void Si5351::si5351_ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
+{
+	uint8_t reg_val, reg_addr;
+	
+	switch(clk)
+	{
+		case SI5351_CLK0:
+			reg_addr = SI5351_CLK0_PARAMETERS + 2;
+			break;
+		case SI5351_CLK1:
+			reg_addr = SI5351_CLK1_PARAMETERS + 2;
+			break;
+		case SI5351_CLK2:
+			reg_addr = SI5351_CLK2_PARAMETERS + 2;
+			break;
+		case SI5351_CLK3:
+			reg_addr = SI5351_CLK3_PARAMETERS + 2;
+			break;
+		case SI5351_CLK4:
+			reg_addr = SI5351_CLK4_PARAMETERS + 2;
+			break;
+		case SI5351_CLK5:
+			reg_addr = SI5351_CLK5_PARAMETERS + 2;
+			break;
+		case SI5351_CLK6:
+			return;
+		case SI5351_CLK7:
+			return;
+	}
+	
+	reg_val = si5351_read(reg_addr);
+	
+	if(div_by_4 == 0)
+	{
+		reg_val &= ~(SI5351_OUTPUT_CLK_DIVBY4);
+	}
+	else
+	{
+		reg_val |= (SI5351_OUTPUT_CLK_DIVBY4);
+	}
+	
+	reg_val &= ~(0b111 << SI5351_OUTPUT_CLK_DIV_SHIFT);
+	reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
+	
+	si5351_write(reg_addr, reg_val);
 }

@@ -273,6 +273,7 @@ public:
   struct Si5351Status dev_status;
   struct Si5351IntStatus dev_int_status;
   void si5351_set_ms_source(enum si5351_clock, enum si5351_pll);
+  void si5351_set_int(enum si5351_clock, uint8_t);
 private:
   void rational_best_approximation(
           unsigned long long, unsigned long long,
@@ -283,6 +284,7 @@ private:
   uint64_t multisynth_recalc(uint64_t, uint64_t, struct Si5351RegSet *);
   void si5351_update_sys_status(struct Si5351Status *);
   void si5351_update_int_status(struct Si5351IntStatus *);
+  void si5351_ms_div(enum si5351_clock, uint8_t, uint8_t);
   uint32_t ee_ref_correction;
   int32_t ref_correction;
   uint64_t plla_freq;
