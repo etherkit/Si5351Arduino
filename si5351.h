@@ -1,7 +1,7 @@
 /*
  * si5351.h - Si5351 library for Arduino
  *
- * Copyright (C) 2014 Jason Milldrum <milldrum@gmail.com>
+ * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
  *
  * Many defines derived from clk-si5351.h in the Linux kernel.
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -221,11 +221,13 @@ enum si5351_variant {
 };
 
 enum si5351_clock {SI5351_CLK0, SI5351_CLK1, SI5351_CLK2, SI5351_CLK3,
-	SI5351_CLK4, SI5351_CLK5, SI5351_CLK6, SI5351_CLK7};
+	SI5351_CLK4, SI5351_CLK5, SI5351_CLK6, SI5351_CLK7, SI5351_CLKNONE};
 
 enum si5351_pll {SI5351_PLLA, SI5351_PLLB};
 
 enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
+
+enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
 
 /* Struct definitions */
 
@@ -256,39 +258,52 @@ struct Si5351IntStatus
 class Si5351
 {
 public:
-  Si5351(void);
-  void init(uint8_t);
-  void set_freq(uint64_t, uint64_t, enum si5351_clock);
-  void set_pll(uint64_t, enum si5351_pll);
-  void clock_enable(enum si5351_clock, uint8_t);
-  void drive_strength(enum si5351_clock, enum si5351_drive);
-  void update_status(void);
-  void set_correction(int32_t);
-  void set_phase(enum si5351_clock, uint8_t);
-  int32_t get_correction(void);
-  void pll_reset(enum si5351_pll);
-  uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
-  uint8_t si5351_write(uint8_t, uint8_t);
-  uint8_t si5351_read(uint8_t);
-  struct Si5351Status dev_status;
-  struct Si5351IntStatus dev_int_status;
-  void si5351_set_ms_source(enum si5351_clock, enum si5351_pll);
-  void si5351_set_int(enum si5351_clock, uint8_t);
+	Si5351(void);
+	void init(uint8_t);
+	uint8_t set_freq(uint64_t, uint64_t, enum si5351_clock);
+	void set_pll(uint64_t, enum si5351_pll);
+	void set_ms(enum si5351_clock, struct Si5351RegSet, uint8_t, uint8_t, uint8_t);
+	void output_enable(enum si5351_clock, uint8_t);
+	void drive_strength(enum si5351_clock, enum si5351_drive);
+	void update_status(void);
+	void set_correction(int32_t);
+	void set_phase(enum si5351_clock, uint8_t);
+	int32_t get_correction(void);
+	void pll_reset(enum si5351_pll);
+	void set_ms_source(enum si5351_clock, enum si5351_pll);
+	void set_int(enum si5351_clock, uint8_t);
+	void set_clock_pwr(enum si5351_clock, uint8_t);
+	void set_clock_invert(enum si5351_clock, uint8_t);
+	void set_clock_source(enum si5351_clock, enum si5351_clock_source);
+	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
+	uint8_t si5351_write(uint8_t, uint8_t);
+	uint8_t si5351_read(uint8_t);
+	
+	struct Si5351Status dev_status;
+	struct Si5351IntStatus dev_int_status;
+	uint64_t plla_freq = 0ULL;
+	uint64_t pllb_freq = 0ULL;
+	uint64_t clk0_freq = 0ULL;
+	uint64_t clk1_freq = 0ULL;
+	uint64_t clk2_freq = 0ULL;
+	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
+	uint8_t lock_plla, lock_pllb;
 private:
-  void rational_best_approximation(
-          unsigned long long, unsigned long long,
-          unsigned long long, unsigned long long,
-          unsigned long *, unsigned long *);
-  uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
-  uint64_t multisynth_calc(uint64_t, struct Si5351RegSet *);
-  uint64_t multisynth_recalc(uint64_t, uint64_t, struct Si5351RegSet *);
-  void si5351_update_sys_status(struct Si5351Status *);
-  void si5351_update_int_status(struct Si5351IntStatus *);
-  void si5351_ms_div(enum si5351_clock, uint8_t, uint8_t);
-  uint32_t ee_ref_correction;
-  int32_t ref_correction;
-  uint64_t plla_freq;
-  uint64_t pllb_freq;
+	void rational_best_approximation(
+		  unsigned long long, unsigned long long,
+		  unsigned long long, unsigned long long,
+		  unsigned long *, unsigned long *);
+	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
+	uint64_t multisynth_calc(uint64_t, struct Si5351RegSet *);
+	uint64_t multisynth_recalc(uint64_t, uint64_t, struct Si5351RegSet *);
+	void update_sys_status(struct Si5351Status *);
+	void update_int_status(struct Si5351IntStatus *);
+	void ms_div(enum si5351_clock, uint8_t, uint8_t);
+	uint8_t select_r_div(uint64_t *);
+	uint32_t ee_ref_correction;
+	int32_t ref_correction;
+	//uint8_t lock_plla;
+	//uint8_t lock_pllb;
 };
 
 #endif /* SI5351_H_ */

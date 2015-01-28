@@ -130,12 +130,11 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 
 TODO
 ----
- - [ ] Implement phase register access
  - [ ] Create an interface to the ref osc frequency
- - [ ] Implement invert
- - [ ] Implement power up/down
- - [ ] Implement reset
  - [ ] Implement clock disable state
+ - [x] Implement invert
+ - [x] Implement power up/down
+ - [x] Implement phase register access
  - [x] Implement tuning above 150 MHz
  - [x] Implement tuning below 1 MHz
  - [x] Implement sub-Hz tuning
