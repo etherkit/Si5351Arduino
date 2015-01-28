@@ -841,7 +841,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 
 	// Factor calibration value into nominal crystal frequency
 	// Measured in parts-per-ten million
-	ref_temp = (int64_t)((double)(correction / 100000.0) * (double)ref_freq) + ref_freq;
+	ref_temp = (int64_t)((double)(correction / 10000000.0) * (double)ref_freq) + ref_freq;
 	ref_freq = (uint64_t)ref_temp;
 
 	// PLL bounds checking

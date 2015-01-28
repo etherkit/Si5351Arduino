@@ -287,7 +287,7 @@ public:
 	uint64_t clk1_freq = 0ULL;
 	uint64_t clk2_freq = 0ULL;
 	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
-	uint8_t lock_plla, lock_pllb;
+	//uint8_t lock_plla, lock_pllb;
 private:
 	void rational_best_approximation(
 		  unsigned long long, unsigned long long,
@@ -300,10 +300,9 @@ private:
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
 	uint8_t select_r_div(uint64_t *);
-	uint32_t ee_ref_correction;
+	uint32_t ee_ref_correction = 0UL;
 	int32_t ref_correction;
-	//uint8_t lock_plla;
-	//uint8_t lock_pllb;
+	uint8_t lock_plla, lock_pllb;
 };
 
 #endif /* SI5351_H_ */
