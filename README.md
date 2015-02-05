@@ -80,6 +80,10 @@ You can also use the get_correction() method to check the EEPROM to see if there
 
 One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, please change the SI5351_XTAL_FREQ define in si5351.h.
 
+Constraints
+-----------
+* Two multisynths cannot share a PLL with when both outputs are > 112.5 MHz.
+
 Tokens
 ------
 Here are some of the defines, structs, and enumerations you will find handy to use with the library.

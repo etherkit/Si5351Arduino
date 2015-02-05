@@ -2,6 +2,7 @@
  * si5351.h - Si5351 library for Arduino
  *
  * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
+ *                    Dana H. Myers <k6jq@comcast.net>
  *
  * Many defines derived from clk-si5351.h in the Linux kernel.
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -35,15 +36,17 @@
 
 /* Define definitions */
 
-#define SI5351_BUS_BASE_ADDR				      0x60
-#define SI5351_XTAL_FREQ					        25000000
-#define SI5351_PLL_FIXED					        90000000000
+#define SI5351_BUS_BASE_ADDR				0x60
+#define SI5351_XTAL_FREQ					25000000
+#define SI5351_PLL_FIXED					90000000000
+#define SI5351_FREQ_MULT					100
 
-#define SI5351_PLL_VCO_MIN				      	600000000
-#define SI5351_PLL_VCO_MAX				      	900000000
+#define SI5351_PLL_VCO_MIN					600000000
+#define SI5351_PLL_VCO_MAX					900000000
 #define SI5351_MULTISYNTH_MIN_FREQ		  	1000000
 #define SI5351_MULTISYNTH_DIVBY4_FREQ	 	150000000
 #define SI5351_MULTISYNTH_MAX_FREQ		  	160000000
+#define SI5351_MULTISYNTH_SHARE_MAX			112500000
 #define SI5351_MULTISYNTH67_MAX_FREQ	  	SI5351_MULTISYNTH_DIVBY4_FREQ
 #define SI5351_CLKOUT_MIN_FREQ			    	8000
 #define SI5351_CLKOUT_MAX_FREQ			    	SI5351_MULTISYNTH_MAX_FREQ
@@ -180,6 +183,8 @@
 
 /* Macro definitions */
 
+#define RFRAC_DENOM ((1L << 20) - 1)
+
 /*
  * Based on former asm-ppc/div64.h and asm-m68knommu/div64.h
  *
@@ -229,6 +234,8 @@ enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_
 
 enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
 
+enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
+
 /* Struct definitions */
 
 struct Si5351RegSet
@@ -275,6 +282,7 @@ public:
 	void set_clock_pwr(enum si5351_clock, uint8_t);
 	void set_clock_invert(enum si5351_clock, uint8_t);
 	void set_clock_source(enum si5351_clock, enum si5351_clock_source);
+	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
@@ -289,10 +297,12 @@ public:
 	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
 	//uint8_t lock_plla, lock_pllb;
 private:
+/*
 	void rational_best_approximation(
 		  unsigned long long, unsigned long long,
 		  unsigned long long, unsigned long long,
 		  unsigned long *, unsigned long *);
+		  */
 	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
 	uint64_t multisynth_calc(uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth_recalc(uint64_t, uint64_t, struct Si5351RegSet *);
