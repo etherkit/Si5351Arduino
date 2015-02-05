@@ -40,6 +40,7 @@ Next, let's set the CLK0 output to 14 MHz and use a fixed PLL reference frequenc
     si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
     si5351.set_freq(1400000000, SI5351_PLL_FIXED, SI5351_CLK0);
 
+Frequencies are indicated in units of 0.01 Hz. Therefore, if you prefer to work in 1 Hz increments in your own code, simply multiply each frequency passed to the library by 100ULL (better yet, use the define called SI5351_FREQ_MULT in the header file for this multiplication).
 The second value passed in the above method is the desired driving PLL frequency. Entering a 0 will have the method choose a PLL frequency for you. If you would like to use a fixed PLL frequency to drive a multisynth (in order to ensure glitch-free tuning), set the desired PLL frequency first using the method below, then specify that frequency in the set_freq() method. The PLL frequency only needs to be set once. Any additional frequency changes only need to use the set_freq() method as long as you are using the same PLL frequency as before.
 
 Now let's set the CLK1 output to 20 MHz output, and let the Si5351 class pick a PLL frequency:
@@ -82,11 +83,11 @@ One thing to note: the library is set for a 25 MHz reference crystal. If you are
 
 Constraints
 -----------
-* Two multisynths cannot share a PLL with when both outputs are > 112.5 MHz.
+* Two multisynths cannot share a PLL with when both outputs are < 1.024 MHz or >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
 
 Tokens
 ------
-Here are some of the defines, structs, and enumerations you will find handy to use with the library.
+Here are the defines, structs, and enumerations you will find handy to use with the library.
 
 Crystal load capacitance:
 
@@ -106,6 +107,14 @@ PLL sources:
 Drive levels:
 
     enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
+    
+Clock sources:
+
+    enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
+    
+Clock disable states:
+
+    enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
 
 Status register
 
@@ -135,7 +144,7 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 TODO
 ----
  - [ ] Create an interface to the ref osc frequency
- - [ ] Implement clock disable state
+ - [x] Implement clock disable state
  - [x] Implement invert
  - [x] Implement power up/down
  - [x] Implement phase register access
