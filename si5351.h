@@ -286,16 +286,14 @@ public:
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
-	
 	struct Si5351Status dev_status;
 	struct Si5351IntStatus dev_int_status;
-	uint64_t plla_freq = 0ULL;
-	uint64_t pllb_freq = 0ULL;
-	uint64_t clk0_freq = 0ULL;
-	uint64_t clk1_freq = 0ULL;
-	uint64_t clk2_freq = 0ULL;
+	uint64_t plla_freq;
+	uint64_t pllb_freq;
+	uint64_t clk0_freq;
+	uint64_t clk1_freq;
+	uint64_t clk2_freq;
 	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
-	//uint8_t lock_plla, lock_pllb;
 private:
 /*
 	void rational_best_approximation(

@@ -46,6 +46,11 @@ Si5351::Si5351(void)
 	clk0_int_mode = 0;
 	clk1_int_mode = 0;
 	clk2_int_mode = 0;
+	plla_freq = 0ULL;
+	pllb_freq = 0ULL;
+	clk0_freq = 0ULL;
+	clk1_freq = 0ULL;
+	clk2_freq = 0ULL;
 }
 
 /*
