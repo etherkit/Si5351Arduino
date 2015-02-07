@@ -61,9 +61,11 @@ Si5351::Si5351(void)
  *
  * xtal_load_c - Crystal load capacitance. Use the SI5351_CRYSTAL_LOAD_*PF
  * defines in the header file
+ * ref_osc_freq - Crystal/reference oscillator frequency in 1 Hz increments.
+ * Defaults to 25000000.
  *
  */
-void Si5351::init(uint8_t xtal_load_c)
+void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 {
 	// Start I2C comms
 	Wire.begin();

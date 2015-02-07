@@ -266,7 +266,7 @@ class Si5351
 {
 public:
 	Si5351(void);
-	void init(uint8_t);
+	void init(uint8_t, uint32_t);
 	uint8_t set_freq(uint64_t, uint64_t, enum si5351_clock);
 	void set_pll(uint64_t, enum si5351_pll);
 	void set_ms(enum si5351_clock, struct Si5351RegSet, uint8_t, uint8_t, uint8_t);
@@ -311,6 +311,7 @@ private:
 	uint32_t ee_ref_correction;
 	int32_t ref_correction;
 	uint8_t lock_plla, lock_pllb;
+	uint32_t xtal_freq;
 };
 
 #endif /* SI5351_H_ */

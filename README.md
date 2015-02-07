@@ -31,9 +31,9 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
     Si5351 si5351;
 
-Now in the Setup() function, let's initialize communications with the Si5351 and specify the load capacitance of the reference crystal:
+Now in the Setup() function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, and to use the default reference oscillator frequency of 25 MHz:
 
-    si5351.init(SI5351_CRYSTAL_LOAD_8PF);
+    si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
 
 Next, let's set the CLK0 output to 14 MHz and use a fixed PLL reference frequency (this allows for glitch-free tuning):
 
@@ -79,7 +79,7 @@ You can also use the get_correction() method to check the EEPROM to see if there
 
     int32_t corr_factor = si5351.get_correction()
 
-One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, please change the SI5351_XTAL_FREQ define in si5351.h.
+One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the init() function to specify that as the reference oscillator frequency.
 
 Constraints
 -----------
