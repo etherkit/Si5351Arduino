@@ -79,7 +79,7 @@ You can also use the get_correction() method to check the EEPROM to see if there
 
     int32_t corr_factor = si5351.get_correction()
 
-One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, please change the SI5351_XTAL_FREQ define in si5351.h.
+One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the init() function to specify that as the reference oscillator frequency.
 
 Constraints
 -----------
@@ -143,7 +143,7 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 
 TODO
 ----
- - [ ] Create an interface to the ref osc frequency
+ - [x] Create an interface to the ref osc frequency
  - [x] Implement clock disable state
  - [x] Implement invert
  - [x] Implement power up/down

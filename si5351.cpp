@@ -51,6 +51,7 @@ Si5351::Si5351(void)
 	clk0_freq = 0ULL;
 	clk1_freq = 0ULL;
 	clk2_freq = 0ULL;
+	xtal_freq = SI5351_XTAL_FREQ;
 }
 
 /*
@@ -62,7 +63,7 @@ Si5351::Si5351(void)
  * xtal_load_c - Crystal load capacitance. Use the SI5351_CRYSTAL_LOAD_*PF
  * defines in the header file
  * ref_osc_freq - Crystal/reference oscillator frequency in 1 Hz increments.
- * Defaults to 25000000.
+ * Defaults to 25000000 if a 0 is used here.
  *
  */
 void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
@@ -75,6 +76,12 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 
 	// Get the correction factor from EEPROM
 	ref_correction = eeprom_read_dword(&ee_ref_correction);
+	
+	// Change the ref osc freq if different from default
+	if (ref_osc_freq != 0)
+	{
+		xtal_freq = ref_osc_freq;
+	}
 }
 
 /*
@@ -101,7 +108,7 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 	// PLL bounds checking
 	if(pll_freq != 0)
 	{
-		if ((freq < SI5351_PLL_VCO_MIN * SI5351_FREQ_MULT) || (freq > SI5351_PLL_VCO_MAX * SI5351_FREQ_MULT))
+		if ((pll_freq < SI5351_PLL_VCO_MIN * SI5351_FREQ_MULT) || (pll_freq > SI5351_PLL_VCO_MAX * SI5351_FREQ_MULT))
 		{
 			return 1;
 		}
@@ -897,7 +904,7 @@ void Si5351::rational_best_approximation(
 
 uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t correction)
 {
-	uint64_t ref_freq = SI5351_XTAL_FREQ * SI5351_FREQ_MULT;
+	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
 	uint64_t lltmp, rfrac, denom;
 	int64_t ref_temp;
