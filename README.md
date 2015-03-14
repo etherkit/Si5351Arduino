@@ -31,20 +31,21 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
     Si5351 si5351;
 
-Now in the Setup() function, let's initialize communications with the Si5351 and specify the load capacitance of the reference crystal:
+Now in the Setup() function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, and to use the default reference oscillator frequency of 25 MHz:
 
-    si5351.init(SI5351_CRYSTAL_LOAD_8PF);
+    si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
 
 Next, let's set the CLK0 output to 14 MHz and use a fixed PLL reference frequency (this allows for glitch-free tuning):
 
     si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-    si5351.set_freq(14000000, SI5351_PLL_FIXED, SI5351_CLK0);
+    si5351.set_freq(1400000000, SI5351_PLL_FIXED, SI5351_CLK0);
 
+Frequencies are indicated in units of 0.01 Hz. Therefore, if you prefer to work in 1 Hz increments in your own code, simply multiply each frequency passed to the library by 100ULL (better yet, use the define called SI5351_FREQ_MULT in the header file for this multiplication).
 The second value passed in the above method is the desired driving PLL frequency. Entering a 0 will have the method choose a PLL frequency for you. If you would like to use a fixed PLL frequency to drive a multisynth (in order to ensure glitch-free tuning), set the desired PLL frequency first using the method below, then specify that frequency in the set_freq() method. The PLL frequency only needs to be set once. Any additional frequency changes only need to use the set_freq() method as long as you are using the same PLL frequency as before.
 
 Now let's set the CLK1 output to 20 MHz output, and let the Si5351 class pick a PLL frequency:
 
-    si5351.set_freq(20000000, 0, SI5351_CLK1);
+    si5351.set_freq(2000000000, 0, SI5351_CLK1);
 
 In the main Loop(), we use the Serial port to monitor the status of the Si5351, using a method to update a public struct which holds the status bits:
 
@@ -78,11 +79,15 @@ You can also use the get_correction() method to check the EEPROM to see if there
 
     int32_t corr_factor = si5351.get_correction()
 
-One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, please change the SI5351_XTAL_FREQ define in si5351.h.
+One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the init() function to specify that as the reference oscillator frequency.
+
+Constraints
+-----------
+* Two multisynths cannot share a PLL with when both outputs are < 1.024 MHz or >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
 
 Tokens
 ------
-Here are some of the defines, structs, and enumerations you will find handy to use with the library.
+Here are the defines, structs, and enumerations you will find handy to use with the library.
 
 Crystal load capacitance:
 
@@ -102,6 +107,14 @@ PLL sources:
 Drive levels:
 
     enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
+    
+Clock sources:
+
+    enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
+    
+Clock disable states:
+
+    enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
 
 Status register
 
@@ -130,12 +143,14 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 
 TODO
 ----
- - [ ] Implement tuning below 1 MHz
- - [ ] Implement tuning above 150 MHz
- - [ ] Implement phase register access
- - [ ] Create an interface to the ref osc frequency
- - [ ] Implement invert
- - [ ] Implement power up/down
- - [ ] Implement reset
+ - [x] Create an interface to the ref osc frequency
+ - [x] Implement clock disable state
+ - [x] Implement invert
+ - [x] Implement power up/down
+ - [x] Implement phase register access
+ - [x] Implement tuning above 150 MHz
+ - [x] Implement tuning below 1 MHz
+ - [x] Implement sub-Hz tuning
+ - [x] Implement PLL reset
 
   [1]: http://www.silabs.com
