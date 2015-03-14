@@ -35,8 +35,9 @@ void setup()
   // get old cal factor
   //old_cal = si5351.get_correction();  
   si5351.set_correction(0);
-  // start on target frequency 
-  si5351.set_freq(target_freq, 0, SI5351_CLK0);
+  // start on target frequency
+  si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
+  si5351.set_freq(target_freq, SI5351_PLL_FIXED, SI5351_CLK0);
 }
 
 void loop()
@@ -58,6 +59,7 @@ void loop()
     Serial.println(cal_factor);
     Serial.println("Setting calibration factor");
     si5351.set_correction(cal_factor);
+    Serial.println("Resetting target frequency");
     si5351.set_freq(target_freq, SI5351_PLL_FIXED, SI5351_CLK0);
   }  
   
