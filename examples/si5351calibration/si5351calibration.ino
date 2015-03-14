@@ -26,7 +26,7 @@ int32_t cal_factor;
 int32_t old_cal;
 
 uint64_t rx_freq;
-uint64_t target_freq = 1000000000; // 10 MHz
+uint64_t target_freq = 1000000000; // 10 MHz, in hundredths of herz
 
 void setup()
 {
@@ -102,7 +102,7 @@ static void vfo_interface(void)
       continue;
     }
     si5351.set_freq(rx_freq,SI5351_PLL_FIXED,SI5351_CLK0);
-    cal_factor = (int)(target_freq - rx_freq) / 100;
+    cal_factor = (int32_t)(target_freq - rx_freq) / 100;
     Serial.print("Current difference:");
     Serial.println(cal_factor);
     }
