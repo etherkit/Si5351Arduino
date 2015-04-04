@@ -40,6 +40,7 @@
 #define SI5351_XTAL_FREQ					25000000
 #define SI5351_PLL_FIXED					90000000000ULL
 #define SI5351_FREQ_MULT					100ULL
+#define SI5351_DEFAULT_CLK					1000000000ULL
 
 #define SI5351_PLL_VCO_MIN					600000000
 #define SI5351_PLL_VCO_MAX					900000000
@@ -279,7 +280,7 @@ public:
 	void pll_reset(enum si5351_pll);
 	void set_ms_source(enum si5351_clock, enum si5351_pll);
 	void set_int(enum si5351_clock, uint8_t);
-	void set_clock_pwr(enum si5351_clock, uint8_t);
+	uint8_t set_clock_pwr(enum si5351_clock, uint8_t);
 	void set_clock_invert(enum si5351_clock, uint8_t);
 	void set_clock_source(enum si5351_clock, enum si5351_clock_source);
 	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);

@@ -8,10 +8,6 @@
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
  * Rabeeh Khoury <rabeeh@solid-run.com>
  *
- * rational_best_approximation() derived from lib/rational.c in
- * the Linux kernel.
- * Copyright (C) 2009 emlix GmbH, Oskar Schirmer <oskar@scara.com>
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -85,12 +81,7 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 	si5351_write(17, 0x80);
 	si5351_write(18, 0x80);
 	
-	// Set default phase to 0 for all outputs
-	set_phase(SI5351_CLK0, 0);
- 	set_phase(SI5351_CLK1, 0);
-	set_phase(SI5351_CLK2, 0);
-	
-	// Turn the outputs back on...
+	// Turn the clocks back on...
 	si5351_write(16, 0x0c);
 	si5351_write(17, 0x0c);
 	si5351_write(18, 0x0c);
@@ -146,158 +137,158 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 	r_div = select_r_div(&freq);
 	
 	// Calculate the synth parameters
-	// The PLL must be calculated and set by firmware when 150 MHz <= freq <= 160 MHz
-	if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
-	{
-		pll_freq = multisynth_calc(freq, &ms_reg);
-		write_pll = 1;
-		div_by_4 = 1;
-		int_mode = 1;
-	}
-	// If pll_freq is 0, let the algorithm pick a PLL frequency
-	else if(pll_freq == 0)
-	{
-		// TODO: INT mode logic
-		pll_freq = multisynth_calc(freq, &ms_reg);
-		write_pll = 1;
-		div_by_4 = 0;
-		int_mode = 0;
-	}
-	else
+	// If pll_freq is 0 and freq < 150 MHz, let the algorithm pick a PLL frequency
+	if((pll_freq) && (freq < SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT))
 	{
 		multisynth_recalc(freq, pll_freq, &ms_reg);
 		write_pll = 0;
 		div_by_4 = 0;
 		int_mode = 0;
+		
+		switch(clk)
+		{
+		case SI5351_CLK0:
+			clk0_freq = freq;
+			break;
+		case SI5351_CLK1:
+			clk1_freq = freq;
+			break;
+		case SI5351_CLK2:
+			clk2_freq = freq;
+			break;
+		default:
+			break;
+		}
 	}
-
-	// Determine which PLL to use
-	// CLK0 gets PLLA, CLK1 gets PLLB
-	// CLK2 gets PLLB if necessary
-	// Only good for Si5351A3 variant at the moment
-	switch(clk)
+	else
 	{
-	case SI5351_CLK0:
-		pll_freq = multisynth_calc(freq, &ms_reg);
-		target_pll = SI5351_PLLA;
-		write_pll = 1;
-		plla_freq = pll_freq;
-		clk0_freq = freq;
-		set_ms_source(SI5351_CLK0, SI5351_PLLA);
-		set_clock_source(SI5351_CLK0, SI5351_CLK_SRC_MS);
-		break;
-	case SI5351_CLK1:
-		// Check to see if PLLB is locked due to other output being < 1.024 MHz or >= 112.5 MHz
-		if(lock_pllb == SI5351_CLK2)
+		// The PLL must be calculated and set by firmware when 150 MHz <= freq <= 160 MHz
+		if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
 		{
-			// We can't have a 2nd output < 1.024 MHz or >= 112.5 MHz on the same PLL unless exact same freq, so exit
-			if((freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT 
-				|| freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128) && freq != clk2_freq)
-			{
-				clk1_freq = 0;
-				return 1;
-			}
-			// Else, set multisynth to same PLL freq as CLK2
-			else
-			{
-				pll_freq = pllb_freq;
-				multisynth_recalc(freq, pll_freq, &ms_reg);
-				write_pll = 0;
-			}
-		}
-		else if(pllb_freq == 0)
-		{
-			pllb_freq = pll_freq;
-			write_pll = 1;
-		}
-		else
-		{
-			pll_freq = pllb_freq;
-			multisynth_recalc(freq, pll_freq, &ms_reg);
-			write_pll = 0;
-		}
-		
-		if(freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT || freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128)
-		{
-			lock_pllb = SI5351_CLK1;
-		
-			// Recalc and rewrite the multisynth parameters on CLK2
-			if(clk2_freq != 0)
-			{
-				struct Si5351RegSet ms_temp_reg;
-				r_div = select_r_div(&clk2_freq);
-				multisynth_recalc(clk2_freq, pllb_freq, &ms_temp_reg);
-				set_ms(SI5351_CLK2, ms_temp_reg, 0, r_div, 0);
-			}
-		}
-		else
-		{
-			lock_pllb = SI5351_CLKNONE;
-		}
-		
-		target_pll = SI5351_PLLB;
-		clk1_freq = freq;
-		set_ms_source(SI5351_CLK1, SI5351_PLLB);
-		set_clock_source(SI5351_CLK1, SI5351_CLK_SRC_MS);
-		break;
-	case SI5351_CLK2:
-		// Check to see if PLLB is locked due to other output being < 1.024 MHz or >= 112.5 MHz
-		if(lock_pllb == SI5351_CLK1)
-		{
-			// We can't have a 2nd output < 1.024 MHz  or >= 112.5 MHz on the same PLL unless exact same freq, so exit
-			if((freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT 
-				|| freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128) && freq != clk2_freq)
-			{
-				clk2_freq = 0;
-				return 1;
-			}
-			// Else, set multisynth to same PLL freq as CLK1
-			else
-			{
-				pll_freq = pllb_freq;
-				multisynth_recalc(freq, pll_freq, &ms_reg);
-				write_pll = 0;
-			}
-		}
-		// need to account for CLK2 set before CLK1
-		else if(pllb_freq == 0)
-		{
-			pllb_freq = pll_freq;
 			pll_freq = multisynth_calc(freq, &ms_reg);
 			write_pll = 1;
-		}
-		else
-		{
-			pll_freq = pllb_freq;
-			multisynth_recalc(freq, pll_freq, &ms_reg);
-			write_pll = 0;
+			div_by_4 = 1;
+			int_mode = 1;
 		}
 		
-		if(freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT || freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128)
+		// Determine which PLL to use
+		// CLK0 gets PLLA, CLK1 gets PLLB
+		// CLK2 gets PLLB if necessary
+		// Only good for Si5351A3 variant at the moment
+		switch(clk)
 		{
-			lock_pllb = SI5351_CLK2;
+		case SI5351_CLK0:
+			pll_freq = multisynth_calc(freq, &ms_reg);
+			target_pll = SI5351_PLLA;
+			write_pll = 1;
+			set_ms_source(SI5351_CLK0, SI5351_PLLA);
 		
-			if(clk1_freq != 0)
+			plla_freq = pll_freq;
+			clk0_freq = freq;
+			//set_clock_source(SI5351_CLK0, SI5351_CLK_SRC_MS);
+			break;
+		case SI5351_CLK1:
+			// Check to see if PLLB is locked due to other output being < 1.024 MHz or >= 112.5 MHz
+			if(lock_pllb == SI5351_CLK2)
 			{
-				// Recalc and rewrite the multisynth parameters on CLK1
-				struct Si5351RegSet ms_temp_reg;
-				r_div = select_r_div(&clk1_freq);
-				multisynth_recalc(clk1_freq, pllb_freq, &ms_temp_reg);
-				set_ms(SI5351_CLK1, ms_temp_reg, 0, r_div, 0);
+				// We can't have a 2nd output < 1.024 MHz or >= 112.5 MHz on the same PLL unless exact same freq, so exit
+				if((freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT 
+					|| freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128) && freq != clk2_freq)
+				{
+					clk1_freq = 0;
+					return 1;
+				}
+				// Else, set multisynth to same PLL freq as CLK2
+				else
+				{
+					pll_freq = pllb_freq;
+					multisynth_recalc(freq, pll_freq, &ms_reg);
+					write_pll = 0;
+					set_ms_source(SI5351_CLK1, SI5351_PLLB);
+				}
 			}
-		}
-		else
-		{
-			lock_pllb = SI5351_CLKNONE;
-		}
+			else
+			{
+				pllb_freq = pll_freq;
+				pll_freq = multisynth_calc(freq, &ms_reg);
+				write_pll = 1;
+				set_ms_source(SI5351_CLK1, SI5351_PLLB);
+			}
 		
-		target_pll = SI5351_PLLB;
-		clk2_freq = freq;
-		set_ms_source(SI5351_CLK2, SI5351_PLLB);
-		set_clock_source(SI5351_CLK2, SI5351_CLK_SRC_MS);
-		break;
-	default:
-		return 1;
+			if(freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT || freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128)
+			{
+				lock_pllb = SI5351_CLK1;
+		
+				// Recalc and rewrite the multisynth parameters on CLK2
+				if(clk2_freq != 0)
+				{
+					struct Si5351RegSet ms_temp_reg;
+					r_div = select_r_div(&clk2_freq);
+					multisynth_recalc(clk2_freq, pllb_freq, &ms_temp_reg);
+					set_ms(SI5351_CLK2, ms_temp_reg, 0, r_div, 0);
+				}
+			}
+			else
+			{
+				lock_pllb = SI5351_CLKNONE;
+			}
+		
+			target_pll = SI5351_PLLB;
+			clk1_freq = freq;
+			break;
+		case SI5351_CLK2:
+			// Check to see if PLLB is locked due to other output being < 1.024 MHz or >= 112.5 MHz
+			if(lock_pllb == SI5351_CLK1)
+			{
+				// We can't have a 2nd output < 1.024 MHz  or >= 112.5 MHz on the same PLL unless exact same freq, so exit
+				if((freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT 
+					|| freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128) && freq != clk2_freq)
+				{
+					clk2_freq = 0;
+					return 1;
+				}
+				// Else, set multisynth to same PLL freq as CLK1
+				else
+				{
+					pll_freq = pllb_freq;
+					multisynth_recalc(freq, pll_freq, &ms_reg);
+					write_pll = 0;
+					set_ms_source(SI5351_CLK2, SI5351_PLLB);
+				}
+			}
+			// need to account for CLK2 set before CLK1
+			else
+			{
+				pllb_freq = pll_freq;
+				pll_freq = multisynth_calc(freq, &ms_reg);
+				write_pll = 1;
+				set_ms_source(SI5351_CLK2, SI5351_PLLB);
+			}
+		
+			if(freq >= SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT || freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128)
+			{
+				lock_pllb = SI5351_CLK2;
+		
+				if(clk1_freq != 0)
+				{
+					// Recalc and rewrite the multisynth parameters on CLK1
+					struct Si5351RegSet ms_temp_reg;
+					r_div = select_r_div(&clk1_freq);
+					multisynth_recalc(clk1_freq, pllb_freq, &ms_temp_reg);
+					set_ms(SI5351_CLK1, ms_temp_reg, 0, r_div, 0);
+				}
+			}
+			else
+			{
+				lock_pllb = SI5351_CLKNONE;
+			}
+		
+			target_pll = SI5351_PLLB;
+			clk2_freq = freq;
+			break;
+		default:
+			return 1;
+		}
 	}
 
 	// Set multisynth registers (MS must be set before PLL)
@@ -625,7 +616,6 @@ void Si5351::pll_reset(enum si5351_pll target_pll)
 void Si5351::set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
 {
 	uint8_t reg_val;
-	//uint8_t reg_val = 0x0c;
 
 	reg_val = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
 
@@ -693,21 +683,24 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
  * Enable or disable power to a clock output (a power
  * saving feature).
  */
-void Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
+uint8_t Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
 {
-	uint8_t reg_val;
+	uint8_t reg_val, reg;
 	reg_val = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
+	//reg_val = 0x0c;
 	
 	if(pwr == 1)
 	{
-		reg_val &= ~(SI5351_CLK_POWERDOWN);
+		reg_val &= 0b01111111;
 	}
 	else
 	{
-		reg_val |= (SI5351_CLK_POWERDOWN);
+		reg_val |= 0b10000000;
 	}
 	
 	si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
+	
+	return reg_val;
 }
 
 /*
@@ -845,13 +838,20 @@ uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 
 uint8_t Si5351::si5351_read(uint8_t addr)
 {
+	uint8_t reg_val;
+
 	Wire.beginTransmission(SI5351_BUS_BASE_ADDR);
 	Wire.write(addr);
 	Wire.endTransmission();
 
-	Wire.requestFrom(SI5351_BUS_BASE_ADDR, 1);
+	Wire.requestFrom(SI5351_BUS_BASE_ADDR, 1, false);
 
-	return Wire.read();
+	while(Wire.available())
+	{
+		reg_val = Wire.read();
+	}
+	
+	return reg_val;
 }
 
 /*********************/
