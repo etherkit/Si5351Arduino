@@ -23,7 +23,6 @@
  */
 
 #include <stdint.h>
-#include <avr/eeprom.h>
 
 #include "Arduino.h"
 #include "Wire.h"
