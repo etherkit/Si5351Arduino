@@ -32,7 +32,6 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include <stdint.h>
-#include <avr/eeprom.h>
 
 /* Define definitions */
 
