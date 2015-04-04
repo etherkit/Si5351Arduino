@@ -237,6 +237,8 @@ enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_
 
 enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
 
+enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
+
 /* Struct definitions */
 
 struct Si5351RegSet
@@ -280,10 +282,11 @@ public:
 	void pll_reset(enum si5351_pll);
 	void set_ms_source(enum si5351_clock, enum si5351_pll);
 	void set_int(enum si5351_clock, uint8_t);
-	uint8_t set_clock_pwr(enum si5351_clock, uint8_t);
+	void set_clock_pwr(enum si5351_clock, uint8_t);
 	void set_clock_invert(enum si5351_clock, uint8_t);
 	void set_clock_source(enum si5351_clock, enum si5351_clock_source);
 	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);
+	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
@@ -296,12 +299,6 @@ public:
 	uint64_t clk2_freq;
 	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
 private:
-/*
-	void rational_best_approximation(
-		  unsigned long long, unsigned long long,
-		  unsigned long long, unsigned long long,
-		  unsigned long *, unsigned long *);
-		  */
 	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
 	uint64_t multisynth_calc(uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth_recalc(uint64_t, uint64_t, struct Si5351RegSet *);

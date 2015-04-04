@@ -683,11 +683,10 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
  * Enable or disable power to a clock output (a power
  * saving feature).
  */
-uint8_t Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
+void Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
 {
 	uint8_t reg_val, reg;
 	reg_val = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
-	//reg_val = 0x0c;
 	
 	if(pwr == 1)
 	{
@@ -699,8 +698,6 @@ uint8_t Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
 	}
 	
 	si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
-	
-	return reg_val;
 }
 
 /*
@@ -815,6 +812,48 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
 	}
 	
 	si5351_write(reg, reg_val);
+}
+
+void set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
+{
+	uint8_t reg_val;
+	reg_val = si5351_read(SI5351_FANOUT_ENABLE);
+	
+	switch(fanout)
+	{
+	case SI5351_FANOUT_CLKIN:
+		if(enable)
+		{
+			reg_val |= SI5351_CLKIN_ENABLE;
+		}
+		else
+		{
+			reg_val &= ~(SI5351_CLKIN_ENABLE);
+		}
+		break;
+	case SI5351_FANOUT_XO:
+		if(enable)
+		{
+			reg_val |= SI5351_XTAL_ENABLE;
+		}
+		else
+		{
+			reg_val &= ~(SI5351_XTAL_ENABLE);
+		}
+		break;
+	case SI5351_FANOUT_MS:
+		if(enable)
+		{
+			reg_val |= SI5351_MULTISYNTH_ENABLE;
+		}
+		else
+		{
+			reg_val &= ~(SI5351_MULTISYNTH_ENABLE);
+		}
+		break;
+	}
+	
+	si5351_write(SI5351_FANOUT_ENABLE, reg_val);
 }
 
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
