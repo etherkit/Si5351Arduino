@@ -33,7 +33,6 @@
 #include "Wire.h"
 #include "si5351.h"
 
-uint32_t EEMEM ee_ref_correction = 0;
 
 /********************/
 /* Public functions */
@@ -73,15 +72,32 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 
 	// Set crystal load capacitance
 	si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c);
-
-	// Get the correction factor from EEPROM
-	ref_correction = eeprom_read_dword(&ee_ref_correction);
 	
 	// Change the ref osc freq if different from default
 	if (ref_osc_freq != 0)
 	{
 		xtal_freq = ref_osc_freq;
 	}
+	
+	// Initialize the CLK outputs according to flowchart in datasheet
+	// First, turn them off
+	si5351_write(16, 0x80);
+	si5351_write(17, 0x80);
+	si5351_write(18, 0x80);
+	
+	// Set default phase to 0 for all outputs
+	set_phase(SI5351_CLK0, 0);
+ 	set_phase(SI5351_CLK1, 0);
+	set_phase(SI5351_CLK2, 0);
+	
+	// Turn the outputs back on...
+	si5351_write(16, 0x0c);
+	si5351_write(17, 0x0c);
+	si5351_write(18, 0x0c);
+  
+	// Then reset the PLLs
+	pll_reset(SI5351_PLLA);
+	pll_reset(SI5351_PLLB);
 }
 
 /*
@@ -543,14 +559,7 @@ void Si5351::update_status(void)
  */
 void Si5351::set_correction(int32_t corr)
 {
-	int32_t temp = eeprom_read_dword(&ee_ref_correction);
-	if(temp != corr)
-	{
-		eeprom_write_dword(&ee_ref_correction, corr);
-	}
 	ref_correction = corr;
-	
-	// TODO: recalc the synth params
 }
 
 /*
@@ -580,7 +589,7 @@ void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
  */
 int32_t Si5351::get_correction(void)
 {
-	return eeprom_read_dword(&ee_ref_correction);
+	return ref_correction;
 }
 
 /*
