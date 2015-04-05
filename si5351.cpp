@@ -1072,66 +1072,6 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 	}
 }
 
-/*
-uint64_t Si5351::multisynth_recalc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
-{
-	uint64_t lltmp, rfrac, denom;
-	uint32_t a, b, c, p1, p2, p3;
-	uint8_t divby4;
-
-	// Multisynth bounds checking
-	if (freq > SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT)
-	{
-		freq = SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT;
-	}
-	if (freq < SI5351_MULTISYNTH_MIN_FREQ * SI5351_FREQ_MULT)
-	{
-		freq = SI5351_MULTISYNTH_MIN_FREQ * SI5351_FREQ_MULT;
-	}
-
-	divby4 = 0;
-	if (freq > SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
-	{
-		divby4 = 1;
-	}
-
-	// Determine integer part of feedback equation
-	a = pll_freq / freq;
-	
-	if (a < SI5351_MULTISYNTH_A_MIN)
-	{
-		freq = pll_freq / SI5351_MULTISYNTH_A_MIN;
-	}
-	if (a > SI5351_MULTISYNTH_A_MAX)
-	{
-		freq = pll_freq / SI5351_MULTISYNTH_A_MAX;
-	}
-	
-    b = (pll_freq % freq * RFRAC_DENOM) / freq;
-    c = b ? RFRAC_DENOM : 1;
-
-	// Calculate parameters
-	if (divby4)
-	{
-		p3 = 1;
-		p2 = 0;
-		p1 = 0;
-	}
-	else
-	{
-        p1 = 128 * a + ((128 * b) / c) - 512;
-        p2 = 128 * b - c * ((128 * b) / c);
-        p3 = c;
-	}
-
-	reg->p1 = p1;
-	reg->p2 = p2;
-	reg->p3 = p3;
-
-	return freq;
-}
-*/
-
 void Si5351::update_sys_status(struct Si5351Status *status)
 {
   uint8_t reg_val = 0;
