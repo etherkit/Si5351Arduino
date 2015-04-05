@@ -26,7 +26,7 @@ int32_t cal_factor;
 int32_t old_cal;
 
 uint64_t rx_freq;
-uint64_t target_freq = 1000000000; // 10 MHz, in hundredths of herz
+uint64_t target_freq = 1000000000ULL; // 10 MHz, in hundredths of herz
 
 void setup()
 {
@@ -77,9 +77,9 @@ static void flush_input(void)
 static void vfo_interface(void)
 {
   rx_freq = target_freq;
-  Serial.println(F("   Up: y  u   i o   p"));
-  Serial.println(F(" Down: h  j   k l   ;"));
-  Serial.println(F("   Hz: 1 10 100 1K 10k"));
+  Serial.println(F("   Up:   r   t  y  u  i   o  p"));
+  Serial.println(F(" Down:   f   g  h  j  k   l  ;"));
+  Serial.println(F("   Hz: 0.01 0.1 1 10 100 1K 10k"));
   while (1) {
   if (Serial.available() > 0) {
     char c = Serial.read();
@@ -87,6 +87,10 @@ static void vfo_interface(void)
       case 'q':
         flush_input();
         return;
+      case 'r': rx_freq += 1; break;
+      case 'f': rx_freq -= 1; break;
+      case 't': rx_freq += 10; break;
+      case 'g': rx_freq -= 10; break;
       case 'y': rx_freq += 100; break;
       case 'h': rx_freq -= 100; break;
       case 'u': rx_freq += 1000; break;
@@ -102,7 +106,7 @@ static void vfo_interface(void)
       continue;
     }
     si5351.set_freq(rx_freq,SI5351_PLL_FIXED,SI5351_CLK0);
-    cal_factor = (int32_t)(target_freq - rx_freq) / 100;
+    cal_factor = (int32_t)(target_freq - rx_freq) / 1;
     Serial.print("Current difference:");
     Serial.println(cal_factor);
     }

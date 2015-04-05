@@ -75,15 +75,13 @@ Also, there will be some inherent error in the reference crystal's actual freque
 
     si5351.set_correction(-900);
 
-You can also use the get_correction() method to check the EEPROM to see if there is a non-zero correction factor stored, then skip setting the correction factor if there's already something other than the default (such as at startup, for example):
-
-    int32_t corr_factor = si5351.get_correction()
-
 One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the init() function to specify that as the reference oscillator frequency.
 
 Constraints
 -----------
 * Two multisynths cannot share a PLL with when both outputs are < 1.024 MHz or >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
+
+* Setting phase will be limited in the extreme edges of the output tuning ranges. 
 
 Tokens
 ------

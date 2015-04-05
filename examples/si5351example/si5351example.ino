@@ -30,10 +30,10 @@ void setup()
 
   // Set CLK0 to output 14 MHz with a fixed PLL frequency
   si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-  si5351.set_freq(1400000000, SI5351_PLL_FIXED, SI5351_CLK0);
+  si5351.set_freq(1400000000ULL, SI5351_PLL_FIXED, SI5351_CLK0);
 
   // Set CLK1 to output 20 MHz
-  si5351.set_freq(2000000000, 0, SI5351_CLK1);
+  si5351.set_freq(2000000000ULL, 0, SI5351_CLK1);
 }
 
 void loop()

@@ -139,7 +139,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 	// If pll_freq is 0 and freq < 150 MHz, let the algorithm pick a PLL frequency
 	if((pll_freq) && (freq < SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT))
 	{
-		//multisynth_recalc(freq, pll_freq, &ms_reg);
 		multisynth_calc(freq, pll_freq, &ms_reg);
 		write_pll = 0;
 		div_by_4 = 0;
@@ -185,7 +184,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 		
 			plla_freq = pll_freq;
 			clk0_freq = freq;
-			//set_clock_source(SI5351_CLK0, SI5351_CLK_SRC_MS);
 			break;
 		case SI5351_CLK1:
 			// Check to see if PLLB is locked due to other output being < 1.024 MHz or >= 112.5 MHz
@@ -202,7 +200,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 				else
 				{
 					pll_freq = pllb_freq;
-					//multisynth_recalc(freq, pll_freq, &ms_reg);
 					multisynth_calc(freq, pll_freq, &ms_reg);
 					write_pll = 0;
 					set_ms_source(SI5351_CLK1, SI5351_PLLB);
@@ -225,7 +222,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 				{
 					struct Si5351RegSet ms_temp_reg;
 					r_div = select_r_div(&clk2_freq);
-					//multisynth_recalc(clk2_freq, pllb_freq, &ms_temp_reg);
 					multisynth_calc(clk2_freq, pllb_freq, &ms_temp_reg);
 					set_ms(SI5351_CLK2, ms_temp_reg, 0, r_div, 0);
 				}
@@ -253,7 +249,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 				else
 				{
 					pll_freq = pllb_freq;
-					//multisynth_recalc(freq, pll_freq, &ms_reg);
 					multisynth_calc(freq, pll_freq, &ms_reg);
 					write_pll = 0;
 					set_ms_source(SI5351_CLK2, SI5351_PLLB);
@@ -277,7 +272,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 					// Recalc and rewrite the multisynth parameters on CLK1
 					struct Si5351RegSet ms_temp_reg;
 					r_div = select_r_div(&clk1_freq);
-					//multisynth_recalc(clk1_freq, pllb_freq, &ms_temp_reg);
 					multisynth_calc(clk1_freq, pllb_freq, &ms_temp_reg);
 					set_ms(SI5351_CLK1, ms_temp_reg, 0, r_div, 0);
 				}
@@ -912,59 +906,6 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 /* Private functions */
 /*********************/
 
-/*
- * Calculate best rational approximation for a given fraction
- * taking into account restricted register size, e.g. to find
- * appropriate values for a pll with 5 bit denominator and
- * 8 bit numerator register fields, trying to set up with a
- * frequency ratio of 3.1415, one would say:
- *
- * rational_best_approximation(31415, 10000,
- *              (1 << 8) - 1, (1 << 5) - 1, &n, &d);
- *
- * you may look at given_numerator as a fixed point number,
- * with the fractional part size described in given_denominator.
- *
- * for theoretical background, see:
- * http://en.wikipedia.org/wiki/Continued_fraction
- */
-
-/*
-void Si5351::rational_best_approximation(
-        unsigned long long given_numerator, unsigned long long given_denominator,
-        unsigned long long max_numerator, unsigned long long max_denominator,
-        unsigned long *best_numerator, unsigned long *best_denominator)
-{
-	unsigned long long n, d, n0, d0, n1, d1;
-	n = given_numerator;
-	d = given_denominator;
-	n0 = d1 = 0;
-	n1 = d0 = 1;
-	for (;;) {
-		unsigned long long t, a;
-		if ((n1 > max_numerator) || (d1 > max_denominator)) {
-			n1 = n0;
-			d1 = d0;
-			break;
-		}
-		if (d == 0)
-			break;
-		t = d;
-		a = n / d;
-		d = n % d;
-		n = t;
-		t = n0 + a * n1;
-		n0 = n1;
-		n1 = t;
-		t = d0 + a * d1;
-		d0 = d1;
-		d1 = t;
-	}
-	*best_numerator = (unsigned long)n1;
-	*best_denominator = (unsigned long)d1;
-}
-*/
-
 uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t correction)
 {
 	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
@@ -973,11 +914,11 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	int64_t ref_temp;
 
 	// Factor calibration value into nominal crystal frequency
-	// Measured in parts-per-ten million
+	// Measured in parts-per-billion
 	/*
 	ref_temp = (int64_t)((double)(correction / 10000000.0) * (double)ref_freq) + ref_freq;
 	ref_freq = (uint64_t)ref_temp;*/
-	ref_freq = ref_freq + (int32_t)((((((int64_t)correction) << 31) / 10000000LL) * ref_freq) >> 31);
+	ref_freq = ref_freq + (int32_t)((((((int64_t)correction) << 31) / 1000000000LL) * ref_freq) >> 31);
 
 	// PLL bounds checking
 	if (freq < SI5351_PLL_VCO_MIN * SI5351_FREQ_MULT)
