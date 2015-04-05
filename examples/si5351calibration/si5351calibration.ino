@@ -26,7 +26,7 @@ int32_t cal_factor;
 int32_t old_cal;
 
 uint64_t rx_freq;
-uint64_t target_freq = 1000000000ULL; // 10 MHz, in hundredths of herz
+uint64_t target_freq = 1000000000ULL; // 10 MHz, in hundredths of hertz
 
 void setup()
 {

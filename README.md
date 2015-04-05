@@ -400,7 +400,7 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
 ###set_clock_fanout()
 ```
 /*
- * void set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
+ * set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
  *
  * fanout - Desired clock fanout
  *   (use the si5351_clock_fanout enum)
