@@ -1,3 +1,22 @@
+/*
+ * si5351example.ino - Simple example of using the Si5351Arduino library
+ *
+ * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "si5351.h"
 #include "Wire.h"
 
@@ -19,7 +38,7 @@ void setup()
 
 void loop()
 {
-  // Read the Status Register and print it every second
+  // Read the Status Register and print it every 10 seconds
   si5351.update_status();
   Serial.print("SYS_INIT: ");
   Serial.print(si5351.dev_status.SYS_INIT);
@@ -32,5 +51,5 @@ void loop()
   Serial.print("  REVID: ");
   Serial.println(si5351.dev_status.REVID);
 
-  delay(1000);
+  delay(10000);
 }

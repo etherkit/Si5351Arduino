@@ -572,8 +572,6 @@ void Si5351::set_correction(int32_t corr)
 void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 {
 	si5351_write(SI5351_CLK0_PHASE_OFFSET + (uint8_t)clk, phase);
-	pll_reset(SI5351_PLLA);
-	pll_reset(SI5351_PLLB);
 }
 
 /*
