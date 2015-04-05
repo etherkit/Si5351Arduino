@@ -367,6 +367,19 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
   delete params;
 }
 
+/*
+ * set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t int_mode, uint8_t r_div, uint8_t div_by_4)
+ *
+ * Set the specified multisynth parameters. Not normally needed, but public for advanced users.
+ *
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ * int_mode - Set integer mode
+ *  Set to 1 to enable, 0 to disable
+ * r_div - Desired r_div ratio
+ * div_by_4 - Set Divide By 4 mode
+ *   Set to 1 to enable, 0 to disable
+ */
 void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t int_mode, uint8_t r_div, uint8_t div_by_4)
 {
 	uint8_t *params = new uint8_t[20];
@@ -527,7 +540,7 @@ void Si5351::update_status(void)
  *
  * Use this to set the oscillator correction factor to
  * EEPROM. This value is a signed 32-bit integer of the
- * parts-per-10 million value that the actual oscillation
+ * parts-per-billion value that the actual oscillation
  * frequency deviates from the specified frequency.
  *
  * The frequency calibration is done as a one-time procedure.
@@ -536,7 +549,7 @@ void Si5351::update_status(void)
  * should be measured as accurately as possible. The
  * difference between the measured and specified frequencies
  * should be calculated in Hertz, then multiplied by 10 in
- * order to get the parts-per-10 million value.
+ * order to get the parts-per-billion value.
  *
  * Since the Si5351 itself has an intrinsic 0 PPM error, this
  * correction factor is good across the entire tuning range of
@@ -572,7 +585,7 @@ void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
  * get_correction(void)
  *
  * Returns the oscillator correction factor stored
- * in EEPROM.
+ * in RAM.
  */
 int32_t Si5351::get_correction(void)
 {

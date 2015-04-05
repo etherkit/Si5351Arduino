@@ -1,6 +1,6 @@
 /* Simple calibration routine for the Si5351 breakout board.
  *
- * Copyright 2015 Paul Warren <pwarren@pwarren.id.au
+ * Copyright 2015 Paul Warren <pwarren@pwarren.id.au>
  *
  * Uses code from https://github.com/darksidelemm/open_radio_miniconf_2015
  * and the old version of the calibration sketch
@@ -106,7 +106,7 @@ static void vfo_interface(void)
       continue;
     }
     si5351.set_freq(rx_freq,SI5351_PLL_FIXED,SI5351_CLK0);
-    cal_factor = (int32_t)(target_freq - rx_freq) / 1;
+    cal_factor = (int32_t)(target_freq - rx_freq);
     Serial.print("Current difference:");
     Serial.println(cal_factor);
     }
