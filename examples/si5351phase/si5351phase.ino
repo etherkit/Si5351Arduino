@@ -68,6 +68,9 @@ void setup()
   // the clock frequency is 50.
   si5351.set_phase(SI5351_CLK0, 0);
   si5351.set_phase(SI5351_CLK1, 50);
+  
+  // We need to reset the PLL before they will be in phase alignment
+  si5351.pll_reset(SI5351_PLLA);
 }
 
 void loop()

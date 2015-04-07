@@ -49,7 +49,7 @@ Si5351::Si5351(void)
 }
 
 /*
- * init(uint8_t xtal_load_c)
+ * init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
  *
  * Setup communications to the Si5351 and set the crystal
  * load capacitance.
@@ -963,7 +963,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	rfrac = lltmp;
 	
 	b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
-    c = b ? RFRAC_DENOM : 1;
+	c = b ? RFRAC_DENOM : 1;
 
 	/*
 	b = 0;

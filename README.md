@@ -133,6 +133,9 @@ You can see this in action in a sketch in the examples folder called _si5351phas
 	  // the clock frequency is 50.
 	  si5351.set_phase(SI5351_CLK0, 0);
 	  si5351.set_phase(SI5351_CLK1, 50);
+	  
+	  // We need to reset the PLL before they will be in phase alignment
+      si5351.pll_reset(SI5351_PLLA);
 
 
 Constraints
@@ -146,7 +149,7 @@ Public Methods
 ###init()
 ```
 /*
- * init(uint8_t xtal_load_c)
+ * init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
  *
  * Setup communications to the Si5351 and set the crystal
  * load capacitance.
