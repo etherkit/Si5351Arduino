@@ -296,7 +296,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 	if(write_pll == 1)
 	{
 		set_pll(pll_freq, target_pll);
-		pll_reset(target_pll);
 	}
 
 	return 0;
