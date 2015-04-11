@@ -313,7 +313,7 @@ int32_t Si5351::get_correction(void)
  */
 void Si5351::pll_reset(enum si5351_pll target_pll)
 ```
-###set_ms_source
+###set_ms_source()
 ```
 /*
  * set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
@@ -340,7 +340,7 @@ void Si5351::set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
  */
 void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
 ```
-###set_clock_pwr
+###set_clock_pwr()
 ```
 /*
  * set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
