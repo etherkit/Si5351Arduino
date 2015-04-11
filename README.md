@@ -83,7 +83,7 @@ The drive strength is the amount of current into a 50&Omega; load. 2 mA roughly 
 
 Individual outputs can be turned on and off. In the second argument, use a 0 to disable and 1 to enable:
 
-    si5351.clock_enable(SI5351_CLK0, 0);
+    si5351.output_enable(SI5351_CLK0, 0);
 
 You may invert a clock output signal by using this command:
 
