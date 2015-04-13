@@ -577,6 +577,9 @@ void Si5351::set_correction(int32_t corr)
  */
 void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 {
+	// Mask off the upper bit since it is reserved
+	phase = phase & 0b01111111;
+	
 	si5351_write(SI5351_CLK0_PHASE_OFFSET + (uint8_t)clk, phase);
 }
 
@@ -927,9 +930,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 
 	// Factor calibration value into nominal crystal frequency
 	// Measured in parts-per-billion
-	/*
-	ref_temp = (int64_t)((double)(correction / 10000000.0) * (double)ref_freq) + ref_freq;
-	ref_freq = (uint64_t)ref_temp;*/
+
 	ref_freq = ref_freq + (int32_t)((((((int64_t)correction) << 31) / 1000000000LL) * ref_freq) >> 31);
 
 	// PLL bounds checking
@@ -963,16 +964,6 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	
 	b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
 	c = b ? RFRAC_DENOM : 1;
-
-	/*
-	b = 0;
-	c = 1;
-	if (rfrac)
-	{
-		rational_best_approximation(rfrac, denom,
-				    SI5351_PLL_B_MAX, SI5351_PLL_C_MAX, &b, &c);
-	}
-	*/
 
 	// Calculate parameters
     p1 = 128 * a + ((128 * b) / c) - 512;
