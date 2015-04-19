@@ -62,7 +62,7 @@ In the main Loop(), we use the Serial port to monitor the status of the Si5351, 
     Serial.println(si5351.dev_status.REVID);
 
 Setting the Output Frequency
------------------------------------
+----------------------------
 As indicated above, the library accepts and indicates clock and PLL frequencies in units of 0.01 Hz, as an _unsigned long long_ variable type (or _uint64_t_). When entering literal values, append "ULL" to make an explicit unsigned long long number to ensure proper tuning. Since many applications won't require sub-Hertz tuning, you may wish to use an _unsigned long_ (or _uint32_t_) variable to hold your tune frequency, then scale it up by multiplying by 100ULL before passing it to the set_freq() method.
 
 The most simple way to set the output frequency is to let the library pick a PLL assignment for you. You do this by passing a 0 to the set_freq() method in the 2nd parameter:
@@ -72,6 +72,18 @@ The most simple way to set the output frequency is to let the library pick a PLL
 If you let the library make PLL assignments, it will assign CLK0 to PLLA and both CLK1 and CLK2 to PLLB.
 
 If that is not suitable, such as when you need glitch-free tuning or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs.
+
+Manually Selecting a PLL Frequency
+----------------------------------
+The Si5351 consists of two main stages: two PLLs which are locked to the 25 or 27 MHz reference oscillator and which can be set from 600 to 900 MHz, and the output (multisynth) clocks which are locked to a PLL and can be set from 1 to 160 MHz. Instead of letting the library choose a PLL frequency for your chosen output frequency, you can choose it yourself by using the set_pll() method, and then using the same frequency in the second parameter in the call to set_freq() (as is shown in the example above).
+
+Keep in mind when you are setting the PLL manually, that you need to be mindful of the limits of the IC. The multisynth is a fractional PLL, with limits described in AN619 as:
+
+>Valid Multisynth divider ratios are 4, 6, 8, and any fractional value between 8 + 1/1,048,575 and 900 + 0/1.
+This means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
+of the VCO frequencies.
+
+To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 112.5 MHz, then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
 
 Further Details
 ---------------
@@ -145,7 +157,7 @@ Constraints
 * Setting phase will be limited in the extreme edges of the output tuning ranges. Because the phase register is 7-bits in size and is denominated in units representing 1/4 the PLL period, not all phases can be set for all output frequencies. For example, if you need a 90&deg; phase shift, the lowest frequency you can set it at is 4.6875 MHz (600 MHz PLL/128).
 
 Public Methods
-------------------
+--------------
 ###init()
 ```
 /*
@@ -487,7 +499,7 @@ Interrupt register:
     };
 
 Raw Commands
--------------------
+------------
 If you need to read and write raw data to the Si5351, there is public access to the library's read(), write(), and write_bulk() methods.
 
 Changes from alpha version
