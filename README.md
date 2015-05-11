@@ -1,6 +1,6 @@
 Si5351 Library for Arduino
 ==========================
-This is a basic library for the Si5351 series of clock generator ICs from [Silicon Labs](1) for the Arduino development environment. It will allow you to control the Si5351 with an Arduino, and without depending on the proprietary ClockBuilder software from Silicon Labs.
+This is a basic library for the Si5351 series of clock generator ICs from [Silicon Labs](http://www.silabs.com) for the Arduino development environment. It will allow you to control the Si5351 with an Arduino, and without depending on the proprietary ClockBuilder software from Silicon Labs.
 
 This library is focused towards usage in RF/amateur radio applications, but it may be useful in other cases. However, keep in mind that coding decisions are and will be made with those applications in mind first, so if you need something a bit different, please do fork this repository. Also, since the Si5351A3 version is the one which seems most useful in amateur radio applications, this is where the current development will be focused. Once the Si5351A3 has a decent and mature feature set, hopefully we will be able to turn to the 8-output version, and perhaps even the B and C variants.
 
@@ -8,7 +8,7 @@ Please feel free to use the issues feature of GitHub if you run into problems or
 
 Thanks For Your Support!
 ------------------------
-If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](2). Thank you!
+If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](https://www.etherkit.com). Thank you!
 
 Hardware Requirements and Setup
 -------------------------------
