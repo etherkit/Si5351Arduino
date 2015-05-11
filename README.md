@@ -6,6 +6,10 @@ This library is focused towards usage in RF/amateur radio applications, but it m
 
 Please feel free to use the issues feature of GitHub if you run into problems or have suggestions for important features to implement.
 
+Thanks For Your Support!
+------------------------
+If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](2). Thank you!
+
 Hardware Requirements and Setup
 -------------------------------
 This library has been written for the Arduino platform and has been successfully tested on the Arduino Uno and an Uno clone. There should be no reason that it would not work on any other Arduino hardware with I2C support.
@@ -100,7 +104,7 @@ Individual outputs can be turned on and off. In the second argument, use a 0 to 
 You may invert a clock output signal by using this command:
 
 	set_clock_invert(SI5351_CLK0, 1);
-    
+
 Calibration
 -----------
 There will be some inherent error in the reference oscillator's actual frequency, so we can account for this by measuring the difference between the uncalibrated actual and nominal output frequencies, then using that difference as a correction factor in the library. The set_correction() method uses a signed integer calibration constant measured in parts-per-billion. The easist way to determine this correction factor is to measure a 10 MHz signal from one of the clock outputs (in Hz, or better resolution if you can measure it), scale it to parts-per-billion, then use it in the set_correction() method in future use of this particular reference oscillator. Once this correction factor is determined, it should not need to be measured again for the same reference oscillator/Si5351 pair unless you want to redo the calibration. With an accurate measurement at one frequency, this calibration should be good across the entire tuning range.
@@ -121,31 +125,31 @@ Setting the phase of a clock requires that you manually set the PLL and take the
 
 If you need a 90 degree phase shift (as in many RF applications), then it is quite easy to determine your parameters. Pick a PLL frequency that is an even multiple of your clock frequency (remember that the PLL needs to be in the range of 600 to 900 MHz). Then to set a 90 degree phase shift, you simply enter that multiple into the phase register. Remember when setting multiple outputs to be phase-related to each other, they each need to be referenced to the same PLL.
 
-You can see this in action in a sketch in the examples folder called _si5351phase_. It shows how one would set up an I/Q pair of signals at 14.1 MHz. 
+You can see this in action in a sketch in the examples folder called _si5351phase_. It shows how one would set up an I/Q pair of signals at 14.1 MHz.
 
 	  // We will output 14.1 MHz on CLK0 and CLK1.
 	  // A PLLA frequency of 705 MHz was chosen to give an even
 	  // divisor by 14.1 MHz.
 	  unsigned long long freq = 1410000000ULL;
 	  unsigned long long pll_freq = 70500000000ULL;
-	
+
 	  // Set PLLA to the chosen frequency
 	  si5351.set_pll(pll_freq, SI5351_PLLA);
-	  
+
 	  // Set CLK0 and CLK1 to use PLLA as the MS source
 	  si5351.set_ms_source(SI5351_CLK0, SI5351_PLLA);
 	  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLA);
-	  
+
 	  // Set CLK0 and CLK1 to output 14.1 MHz with a fixed PLL frequency
 	  si5351.set_freq(freq, pll_freq, SI5351_CLK0);
 	  si5351.set_freq(freq, pll_freq, SI5351_CLK1);
-	
+
 	  // Now we can set CLK1 to have a 90 deg phase shift by entering
 	  // 50 in the CLK1 phase register, since the ratio of the PLL to
 	  // the clock frequency is 50.
 	  si5351.set_phase(SI5351_CLK0, 0);
 	  si5351.set_phase(SI5351_CLK1, 50);
-	  
+
 	  // We need to reset the PLL before they will be in phase alignment
       si5351.pll_reset(SI5351_PLLA);
 
@@ -464,15 +468,15 @@ PLL sources:
 Drive levels:
 
     enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
-    
+
 Clock sources:
 
     enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
-    
+
 Clock disable states:
 
     enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
-    
+
 Clock fanout:
 
     enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
@@ -524,5 +528,4 @@ TODO
  - [x] Implement PLL reset
 
   [1]: http://www.silabs.com
-
-
+  [2]: https://www.etherkit.com
