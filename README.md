@@ -1,10 +1,14 @@
 Si5351 Library for Arduino
 ==========================
-This is a basic library for the Si5351 series of clock generator ICs from [Silicon Labs](1) for the Arduino development environment. It will allow you to control the Si5351 with an Arduino, and without depending on the proprietary ClockBuilder software from Silicon Labs.
+This is a basic library for the Si5351 series of clock generator ICs from [Silicon Labs](http://www.silabs.com) for the Arduino development environment. It will allow you to control the Si5351 with an Arduino, and without depending on the proprietary ClockBuilder software from Silicon Labs.
 
 This library is focused towards usage in RF/amateur radio applications, but it may be useful in other cases. However, keep in mind that coding decisions are and will be made with those applications in mind first, so if you need something a bit different, please do fork this repository. Also, since the Si5351A3 version is the one which seems most useful in amateur radio applications, this is where the current development will be focused. Once the Si5351A3 has a decent and mature feature set, hopefully we will be able to turn to the 8-output version, and perhaps even the B and C variants.
 
 Please feel free to use the issues feature of GitHub if you run into problems or have suggestions for important features to implement.
+
+Thanks For Your Support!
+------------------------
+If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](https://www.etherkit.com). Thank you!
 
 Hardware Requirements and Setup
 -------------------------------
@@ -62,7 +66,7 @@ In the main Loop(), we use the Serial port to monitor the status of the Si5351, 
     Serial.println(si5351.dev_status.REVID);
 
 Setting the Output Frequency
------------------------------------
+----------------------------
 As indicated above, the library accepts and indicates clock and PLL frequencies in units of 0.01 Hz, as an _unsigned long long_ variable type (or _uint64_t_). When entering literal values, append "ULL" to make an explicit unsigned long long number to ensure proper tuning. Since many applications won't require sub-Hertz tuning, you may wish to use an _unsigned long_ (or _uint32_t_) variable to hold your tune frequency, then scale it up by multiplying by 100ULL before passing it to the set_freq() method.
 
 The most simple way to set the output frequency is to let the library pick a PLL assignment for you. You do this by passing a 0 to the set_freq() method in the 2nd parameter:
@@ -72,6 +76,18 @@ The most simple way to set the output frequency is to let the library pick a PLL
 If you let the library make PLL assignments, it will assign CLK0 to PLLA and both CLK1 and CLK2 to PLLB.
 
 If that is not suitable, such as when you need glitch-free tuning or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs.
+
+Manually Selecting a PLL Frequency
+----------------------------------
+The Si5351 consists of two main stages: two PLLs which are locked to the 25 or 27 MHz reference oscillator and which can be set from 600 to 900 MHz, and the output (multisynth) clocks which are locked to a PLL and can be set from 1 to 160 MHz. Instead of letting the library choose a PLL frequency for your chosen output frequency, you can choose it yourself by using the set_pll() method, and then using the same frequency in the second parameter in the call to set_freq() (as is shown in the example above).
+
+Keep in mind when you are setting the PLL manually, that you need to be mindful of the limits of the IC. The multisynth is a fractional PLL, with limits described in AN619 as:
+
+>Valid Multisynth divider ratios are 4, 6, 8, and any fractional value between 8 + 1/1,048,575 and 900 + 0/1.
+This means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
+of the VCO frequencies.
+
+To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 112.5 MHz, then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
 
 Further Details
 ---------------
@@ -88,7 +104,7 @@ Individual outputs can be turned on and off. In the second argument, use a 0 to 
 You may invert a clock output signal by using this command:
 
 	set_clock_invert(SI5351_CLK0, 1);
-    
+
 Calibration
 -----------
 There will be some inherent error in the reference oscillator's actual frequency, so we can account for this by measuring the difference between the uncalibrated actual and nominal output frequencies, then using that difference as a correction factor in the library. The set_correction() method uses a signed integer calibration constant measured in parts-per-billion. The easist way to determine this correction factor is to measure a 10 MHz signal from one of the clock outputs (in Hz, or better resolution if you can measure it), scale it to parts-per-billion, then use it in the set_correction() method in future use of this particular reference oscillator. Once this correction factor is determined, it should not need to be measured again for the same reference oscillator/Si5351 pair unless you want to redo the calibration. With an accurate measurement at one frequency, this calibration should be good across the entire tuning range.
@@ -109,31 +125,31 @@ Setting the phase of a clock requires that you manually set the PLL and take the
 
 If you need a 90 degree phase shift (as in many RF applications), then it is quite easy to determine your parameters. Pick a PLL frequency that is an even multiple of your clock frequency (remember that the PLL needs to be in the range of 600 to 900 MHz). Then to set a 90 degree phase shift, you simply enter that multiple into the phase register. Remember when setting multiple outputs to be phase-related to each other, they each need to be referenced to the same PLL.
 
-You can see this in action in a sketch in the examples folder called _si5351phase_. It shows how one would set up an I/Q pair of signals at 14.1 MHz. 
+You can see this in action in a sketch in the examples folder called _si5351phase_. It shows how one would set up an I/Q pair of signals at 14.1 MHz.
 
 	  // We will output 14.1 MHz on CLK0 and CLK1.
 	  // A PLLA frequency of 705 MHz was chosen to give an even
 	  // divisor by 14.1 MHz.
 	  unsigned long long freq = 1410000000ULL;
 	  unsigned long long pll_freq = 70500000000ULL;
-	
+
 	  // Set PLLA to the chosen frequency
 	  si5351.set_pll(pll_freq, SI5351_PLLA);
-	  
+
 	  // Set CLK0 and CLK1 to use PLLA as the MS source
 	  si5351.set_ms_source(SI5351_CLK0, SI5351_PLLA);
 	  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLA);
-	  
+
 	  // Set CLK0 and CLK1 to output 14.1 MHz with a fixed PLL frequency
 	  si5351.set_freq(freq, pll_freq, SI5351_CLK0);
 	  si5351.set_freq(freq, pll_freq, SI5351_CLK1);
-	
+
 	  // Now we can set CLK1 to have a 90 deg phase shift by entering
 	  // 50 in the CLK1 phase register, since the ratio of the PLL to
 	  // the clock frequency is 50.
 	  si5351.set_phase(SI5351_CLK0, 0);
 	  si5351.set_phase(SI5351_CLK1, 50);
-	  
+
 	  // We need to reset the PLL before they will be in phase alignment
       si5351.pll_reset(SI5351_PLLA);
 
@@ -145,7 +161,7 @@ Constraints
 * Setting phase will be limited in the extreme edges of the output tuning ranges. Because the phase register is 7-bits in size and is denominated in units representing 1/4 the PLL period, not all phases can be set for all output frequencies. For example, if you need a 90&deg; phase shift, the lowest frequency you can set it at is 4.6875 MHz (600 MHz PLL/128).
 
 Public Methods
-------------------
+--------------
 ###init()
 ```
 /*
@@ -452,15 +468,15 @@ PLL sources:
 Drive levels:
 
     enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
-    
+
 Clock sources:
 
     enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
-    
+
 Clock disable states:
 
     enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
-    
+
 Clock fanout:
 
     enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
@@ -487,7 +503,7 @@ Interrupt register:
     };
 
 Raw Commands
--------------------
+------------
 If you need to read and write raw data to the Si5351, there is public access to the library's read(), write(), and write_bulk() methods.
 
 Changes from alpha version
@@ -512,5 +528,4 @@ TODO
  - [x] Implement PLL reset
 
   [1]: http://www.silabs.com
-
-
+  [2]: https://www.etherkit.com
