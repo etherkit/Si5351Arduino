@@ -20,16 +20,12 @@ Wire the SDA and SCL pins of the Si5351 to the corresponding pins on the Arduino
 
 Connect a 25 MHz or 27 MHz crystal with a load capacitance of 6, 8, or 10 pF to the Si5351 XA and XB pins. Locate the crystal as close to the Si5351 as possible and keep the traces as short as possible. Please use a SMT crystal. A crystal with leads will have too much stray capacitance.
 
-Library Installation
---------------------
-The best way to install the library is via the Arduino Library Manager, which is available if you are using Arduino IDE version 1.6.2 or greater. To install it this way, simply go to the menu Sketch > Include Library > Manage Libraries..., and then in the search box at the upper-right, type "Etherkit Si5351". Click on the entry in the list below, then click on the provided "Install" button. By installing the library this way, you will always have notifications of future library updates, and can easily switch between library versions.
-
-If you need to or would like to install the library in the old way, then you can download a copy of the library in a ZIP file. Download a ZIP file of the library from the GitHub repository by using the "Download ZIP" button at the right of the main repository page. Extract the ZIP file, then rename the unzipped folder as "Si5351". Finally, open the Arduino IDE, select menu Sketch > Import Library... > Add Library..., and select the renamed folder that you just downloaded. Restart the IDE and you should have access to the new library.
+Example
+-------
+Include the Si5351Arduino library into your instance of the Arduino IDE. Download a ZIP file of the library from the GitHub repository by using the "Download ZIP" button at the right of the main repository page. Extract the ZIP file, then rename the unzipped folder as "Si5351". Finally, open the Arduino IDE, select menu Sketch > Import Library... > Add Library..., and select the renamed folder that you just downloaded. Restart the IDE and you should have access to the new library.
 
 (Yes, the Arduino IDE can import a ZIP file, but it doesn't like filenames with characters such as dashes, as GitHub does when it appends the branch name with a dash. Perhaps there's an elegant way around this, we'll see.)
 
-Example
--------
 There is a simple example that is placed in your examples menu under Si5351Arduino. Open this to see how to initialize the Si5351 and set a couple of the outputs to different frequencies. The commentary below will analyze the sample sketch.
 
 Before you do anything with the Si5351, you will need to include the "si5351.h" and "Wire.h" header files and instantiate the Si5351 class.
@@ -437,6 +433,20 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
  */
 void Si5351::set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
 ```
+###set_pll_input()
+```
+/*
+ * set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
+ *
+ * pll - Which PLL to use as the source
+ *     (use the si5351_pll enum)
+ * input - Which reference oscillator to use as PLL input
+ *     (use the si5351_pll_input enum)
+ *
+ * Set the desired reference oscillator source for the given PLL.
+ */
+void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
+```
 ###si5351_write_bulk()
 ```
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
@@ -518,6 +528,16 @@ Changes from alpha version
 Oddities
 --------
 Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3). Since some of the code was derived from the Si5351 driver in the Linux kernel, it may be useable on with the other variants, but certainly many features won't work yet. With any luck, we will get the library to work with the other variants as well, or even better, maybe someone will take the initiative, write the code, and send me a pull request.
+
+Changelog
+---------
+* v1.1.0
+
+    Added set_pll_input() method to allow toggling the PLL reference source for the Si5351C variant and added support to init() for different PLL reference frequencies from 10 to 100 MHz.
+
+* v1.0.0
+
+    Initial release
 
 TODO
 ----

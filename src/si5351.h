@@ -218,25 +218,27 @@
  * @SI5351_VARIANT_B: Si5351B (8 output clocks, XTAL/VXCO input)
  * @SI5351_VARIANT_C: Si5351C (8 output clocks, XTAL/CLKIN input)
  */
-enum si5351_variant {
-	SI5351_VARIANT_A = 1,
-	SI5351_VARIANT_A3 = 2,
-	SI5351_VARIANT_B = 3,
-	SI5351_VARIANT_C = 4,
-};
+ enum si5351_variant {SI5351_VARIANT_A, SI5351_VARIANT_A3,	SI5351_VARIANT_B,
+   SI5351_VARIANT_C};
 
-enum si5351_clock {SI5351_CLK0, SI5351_CLK1, SI5351_CLK2, SI5351_CLK3,
-	SI5351_CLK4, SI5351_CLK5, SI5351_CLK6, SI5351_CLK7, SI5351_CLKNONE};
+ enum si5351_clock {SI5351_CLK0, SI5351_CLK1, SI5351_CLK2, SI5351_CLK3,
+ 	SI5351_CLK4, SI5351_CLK5, SI5351_CLK6, SI5351_CLK7, SI5351_CLKNONE};
 
-enum si5351_pll {SI5351_PLLA, SI5351_PLLB};
+ enum si5351_pll {SI5351_PLLA, SI5351_PLLB};
 
-enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA, SI5351_DRIVE_8MA};
+ enum si5351_drive {SI5351_DRIVE_2MA, SI5351_DRIVE_4MA, SI5351_DRIVE_6MA,
+   SI5351_DRIVE_8MA};
 
-enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN, SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
+ enum si5351_clock_source {SI5351_CLK_SRC_XTAL, SI5351_CLK_SRC_CLKIN,
+   SI5351_CLK_SRC_MS0, SI5351_CLK_SRC_MS};
 
-enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
+ enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH,
+   SI5351_CLK_DISABLE_HI_Z, SI5351_CLK_DISABLE_NEVER};
 
-enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
+ enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO,
+   SI5351_FANOUT_MS};
+
+ enum si5351_pll_input{SI5351_PLL_INPUT_XO, SI5351_PLL_INPUT_CLKIN};
 
 /* Struct definitions */
 
@@ -286,6 +288,7 @@ public:
 	void set_clock_source(enum si5351_clock, enum si5351_clock_source);
 	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
+  void set_pll_input(enum si5351_pll, enum si5351_pll_input);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
