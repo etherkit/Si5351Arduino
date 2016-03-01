@@ -541,6 +541,10 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 
 Changelog
 ---------
+* v1.1.1
+
+    Fix if statement eval error in set_clock_disable()
+    
 * v1.1.0
 
     Added set_pll_input() method to allow toggling the PLL reference source for the Si5351C variant and added support to init() for different PLL reference frequencies from 10 to 100 MHz.
