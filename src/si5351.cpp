@@ -823,26 +823,34 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
 {
 	uint8_t reg_val, reg;
 
-	if (clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
+	if(clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
 	{
 		reg = SI5351_CLK3_0_DISABLE_STATE;
 	}
-	else if (clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
+	else if(clk >= SI5351_CLK4 && clk <= SI5351_CLK7)
 	{
 		reg = SI5351_CLK7_4_DISABLE_STATE;
+	}
+	else
+	{
+		return;
 	}
 
 	reg_val = si5351_read(reg);
 
-	if (clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
+	if(clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
 	{
 		reg_val &= ~(0b11 << (clk * 2));
 		reg_val |= dis_state << (clk * 2);
 	}
-	else if (clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
+	else if(clk >= SI5351_CLK4 && clk <= SI5351_CLK7)
 	{
 		reg_val &= ~(0b11 << ((clk - 4) * 2));
 		reg_val |= dis_state << ((clk - 4) * 2);
+	}
+	else
+	{
+		return;
 	}
 
 	si5351_write(reg, reg_val);
