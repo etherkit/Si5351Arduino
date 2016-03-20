@@ -472,6 +472,7 @@ Here are the defines, structs, and enumerations you will find handy to use with 
 
 Crystal load capacitance:
 
+    SI5351_CRYSTAL_LOAD_0PF
     SI5351_CRYSTAL_LOAD_6PF
     SI5351_CRYSTAL_LOAD_8PF
     SI5351_CRYSTAL_LOAD_10PF
@@ -500,7 +501,7 @@ Clock disable states:
 Clock fanout:
 
     enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
-    
+
 PLL input sources:
 
     enum si5351_pll_input{SI5351_PLL_INPUT_XO, SI5351_PLL_INPUT_CLKIN};
@@ -541,10 +542,14 @@ Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3
 
 Changelog
 ---------
+* v1.1.2
+
+    Fix error where register 183 is not pre-loaded with correct value per AN619. Add define for SI5351_CRYSTAL_LOAD_0PF (undocumented in AN619 but present in the official ClockBuilder software).
+
 * v1.1.1
 
     Fix if statement eval error in set_clock_disable()
-    
+
 * v1.1.0
 
     Added set_pll_input() method to allow toggling the PLL reference source for the Si5351C variant and added support to init() for different PLL reference frequencies from 10 to 100 MHz.

@@ -1,8 +1,8 @@
 /*
  * si5351.h - Si5351 library for Arduino
  *
- * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
- *                    Dana H. Myers <k6jq@comcast.net>
+ * Copyright (C) 2015-2016 Jason Milldrum <milldrum@gmail.com>
+ *                         Dana H. Myers <k6jq@comcast.net>
  *
  * Many defines derived from clk-si5351.h in the Linux kernel.
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -171,6 +171,7 @@
 
 #define SI5351_CRYSTAL_LOAD	      			183
 #define SI5351_CRYSTAL_LOAD_MASK	     	(3<<6)
+#define SI5351_CRYSTAL_LOAD_0PF         (0<<6) 
 #define SI5351_CRYSTAL_LOAD_6PF	      	(1<<6)
 #define SI5351_CRYSTAL_LOAD_8PF      		(2<<6)
 #define SI5351_CRYSTAL_LOAD_10PF     		(3<<6)

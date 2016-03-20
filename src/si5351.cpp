@@ -1,8 +1,8 @@
 /*
  * si5351.cpp - Si5351 library for Arduino
  *
- * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
- *                    Dana H. Myers <k6jq@comcast.net>
+ * Copyright (C) 2015-2016 Jason Milldrum <milldrum@gmail.com>
+ *                         Dana H. Myers <k6jq@comcast.net>
  *
  * Some tuning algorithms derived from clk-si5351.c in the Linux kernel.
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -66,7 +66,9 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 	Wire.begin();
 
 	// Set crystal load capacitance
-	si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c);
+	uint8_t reg_val = 0x12; // 0b010010 reserved value bits
+	reg_val |= xtal_load_c;
+	si5351_write(SI5351_CRYSTAL_LOAD, reg_val);
 
 	// Change the ref osc freq if different from default
 	// Divide down if greater than 30 MHz
