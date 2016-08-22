@@ -191,27 +191,33 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			pllb_freq = pll_freq;
 		}
 		//write_pll = 1;
-		set_pll(pll_freq, pll_assignment[clk]);
-
-		// Calculate the synth parameters for this CLK
 
 		// Recalculate params for other synths on same PLL
 		for(i = 0; i < 8; i++)
 		{
-			//if(clk_freq[i] != 0)
-			//{
-				//if(pll_assignment[i] == pll_assignment[clk])
-				//{
-					multisynth_calc(clk_freq[i], pll_assignment[i], &ms_reg);
+			if(clk_freq[i] != 0)
+			{
+				if(pll_assignment[i] == pll_assignment[clk])
+				{
+					struct Si5351RegSet temp_reg;
+
+					if(pll_assignment[i] == SI5351_PLLA)
+					{
+						multisynth_calc(clk_freq[i], plla_freq, &temp_reg);
+					}
+					else
+					{
+						multisynth_calc(clk_freq[i], pllb_freq, &temp_reg);
+					}
 
 					// Set multisynth registers (MS must be set before PLL)
-					set_ms(i, ms_reg, int_mode, r_div, div_by_4);
-				//}
-			//}
+					set_ms(i, temp_reg, int_mode, r_div, div_by_4);
+				}
+			}
 		}
 
 		// Reset the PLL
-		//set_pll(pll_freq, pll_assignment[clk]);
+		set_pll(pll_freq, pll_assignment[clk]);
 	}
 	else
 	{
