@@ -35,16 +35,15 @@
 
 Si5351::Si5351(void)
 {
+	/*
 	lock_plla = SI5351_CLKNONE;
 	lock_pllb = SI5351_CLKNONE;
-	clk0_int_mode = 0;
-	clk1_int_mode = 0;
-	clk2_int_mode = 0;
 	plla_freq = 0ULL;
 	pllb_freq = 0ULL;
 	clk0_freq = 0ULL;
 	clk1_freq = 0ULL;
 	clk2_freq = 0ULL;
+	*/
 	xtal_freq = SI5351_XTAL_FREQ;
 }
 
@@ -88,6 +87,165 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 	// Then reset the PLLs
 	pll_reset(SI5351_PLLA);
 	pll_reset(SI5351_PLLB);
+
+	// Set PLLA to 900 MHz for automatic tuning
+	set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
+	set_pll(SI5351_PLL_FIXED, SI5351_PLLB);
+
+	plla_freq = SI5351_PLL_FIXED;
+	pllb_freq = SI5351_PLL_FIXED;
+
+	// Make PLL to CLK assignments for automatic tuning
+	pll_assignment[0] = SI5351_PLLA;
+	pll_assignment[1] = SI5351_PLLA;
+	pll_assignment[2] = SI5351_PLLA;
+	pll_assignment[3] = SI5351_PLLA;
+	pll_assignment[4] = SI5351_PLLA;
+	pll_assignment[5] = SI5351_PLLA;
+	pll_assignment[6] = SI5351_PLLB;
+	pll_assignment[7] = SI5351_PLLB;
+
+	set_ms_source(SI5351_CLK0, SI5351_PLLA);
+	set_ms_source(SI5351_CLK1, SI5351_PLLA);
+	set_ms_source(SI5351_CLK2, SI5351_PLLA);
+	set_ms_source(SI5351_CLK3, SI5351_PLLA);
+	set_ms_source(SI5351_CLK4, SI5351_PLLA);
+	set_ms_source(SI5351_CLK5, SI5351_PLLA);
+	set_ms_source(SI5351_CLK6, SI5351_PLLB);
+	set_ms_source(SI5351_CLK7, SI5351_PLLB);
+
+	// Set initial frequencies
+	uint8_t i;
+	for(i = 0; i < 8; i++)
+	{
+		clk_freq[i] = 0;
+	}
+}
+
+/*
+ * set_freq(uint64_t freq, enum si5351_clock output)
+ *
+ * Sets the clock frequency of the specified CLK output.
+ * Frequency range of 8 kHz to 150 MHz
+ *
+ * freq - Output frequency in Hz
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ */
+uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
+{
+	struct Si5351RegSet ms_reg;
+	enum si5351_pll target_pll;
+	uint64_t pll_freq = SI5351_PLL_FIXED;
+	uint8_t write_pll = 0;
+	//uint8_t reg_val;
+	uint8_t r_div = SI5351_OUTPUT_CLK_DIV_1;
+	uint8_t int_mode = 0;
+	uint8_t div_by_4 = 0;
+
+	// Lower bounds check
+	if(freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT)
+	{
+		freq = SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT;
+	}
+
+	// Upper bounds check
+	// We will only allow a maximum output frequency of 160 MHz
+	if(freq > SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT)
+	{
+		freq = SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT;
+	}
+
+	// Select the proper R div value
+	r_div = select_r_div(&freq);
+
+	// If requested freq >112.5 MHz and no other outputs are already >112.5 MHz,
+	// we need to recalculate PLLA and then recalculate all other CLK outputs
+	// on same PLL
+	if(freq > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
+	{
+		// Check other clocks
+		uint8_t i;
+		for(i = 0; i < 8; i++)
+		{
+			if(clk_freq[i] > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
+			{
+				if(i != (uint8_t)clk)
+				{
+					return 1; // won't set if any other clks already >112.5 MHz
+				}
+			}
+		}
+
+		// Set the freq in memory
+		clk_freq[(uint8_t)clk] = freq;
+
+		// Calculate the proper PLL frequency
+		pll_freq = multisynth_calc(freq, 0, &ms_reg);
+		if(pll_assignment[clk] == SI5351_PLLA)
+		{
+			plla_freq = pll_freq;
+		}
+		else
+		{
+			pllb_freq = pll_freq;
+		}
+		//write_pll = 1;
+		set_pll(pll_freq, pll_assignment[clk]);
+
+		// Calculate the synth parameters for this CLK
+
+		// Recalculate params for other synths on same PLL
+		for(i = 0; i < 8; i++)
+		{
+			//if(clk_freq[i] != 0)
+			//{
+				//if(pll_assignment[i] == pll_assignment[clk])
+				//{
+					multisynth_calc(clk_freq[i], pll_assignment[i], &ms_reg);
+
+					// Set multisynth registers (MS must be set before PLL)
+					set_ms(i, ms_reg, int_mode, r_div, div_by_4);
+				//}
+			//}
+		}
+
+		// Reset the PLL
+		//set_pll(pll_freq, pll_assignment[clk]);
+	}
+	else
+	{
+		// Calculate the synth parameters
+		// TODO: handle CLK6 and CLK7
+		clk_freq[(uint8_t)clk] = freq;
+		if(pll_assignment[clk] == SI5351_PLLA)
+		{
+			multisynth_calc(freq, plla_freq, &ms_reg);
+		}
+		else
+		{
+			multisynth_calc(freq, pllb_freq, &ms_reg);
+		}
+		write_pll = 0;
+		div_by_4 = 0;
+		int_mode = 0;
+
+		// Set multisynth registers (MS must be set before PLL)
+		set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
+	}
+
+	// Set multisynth registers (MS must be set before PLL)
+	//set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
+
+	// Set PLL if necessary
+	/*
+	if(write_pll == 1)
+	{
+		set_pll(pll_freq, target_pll);
+	}
+	*/
+
+	return 0;
 }
 
 /*
@@ -101,6 +259,7 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
+ /*
 uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
 {
 	struct Si5351RegSet ms_reg, pll_reg;
@@ -300,6 +459,7 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
 
 	return 0;
 }
+*/
 
 /*
  * set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
@@ -922,7 +1082,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 {
 	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
-	uint64_t lltmp, rfrac, denom;
+	uint64_t lltmp, denom;
 	int64_t ref_temp;
 
 	// Factor calibration value into nominal crystal frequency

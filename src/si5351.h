@@ -171,6 +171,7 @@
 
 #define SI5351_CRYSTAL_LOAD	      			183
 #define SI5351_CRYSTAL_LOAD_MASK	     	(3<<6)
+#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)
 #define SI5351_CRYSTAL_LOAD_6PF	      	(1<<6)
 #define SI5351_CRYSTAL_LOAD_8PF      		(2<<6)
 #define SI5351_CRYSTAL_LOAD_10PF     		(3<<6)
@@ -264,12 +265,40 @@ struct Si5351IntStatus
 	uint8_t LOS_STKY;
 };
 
+/*
+struct Si5351PLLAssignment
+{
+  enum si5351_pll CLK0:1;
+  enum si5351_pll CLK1:1;
+  enum si5351_pll CLK2:1;
+  enum si5351_pll CLK3:1;
+  enum si5351_pll CLK4:1;
+  enum si5351_pll CLK5:1;
+  enum si5351_pll CLK6:1;
+  enum si5351_pll CLK7:1;
+};
+*/
+
+/*
+struct Si5351CLKFreq
+{
+  uint64_t CLK0;
+  uint64_t CLK1;
+  uint64_t CLK2;
+  uint64_t CLK3;
+  uint64_t CLK4;
+  uint64_t CLK5;
+  uint64_t CLK6;
+  uint64_t CLK7;
+}
+*/
+
 class Si5351
 {
 public:
 	Si5351(void);
 	void init(uint8_t, uint32_t);
-	uint8_t set_freq(uint64_t, uint64_t, enum si5351_clock);
+	uint8_t set_freq(uint64_t, enum si5351_clock);
 	void set_pll(uint64_t, enum si5351_pll);
 	void set_ms(enum si5351_clock, struct Si5351RegSet, uint8_t, uint8_t, uint8_t);
 	void output_enable(enum si5351_clock, uint8_t);
@@ -291,11 +320,10 @@ public:
 	uint8_t si5351_read(uint8_t);
 	struct Si5351Status dev_status;
 	struct Si5351IntStatus dev_int_status;
+  enum si5351_pll pll_assignment[8];
+  uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
-	uint64_t clk0_freq;
-	uint64_t clk1_freq;
-	uint64_t clk2_freq;
 	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
 private:
 	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
