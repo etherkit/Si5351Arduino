@@ -1,8 +1,8 @@
 /*
  * si5351.h - Si5351 library for Arduino
  *
- * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
- *                    Dana H. Myers <k6jq@comcast.net>
+ * Copyright (C) 2015 - 2016 Jason Milldrum <milldrum@gmail.com>
+ *                           Dana H. Myers <k6jq@comcast.net>
  *
  * Many defines derived from clk-si5351.h in the Linux kernel.
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -45,7 +45,7 @@
 #define SI5351_PLL_VCO_MAX					900000000
 #define SI5351_MULTISYNTH_MIN_FREQ		  	1000000
 #define SI5351_MULTISYNTH_DIVBY4_FREQ	 	150000000
-#define SI5351_MULTISYNTH_MAX_FREQ		  	160000000
+#define SI5351_MULTISYNTH_MAX_FREQ		  	200000000
 #define SI5351_MULTISYNTH_SHARE_MAX			112500000
 #define SI5351_MULTISYNTH67_MAX_FREQ	  	SI5351_MULTISYNTH_DIVBY4_FREQ
 #define SI5351_CLKOUT_MIN_FREQ			    	8000

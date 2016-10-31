@@ -1,8 +1,8 @@
 /*
  * si5351.cpp - Si5351 library for Arduino
  *
- * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
- *                    Dana H. Myers <k6jq@comcast.net>
+ * Copyright (C) 2015 - 2016 Jason Milldrum <milldrum@gmail.com>
+ *                           Dana H. Myers <k6jq@comcast.net>
  *
  * Some tuning algorithms derived from clk-si5351.c in the Linux kernel.
  * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -78,11 +78,21 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 	si5351_write(16, 0x80);
 	si5351_write(17, 0x80);
 	si5351_write(18, 0x80);
+	si5351_write(19, 0x80);
+	si5351_write(20, 0x80);
+	si5351_write(21, 0x80);
+	si5351_write(22, 0x80);
+	si5351_write(23, 0x80);
 
 	// Turn the clocks back on...
 	si5351_write(16, 0x0c);
 	si5351_write(17, 0x0c);
 	si5351_write(18, 0x0c);
+	si5351_write(19, 0x0c);
+	si5351_write(20, 0x0c);
+	si5351_write(21, 0x0c);
+	si5351_write(22, 0x0c);
+	si5351_write(23, 0x0c);
 
 	// Then reset the PLLs
 	pll_reset(SI5351_PLLA);
@@ -135,11 +145,7 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 {
 	struct Si5351RegSet ms_reg;
-	//enum si5351_pll target_pll;
-	uint64_t pll_freq = SI5351_PLL_FIXED;
-	//uint8_t write_pll = 0;
-	//uint8_t reg_val;
-	uint8_t r_div = SI5351_OUTPUT_CLK_DIV_1;
+	uint64_t pll_freq;
 	uint8_t int_mode = 0;
 	uint8_t div_by_4 = 0;
 
@@ -162,10 +168,8 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 	// on same PLL
 	if(freq > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
 	{
-		// Set the freq in memory
-		clk_freq[(uint8_t)clk] = freq;
-
 		// Check other clocks
+		// TODO: only check clocks on same PLL
 		uint8_t i;
 		for(i = 0; i < 8; i++)
 		{
@@ -178,6 +182,9 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			}
 		}
 
+		// Set the freq in memory
+		clk_freq[(uint8_t)clk] = freq;
+
 		// Calculate the proper PLL frequency
 		pll_freq = multisynth_calc(freq, 0, &ms_reg);
 		if(pll_assignment[clk] == SI5351_PLLA)
@@ -189,6 +196,9 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			pllb_freq = pll_freq;
 		}
 
+		// Set PLL?
+		set_pll(pll_freq, pll_assignment[clk]);
+
 		// Recalculate params for other synths on same PLL
 		for(i = 0; i < 8; i++)
 		{
@@ -198,41 +208,40 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 				{
 					struct Si5351RegSet temp_reg;
 					uint64_t temp_freq;
+					uint8_t r_div;
 
 					// Select the proper R div value
 					temp_freq = clk_freq[i];
-					r_div = select_r_div(&clk_freq[i]);
+					r_div = select_r_div(&temp_freq);
 
-					if(pll_assignment[i] == SI5351_PLLA)
-					{
-						multisynth_calc(clk_freq[i], plla_freq, &temp_reg);
-					}
-					else
-					{
-						multisynth_calc(clk_freq[i], pllb_freq, &temp_reg);
-					}
+					multisynth_calc(temp_freq, pll_freq, &temp_reg);
 
-					clk_freq[i] = temp_freq;
+					div_by_4 = 0;
+					int_mode = 0;
+
+					//clk_freq[i] = temp_freq;
 
 					// Set multisynth registers (MS must be set before PLL)
-					set_ms(i, temp_reg, int_mode, r_div, div_by_4);
+					set_ms((enum si5351_clock)i, temp_reg, int_mode, r_div, div_by_4);
 				}
 			}
 		}
 
 		// Reset the PLL
-		set_pll(pll_freq, pll_assignment[clk]);
+		//set_pll(pll_freq, pll_assignment[clk]);
+		pll_reset(pll_assignment[clk]);
 	}
 	else
 	{
-		clk_freq[clk] = freq;
+		uint8_t r_div;
+
+		clk_freq[(uint8_t)clk] = freq;
 
 		// Select the proper R div value
 		r_div = select_r_div(&freq);
 
 		// Calculate the synth parameters
 		// TODO: handle CLK6 and CLK7
-
 		if(pll_assignment[clk] == SI5351_PLLA)
 		{
 			multisynth_calc(freq, plla_freq, &ms_reg);
@@ -247,17 +256,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		// Set multisynth registers (MS must be set before PLL)
 		set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
 	}
-
-	// Set multisynth registers (MS must be set before PLL)
-	//set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
-
-	// Set PLL if necessary
-	/*
-	if(write_pll == 1)
-	{
-		set_pll(pll_freq, target_pll);
-	}
-	*/
 
 	return 0;
 }
@@ -1239,9 +1237,9 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 	}
 	else
 	{
-        p1 = 128 * a + ((128 * b) / c) - 512;
-        p2 = 128 * b - c * ((128 * b) / c);
-        p3 = c;
+    p1 = 128 * a + ((128 * b) / c) - 512;
+    p2 = 128 * b - c * ((128 * b) / c);
+    p3 = c;
 	}
 
 	reg->p1 = p1;
