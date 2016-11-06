@@ -162,6 +162,10 @@ Manually Setting Output Frequencies
 -----------------------------------
 When you need to output a frequency greater than 150 MHz, more constraints are set on your tuning options and you will have to use a more manual process to properly generate the correct clock.
 
+Startup Conditions
+------------------
+This library initializes the Si5351 parameters to the following value upon startup and on reset:
+
 
 Constraints
 -----------
