@@ -65,7 +65,7 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 	Wire.begin();
 
 	// Wait for Si5351 init to complete before setting registers
-	while((si5351_read(0) & 0x80));
+	while((si5351_read(SI5351_DEVICE_STATUS) & 0x80));
 
 	// Set crystal load capacitance
 	si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c);
@@ -566,7 +566,7 @@ void Si5351::drive_strength(enum si5351_clock clk, enum si5351_drive drive)
  * update_status(void)
  *
  * Call this to update the status structs, then access them
- * via the dev_status and dev_int_status global variables.
+ * via the dev_status and dev_int_status global members.
  *
  * See the header file for the struct definitions. These
  * correspond to the flag names for registers 0 and 1 in
@@ -581,8 +581,8 @@ void Si5351::update_status(void)
 /*
  * set_correction(int32_t corr)
  *
- * Use this to set the oscillator correction factor to
- * EEPROM. This value is a signed 32-bit integer of the
+ * Use this to set the oscillator correction factor.
+ * This value is a signed 32-bit integer of the
  * parts-per-billion value that the actual oscillation
  * frequency deviates from the specified frequency.
  *
@@ -598,9 +598,7 @@ void Si5351::update_status(void)
  * correction factor is good across the entire tuning range of
  * the Si5351. Once this calibration is done accurately, it
  * should not have to be done again for the same Si5351 and
- * crystal. The library will read the correction factor from
- * EEPROM during initialization for use by the tuning
- * algorithms.
+ * crystal.
  */
 void Si5351::set_correction(int32_t corr)
 {
@@ -1146,7 +1144,7 @@ void Si5351::update_int_status(struct Si5351IntStatus *int_status)
 {
   uint8_t reg_val = 0;
 
-  reg_val = si5351_read(SI5351_DEVICE_STATUS);
+  reg_val = si5351_read(SI5351_INTERRUPT_STATUS);
 
   // Parse the register
   int_status->SYS_INIT_STKY = (reg_val >> 7) & 0x01;
