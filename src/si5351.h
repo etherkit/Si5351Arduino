@@ -47,6 +47,7 @@
 #define SI5351_MULTISYNTH_DIVBY4_FREQ	 	150000000
 #define SI5351_MULTISYNTH_MAX_FREQ		  	200000000
 #define SI5351_MULTISYNTH_SHARE_MAX			112500000
+#define SI5351_MULTISYNTH_SHARE_MIN     1024000
 #define SI5351_MULTISYNTH67_MAX_FREQ	  	SI5351_MULTISYNTH_DIVBY4_FREQ
 #define SI5351_CLKOUT_MIN_FREQ			    	8000
 #define SI5351_CLKOUT_MAX_FREQ			    	SI5351_MULTISYNTH_MAX_FREQ
@@ -265,40 +266,14 @@ struct Si5351IntStatus
 	uint8_t LOS_STKY;
 };
 
-/*
-struct Si5351PLLAssignment
-{
-  enum si5351_pll CLK0:1;
-  enum si5351_pll CLK1:1;
-  enum si5351_pll CLK2:1;
-  enum si5351_pll CLK3:1;
-  enum si5351_pll CLK4:1;
-  enum si5351_pll CLK5:1;
-  enum si5351_pll CLK6:1;
-  enum si5351_pll CLK7:1;
-};
-*/
-
-/*
-struct Si5351CLKFreq
-{
-  uint64_t CLK0;
-  uint64_t CLK1;
-  uint64_t CLK2;
-  uint64_t CLK3;
-  uint64_t CLK4;
-  uint64_t CLK5;
-  uint64_t CLK6;
-  uint64_t CLK7;
-}
-*/
-
 class Si5351
 {
 public:
 	Si5351(void);
 	void init(uint8_t, uint32_t);
+  void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
+  uint8_t set_freq_manual(uint64_t, uint64_t, enum si5351_clock);
 	void set_pll(uint64_t, enum si5351_pll);
 	void set_ms(enum si5351_clock, struct Si5351RegSet, uint8_t, uint8_t, uint8_t);
 	void output_enable(enum si5351_clock, uint8_t);

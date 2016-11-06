@@ -45,10 +45,9 @@ Now in the Setup() function, let's initialize communications with the Si5351, sp
 
     si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
 
-Next, let's set the CLK0 output to 14 MHz and use a fixed PLL reference frequency (this allows for glitch-free tuning):
+Next, let's set the CLK0 output to 14 MHz:
 
-    si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-    si5351.set_freq(1400000000ULL, SI5351_PLL_FIXED, SI5351_CLK0);
+    si5351.set_freq(1400000000ULL, SI5351_CLK0);
 
 Frequencies are indicated in units of 0.01 Hz. Therefore, if you prefer to work in 1 Hz increments in your own code, simply multiply each frequency passed to the library by 100ULL (better yet, use the define called SI5351_FREQ_MULT in the header file for this multiplication).
 The second value passed in the above method is the desired driving PLL frequency. Entering a 0 will have the method choose a PLL frequency for you. If you would like to use a fixed PLL frequency to drive a multisynth (in order to ensure glitch-free tuning), set the desired PLL frequency first using the method below, then specify that frequency in the set_freq() method. The PLL frequency only needs to be set once. Any additional frequency changes only need to use the set_freq() method as long as you are using the same PLL frequency as before.
@@ -536,9 +535,9 @@ Changes from alpha version
 * Added reference oscillator frequency parameter to init()
 * Changed the correction factor from parts-per-ten million to parts-per-billion
 
-Oddities
---------
-Right now, this code is focused solely on the 3-output 10-MSOP variant (Si5351A3). Since some of the code was derived from the Si5351 driver in the Linux kernel, it may be useable on with the other variants, but certainly many features won't work yet. With any luck, we will get the library to work with the other variants as well, or even better, maybe someone will take the initiative, write the code, and send me a pull request.
+Unsupported Features
+--------------------
+This library does not curently support the spread spectrum function of the Si5351.
 
 Changelog
 ---------
@@ -557,6 +556,10 @@ Changelog
 * v1.0.0
 
     Initial release
+    
+TODO
+----
+- [ ] VCXO Settings
 
 
   [1]: http://www.silabs.com
