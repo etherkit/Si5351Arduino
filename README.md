@@ -158,6 +158,10 @@ You can see this in action in a sketch in the examples folder called _si5351phas
 	  // We need to reset the PLL before they will be in phase alignment
       si5351.pll_reset(SI5351_PLLA);
 
+Manually Setting Output Frequencies
+-----------------------------------
+When you need to output a frequency greater than 150 MHz, more constraints are set on your tuning options and you will have to use a more manual process to properly generate the correct clock.
+
 
 Constraints
 -----------

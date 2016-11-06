@@ -338,9 +338,63 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 	return 0;
 }
 
+/*
+ * set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
+ *
+ * Sets the clock frequency of the specified CLK output using the given PLL
+ * frequency. You must ensure that the MS is assigned to the correct PLL and
+ * that the PLL is set to the correct frequency before using this method.
+ *
+ * It is important to note that if you use this method, you will have to
+ * track that all settings are sane yourself.
+ *
+ *
+ * freq - Output frequency in Hz
+ * pll_freq - Frequency of the PLL driving the Multisynth
+ *   Use a 0 to have the function choose a PLL frequency
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ */
 uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
 {
-	//
+	struct Si5351RegSet ms_reg;
+	uint8_t int_mode = 0;
+	uint8_t div_by_4 = 0;
+
+	// Lower bounds check
+	if(freq > 0 && freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT)
+	{
+		freq = SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT;
+	}
+
+	// Upper bounds check
+	if(freq > SI5351_CLKOUT_MAX_FREQ * SI5351_FREQ_MULT)
+	{
+		freq = SI5351_CLKOUT_MAX_FREQ * SI5351_FREQ_MULT;
+	}
+
+	uint8_t r_div;
+
+	clk_freq[(uint8_t)clk] = freq;
+
+	// Enable the output
+	output_enable(clk, 1);
+
+	// Select the proper R div value
+	r_div = select_r_div(&freq);
+
+	// Calculate the synth parameters
+	multisynth_calc(freq, pll_freq, &ms_reg);
+
+	// If freq > 150 MHz, we need to use DIVBY4 and integer mode
+	if(freq > SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
+	{
+		div_by_4 = 1;
+		int_mode = 1;
+	}
+
+	// Set multisynth registers (MS must be set before PLL)
+	set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
 }
 
 /*
