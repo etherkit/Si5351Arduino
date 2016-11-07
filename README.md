@@ -41,9 +41,9 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
     Si5351 si5351;
 
-Now in the Setup() function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, and to use the default reference oscillator frequency of 25 MHz (the second argument of "0" indicates that we want to use the default):
+Now in the Setup() function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, that we want to use the default reference oscillator frequency of 25 MHz (the second argument of "0" indicates that we want to use the default), and that we will apply no frequency correction at this point (the third argument of "0"):
 
-    si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
+    si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
 
 Next, let's set the CLK0 output to 14 MHz:
 
@@ -130,10 +130,12 @@ There will be some inherent error in the reference oscillator's actual frequency
 The calibration method is called like this:
 
     si5351.set_correction(-6190);
+    
+However, you may use the third argument in the *init* method to specify the frequeny correction and may not actually need to use the explict *set_correction* method in your code.
 
 A handy calibration program is provided with the library in the example folder named _si5351calibration_. To use it, simply hook up your Arduino to your Si5351, then connect it to a PC with the Arduino IDE. Connect the CLK0 output of the Si5351 to a frequency counter capable of measuring at 10 MHz (the more resolution, the better). Load the sketch then open the serial terminal window. Follow the prompts in the serial terminal to change the output frequency until your frequency counter reads exactly 10.000 000 00 MHz. The output from the Arduino on your serial terminal will tell you the correction factor you will need for future use of that reference oscillator/Si5351 combination.
 
-One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the init() function to specify that as the reference oscillator frequency.
+One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the *init* method to specify that as the reference oscillator frequency.
 
 Phase
 ------
@@ -204,7 +206,7 @@ Public Methods
 ###init()
 ```
 /*
- * init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
+ * init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
  *
  * Setup communications to the Si5351 and set the crystal
  * load capacitance.
@@ -213,6 +215,7 @@ Public Methods
  * defines in the header file
  * ref_osc_freq - Crystal/reference oscillator frequency in 1 Hz increments.
  * Defaults to 25000000 if a 0 is used here.
+ * corr - Frequency correction constant in parts-per-billion
  *
  */
 void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)

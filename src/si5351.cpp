@@ -50,7 +50,7 @@ Si5351::Si5351(void)
 }
 
 /*
- * init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
+ * init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
  *
  * Setup communications to the Si5351 and set the crystal
  * load capacitance.
@@ -59,6 +59,7 @@ Si5351::Si5351(void)
  * defines in the header file
  * ref_osc_freq - Crystal/reference oscillator frequency in 1 Hz increments.
  * Defaults to 25000000 if a 0 is used here.
+ * corr - Frequency correction constant in parts-per-billion
  *
  */
 void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
@@ -981,6 +982,22 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 	}
 
 	si5351_write(SI5351_PLL_INPUT_SOURCE, reg_val);
+}
+
+void Si5351::set_vcxo(uint8_t ppm)
+{
+	// Bounds check
+	if(ppm < SI5351_VCXO_PULL_MIN)
+	{
+		ppm = SI5351_VCXO_PULL_MIN;
+	}
+
+	if(ppm > SI5351_VCXO_PULL_MAX)
+	{
+		ppm = SI5351_VCXO_PULL_MAX;
+	}
+
+	//
 }
 
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
