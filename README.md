@@ -189,7 +189,7 @@ This library initializes the Si5351 parameters to the following value upon start
 
 Multisynths 0 through 5 (and hence the matching clock outputs CLK0 through CLK5) are assigned to PLLA, while Multisynths 6 and 7 are assigned to PLLB.
 
-PLLA and PLLB are set to 900 MHz (also defined as _SI5351_PLL_FIXED_ in the library).
+PLLA and PLLB are set to 800 MHz (also defined as _SI5351_PLL_FIXED_ in the library).
 
 All CLK outputs are set to 0 Hz.
 

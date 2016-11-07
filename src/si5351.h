@@ -37,7 +37,7 @@
 
 #define SI5351_BUS_BASE_ADDR				0x60
 #define SI5351_XTAL_FREQ					25000000
-#define SI5351_PLL_FIXED					90000000000ULL
+#define SI5351_PLL_FIXED					80000000000ULL
 #define SI5351_FREQ_MULT					100ULL
 #define SI5351_DEFAULT_CLK					1000000000ULL
 
@@ -240,6 +240,8 @@ enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI53
 
 enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
 
+enum si5351_pll_input{SI5351_PLL_INPUT_XO, SI5351_PLL_INPUT_CLKIN};
+
 /* Struct definitions */
 
 struct Si5351RegSet
@@ -270,7 +272,7 @@ class Si5351
 {
 public:
 	Si5351(void);
-	void init(uint8_t, uint32_t);
+	void init(uint8_t, uint32_t, int32_t);
   void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
   uint8_t set_freq_manual(uint64_t, uint64_t, enum si5351_clock);
@@ -290,6 +292,7 @@ public:
 	void set_clock_source(enum si5351_clock, enum si5351_clock_source);
 	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
+  void set_pll_input(enum si5351_pll, enum si5351_pll_input);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);

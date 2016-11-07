@@ -61,24 +61,27 @@ Si5351::Si5351(void)
  * Defaults to 25000000 if a 0 is used here.
  *
  */
-void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
+void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
 {
 	// Start I2C comms
 	Wire.begin();
 
 	// Wait for Si5351 init to complete before setting registers
-	while((si5351_read(SI5351_DEVICE_STATUS) & 0x80));
+	//while((si5351_read(SI5351_DEVICE_STATUS) & 0x80));
 
-	update_status();
+	//update_status();
 
 	// Set crystal load capacitance
-	si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c);
+	si5351_write(SI5351_CRYSTAL_LOAD, (xtal_load_c & SI5351_CRYSTAL_LOAD_MASK) | 0b00010010);
 
 	// Change the ref osc freq if different from default
 	if (ref_osc_freq != 0)
 	{
 		xtal_freq = ref_osc_freq;
 	}
+
+	// Set the frequency calibration
+	set_correction(corr);
 
 	reset();
 }
@@ -263,6 +266,15 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 		// Enable the output
 		output_enable(clk, 1);
+
+		// Set PLL
+		if(pll_assignment[clk] == SI5351_PLLA)
+		{
+			set_pll(plla_freq, pll_assignment[clk]);
+		}
+		{
+			set_pll(pllb_freq, pll_assignment[clk]);
+		}
 
 		// Select the proper R div value
 		r_div = select_r_div(&freq);
@@ -925,6 +937,50 @@ void Si5351::set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
 	}
 
 	si5351_write(SI5351_FANOUT_ENABLE, reg_val);
+}
+
+/*
+ * set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
+ *
+ * pll - Which PLL to use as the source
+ *     (use the si5351_pll enum)
+ * input - Which reference oscillator to use as PLL input
+ *     (use the si5351_pll_input enum)
+ *
+ * Set the desired reference oscillator source for the given PLL.
+ */
+void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
+{
+	uint8_t reg_val;
+	reg_val = si5351_read(SI5351_PLL_INPUT_SOURCE);
+
+	switch(pll)
+	{
+	case SI5351_PLLA:
+		if(input == SI5351_PLL_INPUT_CLKIN)
+		{
+			reg_val |= SI5351_PLLA_SOURCE;
+		}
+		else
+		{
+			reg_val &= ~(SI5351_PLLA_SOURCE);
+		}
+		break;
+	case SI5351_PLLB:
+		if(input == SI5351_PLL_INPUT_CLKIN)
+		{
+			reg_val |= SI5351_PLLB_SOURCE;
+		}
+		else
+		{
+			reg_val &= ~(SI5351_PLLB_SOURCE);
+		}
+		break;
+	default:
+		return;
+	}
+
+	si5351_write(SI5351_PLL_INPUT_SOURCE, reg_val);
 }
 
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
