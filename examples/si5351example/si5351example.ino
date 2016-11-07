@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 
 #include "si5351.h"
 #include "Wire.h"
@@ -29,12 +29,17 @@ void setup()
   Serial.begin(57600);
   si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
 
-  // Set CLK0 to output 14 MHz with a fixed PLL frequency
-  si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-  si5351.set_freq(1400000000ULL, SI5351_PLL_FIXED, SI5351_CLK0);
+  // Set CLK0 to output 14 MHz
+  si5351.set_freq(1400000000ULL, SI5351_CLK0);
 
-  // Set CLK1 to output 20 MHz
-  si5351.set_freq(2000000000ULL, 0ULL, SI5351_CLK1);
+  // Set CLK1 to output 175 MHz
+  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLB);
+  si5351.set_freq_manual(17500000000ULL, 70000000000ULL, SI5351_CLK1);
+
+  // Query a status update and wait a bit to let the Si5351 populate the
+  // status flags correctly.
+  si5351.update_status();
+  delay(500);
 }
 
 void loop()

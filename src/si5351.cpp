@@ -35,15 +35,17 @@
 
 Si5351::Si5351(void)
 {
-	/*
-	lock_plla = SI5351_CLKNONE;
-	lock_pllb = SI5351_CLKNONE;
-	plla_freq = 0ULL;
-	pllb_freq = 0ULL;
-	clk0_freq = 0ULL;
-	clk1_freq = 0ULL;
-	clk2_freq = 0ULL;
-	*/
+	dev_status.SYS_INIT = 0;
+	dev_status.LOL_B = 0;
+	dev_status.LOL_A = 0;
+	dev_status.LOS = 0;
+	dev_status.REVID = 0;
+
+	dev_int_status.SYS_INIT_STKY = 0;
+	dev_int_status.LOL_B_STKY = 0;
+	dev_int_status.LOL_A_STKY = 0;
+	dev_int_status.LOS_STKY = 0;
+
 	xtal_freq = SI5351_XTAL_FREQ;
 }
 
@@ -66,6 +68,8 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 
 	// Wait for Si5351 init to complete before setting registers
 	while((si5351_read(SI5351_DEVICE_STATUS) & 0x80));
+
+	update_status();
 
 	// Set crystal load capacitance
 	si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c);
@@ -139,13 +143,14 @@ void Si5351::reset(void)
 	for(i = 0; i < 8; i++)
 	{
 		clk_freq[i] = 0;
-		//set_freq(0, (enum si5351_clock)i);
 		output_enable((enum si5351_clock)i, 0);
 	}
 
 	// Then reset the PLLs
 	pll_reset(SI5351_PLLA);
 	pll_reset(SI5351_PLLB);
+
+	//update_status();
 }
 
 /*
@@ -294,7 +299,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  *
  * freq - Output frequency in Hz
  * pll_freq - Frequency of the PLL driving the Multisynth
- *   Use a 0 to have the function choose a PLL frequency
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
@@ -679,6 +683,8 @@ void Si5351::set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
 	}
 
 	si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
+
+	pll_assignment[(uint8_t)clk] = pll;
 }
 
 /*
@@ -707,6 +713,7 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
 	si5351_write(SI5351_CLK0_CTRL + (uint8_t)clk, reg_val);
 
 	// Integer mode indication
+	/*
 	switch(clk)
 	{
 	case SI5351_CLK0:
@@ -721,6 +728,7 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
 	default:
 		break;
 	}
+	*/
 }
 
 /*
@@ -969,9 +977,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 
 	// Factor calibration value into nominal crystal frequency
 	// Measured in parts-per-billion
-	/*
-	ref_temp = (int64_t)((double)(correction / 10000000.0) * (double)ref_freq) + ref_freq;
-	ref_freq = (uint64_t)ref_temp;*/
+
 	ref_freq = ref_freq + (int32_t)((((((int64_t)correction) << 31) / 1000000000LL) * ref_freq) >> 31);
 
 	// PLL bounds checking
@@ -1001,7 +1007,6 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	lltmp = freq % ref_freq;
 	lltmp *= denom;
 	do_div(lltmp, ref_freq);
-	// rfrac = lltmp;
 
 	b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
 	c = b ? RFRAC_DENOM : 1;

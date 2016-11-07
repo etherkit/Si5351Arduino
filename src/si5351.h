@@ -299,7 +299,6 @@ public:
   uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
-	uint8_t clk0_int_mode, clk1_int_mode, clk2_int_mode;
 private:
 	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
@@ -308,7 +307,7 @@ private:
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
 	uint8_t select_r_div(uint64_t *);
 	int32_t ref_correction;
-	uint8_t lock_plla, lock_pllb;
+	//uint8_t lock_plla, lock_pllb;
 	uint32_t xtal_freq;
 };
 

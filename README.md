@@ -1,6 +1,6 @@
 Si5351 Library for Arduino
 ==========================
-This is a basic library for the Si5351 series of clock generator ICs from [Silicon Labs](http://www.silabs.com) for the Arduino development environment. It will allow you to control the Si5351 with an Arduino, and without depending on the proprietary ClockBuilder software from Silicon Labs.
+This is a library for the Si5351 series of clock generator ICs from [Silicon Labs](http://www.silabs.com) for the Arduino development environment. It will allow you to control the Si5351 with an Arduino, and without depending on the proprietary ClockBuilder software from Silicon Labs.
 
 This library is focused towards usage in RF/amateur radio applications, but it may be useful in other cases. However, keep in mind that coding decisions are and will be made with those applications in mind first, so if you need something a bit different, please do fork this repository.
 
@@ -41,7 +41,7 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
     Si5351 si5351;
 
-Now in the Setup() function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, and to use the default reference oscillator frequency of 25 MHz:
+Now in the Setup() function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, and to use the default reference oscillator frequency of 25 MHz (the second argument of "0" indicates that we want to use the default):
 
     si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
 
@@ -64,20 +64,40 @@ In the main Loop(), we use the Serial port to monitor the status of the Si5351, 
     Serial.print(si5351.dev_status.LOS);
     Serial.print("  REVID: ");
     Serial.println(si5351.dev_status.REVID);
+    
+When the synthesizers are locked and the Si5351 is working correctly, you'll see an output similar to this one (the REVID may be different):
+
+    SYS_INIT: 0  LOL_A: 0  LOL_B: 0  LOS: 0  REVID: 3
+
+The nominal status for each of those flags is a 0. When the program indicates 1, there may be a reference clock problem, tuning problem, or some kind of other issue. (Note that it may take the Si5351 a bit of time to return the proper status flags, so in program initialization issue *update_status* and then give the Si5351 a few hundred milliseconds to initialize before querying the status flags again.)
+
+A Brief Word about the Si5351 Architecture
+------------------------------------------
+The Si5351 consists of two main stages: two PLLs which are locked to the reference oscillator (a 25/27 MHz crystal) and which can be set from 600 to 900 MHz, and the output (multisynth) clocks which are locked to a PLL of choice and can be set from 500 kHz to 200 MHz (per the datasheet, although it does seem to be possible to set an output up to 225 MHz). 
+
+The B variant has an additional VCXO stage with control voltage pin which can be used as a reference synth for a clock output (PLLB must be used as the source for any VCXO output clock). 
+
+The C variant is able to take a reference clock input from 10 to 100 MHz separate from the standard crystal reference. If using this reference input, be sure to initialize the library with the correct frequency.
+
+This library makes PLL assignments based on ease of use. They can be changed manually if needed, although that can introduce complications (see _Manually Selecting a PLL Frequency_ below).
 
 Setting the Output Frequency
 ----------------------------
 As indicated above, the library accepts and indicates clock and PLL frequencies in units of 0.01 Hz, as an _unsigned long long_ variable type (or _uint64_t_). When entering literal values, append "ULL" to make an explicit unsigned long long number to ensure proper tuning. Since many applications won't require sub-Hertz tuning, you may wish to use an _unsigned long_ (or _uint32_t_) variable to hold your tune frequency, then scale it up by multiplying by 100ULL before passing it to the set_freq() method.
 
-Using the *set_freq* method is the easiest way to use the library and gives you a wide range of tuning options, but 
+Using the *set_freq* method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 112.5 MHz. Therefore, once one CLK output has been set above 112.5 MHz, no more CLKs on the same PLL will be allowed to be set greater than 112.5 MHz (unless the one which is already set is changed to a frequency below this threshold). Also, due to the special PLL requirements for output frequencies above 150 MHz, the *set_freq* method will not tune above 150 MHz. Refer to the next section for instructions on how to generate these output frequencies.
 
-If that is not suitable, such as when you need glitch-free tuning or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs.
+If the above constraints are not suitable, you need glitch-free tuning, or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs. 
 
 Manually Selecting a PLL Frequency
 ----------------------------------
-The Si5351 consists of two main stages: two PLLs which are locked to the reference oscillator (which is either a 25/27 MHz crystal or an external 10 to 100 MHz oscillator) and which can be set from 600 to 900 MHz, and the output (multisynth) clocks which are locked to a PLL and can be set from 500 kHz to 200 MHz. Instead of letting the library choose a PLL frequency for your chosen output frequency, you can choose it yourself by using the set_pll() method, and then using the same frequency in the second parameter in the call to set_freq() (as is shown in the example above).
+Instead of letting the library choose a PLL frequency for your chosen output frequency, you can choose it yourself in the *set_freq_manual* method. This method is similar to *set_freq*, but the second argument is the desired PLL frequency:
 
-Keep in mind when you are setting the PLL manually, that you need to be mindful of the limits of the IC. The multisynth is a fractional PLL, with limits described in AN619 as:
+    si5351.set_freq_manual(19800000000ULL, 79200000000ULL, SI5351_CLK0);
+
+**If you use this method (or the other methods to tweak the PLL and multisynth settings manually), it is very important to remember that the library will no longer properly track the PLL and multisynth settings and that you alone will be responsible for keeping the synths tuned properly. Strange things can happen to your other outputs if they are already in use. Be sure to read the Si5351 datasheet and Silicon Labs AN619 before doing this so that you understand what you are doing.**
+
+When you are setting the PLL manually you need to be mindful of the limits of the IC. The multisynth is a fractional PLL, with limits described in AN619 as:
 
 >Valid Multisynth divider ratios are 4, 6, 8, and any fractional value between 8 + 1/1,048,575 and 900 + 0/1.
 This means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
@@ -85,13 +105,15 @@ of the VCO frequencies.
 
 To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 112.5 MHz, then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
 
+Furthermore, you must use the *set_freq_manual* method to set an output frequency greater than 150 MHz because of the requirement of the reference PLL to be a mutiple of 4 of the output frequency in this case. You can see this in the code example earlier in this section. This will most likely prevent you from using other CLK outputs locked to the same PLL (unless you can use another output on the exact same frequency).
+
 Further Details
 ---------------
 If we like we can adjust the output drive power:
 
     si5351.drive_strength(SI5351_CLK0, SI5351_DRIVE_4MA);
 
-The drive strength is the amount of current into a 50&Omega; load. 2 mA roughly corresponds to 7 dBm output and 8 mA is approximately 14 dBm output.
+The drive strength is the amount of current into a 50&Omega; load. 2 mA roughly corresponds to 3 dBm output and 8 mA is approximately 10 dBm output.
 
 Individual outputs can be turned on and off. In the second argument, use a 0 to disable and 1 to enable:
 
@@ -137,8 +159,8 @@ You can see this in action in a sketch in the examples folder called _si5351phas
 	  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLA);
 
 	  // Set CLK0 and CLK1 to output 14.1 MHz with a fixed PLL frequency
-	  si5351.set_freq(freq, pll_freq, SI5351_CLK0);
-	  si5351.set_freq(freq, pll_freq, SI5351_CLK1);
+	  si5351.set_freq_manual(freq, pll_freq, SI5351_CLK0);
+	  si5351.set_freq_manual(freq, pll_freq, SI5351_CLK1);
 
 	  // Now we can set CLK1 to have a 90 deg phase shift by entering
 	  // 50 in the CLK1 phase register, since the ratio of the PLL to
@@ -149,18 +171,31 @@ You can see this in action in a sketch in the examples folder called _si5351phas
 	  // We need to reset the PLL before they will be in phase alignment
       si5351.pll_reset(SI5351_PLLA);
 
-Manually Setting Output Frequencies
------------------------------------
-When you need to output a frequency greater than 150 MHz, more constraints are set on your tuning options and you will have to use a more manual process to properly generate the correct clock.
+
+CLK Output Options
+------------------
+
+Using the VCXO (Si5351B)
+-----------------------
+
+
+Using an External Reference (Si5351C)
+-------------------------------------
+
 
 Startup Conditions
 ------------------
 This library initializes the Si5351 parameters to the following value upon startup and on reset:
 
+Multisynths 0 through 5 (and hence the matching clock outputs CLK0 through CLK5) are assigned to PLLA, while Multisynths 6 and 7 are assigned to PLLB.
+
+PLLA and PLLB are set to 900 MHz (also defined as _SI5351_PLL_FIXED_ in the library).
+
+All CLK outputs are set to 0 Hz.
 
 Constraints
 -----------
-* Two multisynths cannot share a PLL with when both outputs are < 1.024 MHz or >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
+* Two multisynths cannot share a PLL with when both outputs are >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
 
 * Setting phase will be limited in the extreme edges of the output tuning ranges. Because the phase register is 7-bits in size and is denominated in units representing 1/4 the PLL period, not all phases can be set for all output frequencies. For example, if you need a 90&deg; phase shift, the lowest frequency you can set it at is 4.6875 MHz (600 MHz PLL/128).
 
@@ -194,13 +229,11 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq)
 ###set_freq()
 ```
 /*
- * set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock output)
+ * set_freq(uint64_t freq, enum si5351_clock clk)
  *
  * Sets the clock frequency of the specified CLK output
  *
  * freq - Output frequency in Hz
- * pll_freq - Frequency of the PLL driving the Multisynth
- *   Use a 0 to have the function choose a PLL frequency
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
@@ -220,7 +253,6 @@ uint8_t Si5351::set_freq(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk
  *
  * freq - Output frequency in Hz
  * pll_freq - Frequency of the PLL driving the Multisynth
- *   Use a 0 to have the function choose a PLL frequency
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
@@ -300,8 +332,8 @@ void Si5351::update_status(void)
 /*
  * set_correction(int32_t corr)
  *
- * Use this to set the oscillator correction factor to
- * EEPROM. This value is a signed 32-bit integer of the
+ * Use this to set the oscillator correction factor.
+ * This value is a signed 32-bit integer of the
  * parts-per-billion value that the actual oscillation
  * frequency deviates from the specified frequency.
  *
@@ -317,9 +349,7 @@ void Si5351::update_status(void)
  * correction factor is good across the entire tuning range of
  * the Si5351. Once this calibration is done accurately, it
  * should not have to be done again for the same Si5351 and
- * crystal. The library will read the correction factor from
- * EEPROM during initialization for use by the tuning
- * algorithms.
+ * crystal.
  */
 void Si5351::set_correction(int32_t corr)
 ```
@@ -557,10 +587,6 @@ Raw Commands
 ------------
 If you need to read and write raw data to the Si5351, there is public access to the library's read(), write(), and write_bulk() methods.
 
-Changes from alpha version
---------------------------
-* Added reference oscillator frequency parameter to init()
-* Changed the correction factor from parts-per-ten million to parts-per-billion
 
 Unsupported Features
 --------------------
@@ -568,6 +594,10 @@ This library does not curently support the spread spectrum function of the Si535
 
 Changelog
 ---------
+* v2.0.0
+
+    Complete rewrite of tuning algorithm.
+    
 * v1.1.2
 
     Fix error where register 183 is not pre-loaded with correct value per AN619. Add define for SI5351_CRYSTAL_LOAD_0PF (undocumented in AN619 but present in the official ClockBuilder software).
