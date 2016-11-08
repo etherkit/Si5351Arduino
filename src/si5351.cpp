@@ -185,7 +185,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 	// method. For >150 MHz, you'll have to manually set the paramters
 	if(freq > SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
 	{
-		freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT;
+		freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
 	}
 
 	// If requested freq >112.5 MHz and no other outputs are already >112.5 MHz,
@@ -349,7 +349,7 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 	multisynth_calc(freq, pll_freq, &ms_reg);
 
 	// If freq > 150 MHz, we need to use DIVBY4 and integer mode
-	if(freq > SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
+	if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
 	{
 		div_by_4 = 1;
 		int_mode = 1;
