@@ -67,6 +67,7 @@
 #define SI5351_MULTISYNTH_P3_MAX		    	((1<<20)-1)
 #define SI5351_VCXO_PULL_MIN              30
 #define SI5351_VCXO_PULL_MAX              240
+#define SI5351_VCXO_MARGIN                1030000
 
 #define SI5351_DEVICE_STATUS			      	0
 #define SI5351_INTERRUPT_STATUS		   		1
@@ -187,7 +188,8 @@
 
 /* Macro definitions */
 
-#define RFRAC_DENOM ((1L << 20) - 1)
+//#define RFRAC_DENOM ((1L << 20) - 1)
+#define RFRAC_DENOM 1000000ULL
 
 /*
  * Based on former asm-ppc/div64.h and asm-m68knommu/div64.h
@@ -295,7 +297,7 @@ public:
 	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
   void set_pll_input(enum si5351_pll, enum si5351_pll_input);
-  void set_vcxo(uint8_t);
+  void set_vcxo(uint64_t, uint8_t);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
@@ -306,7 +308,7 @@ public:
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
 private:
-	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t);
+	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	void update_sys_status(struct Si5351Status *);
 	void update_int_status(struct Si5351IntStatus *);

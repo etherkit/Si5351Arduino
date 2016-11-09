@@ -182,8 +182,8 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 	// Upper bounds check
 	// We will only allow a maximum output frequency of 150 MHz using this
-	// method. For >150 MHz, you'll have to manually set the paramters
-	if(freq > SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
+	// method. For >=150 MHz, you'll have to manually set the paramters
+	if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
 	{
 		freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
 	}
@@ -375,7 +375,7 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 {
   struct Si5351RegSet pll_reg;
 
-  pll_calc(pll_freq, &pll_reg, ref_correction);
+  pll_calc(pll_freq, &pll_reg, ref_correction, 0);
 
   // Derive the register values to write
 
@@ -984,8 +984,11 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 	si5351_write(SI5351_PLL_INPUT_SOURCE, reg_val);
 }
 
-void Si5351::set_vcxo(uint8_t ppm)
+void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 {
+	struct Si5351RegSet pll_reg;
+	uint64_t vcxo_param;
+
 	// Bounds check
 	if(ppm < SI5351_VCXO_PULL_MIN)
 	{
@@ -997,7 +1000,62 @@ void Si5351::set_vcxo(uint8_t ppm)
 		ppm = SI5351_VCXO_PULL_MAX;
 	}
 
-	//
+	// Set PLLB params
+	vcxo_param = pll_calc(pll_freq, &pll_reg, ref_correction, 1);
+
+	// Derive the register values to write
+
+	// Prepare an array for parameters to be written to
+	uint8_t *params = new uint8_t[20];
+	uint8_t i = 0;
+	uint8_t temp;
+
+	// Registers 26-27
+	temp = ((pll_reg.p3 >> 8) & 0xFF);
+	params[i++] = temp;
+
+	temp = (uint8_t)(pll_reg.p3  & 0xFF);
+	params[i++] = temp;
+
+	// Register 28
+	temp = (uint8_t)((pll_reg.p1 >> 16) & 0x03);
+	params[i++] = temp;
+
+	// Registers 29-30
+	temp = (uint8_t)((pll_reg.p1 >> 8) & 0xFF);
+	params[i++] = temp;
+
+	temp = (uint8_t)(pll_reg.p1  & 0xFF);
+	params[i++] = temp;
+
+	// Register 31
+	temp = (uint8_t)((pll_reg.p3 >> 12) & 0xF0);
+	temp += (uint8_t)((pll_reg.p2 >> 16) & 0x0F);
+	params[i++] = temp;
+
+	// Registers 32-33
+	temp = (uint8_t)((pll_reg.p2 >> 8) & 0xFF);
+	params[i++] = temp;
+
+	temp = (uint8_t)(pll_reg.p2  & 0xFF);
+	params[i++] = temp;
+
+	// Write the parameters
+	si5351_write_bulk(SI5351_PLLB_PARAMETERS, i, params);
+
+	delete params;
+
+	// Write the VCXO parameters
+	vcxo_param = (vcxo_param * ppm) / RFRAC_DENOM;
+
+	temp = (uint8_t)(vcxo_param & 0xFF);
+	si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
+
+	temp = (uint8_t)((vcxo_param >> 8) & 0xFF);
+	si5351_write(SI5351_VXCO_PARAMETERS_MID, temp);
+
+	temp = (uint8_t)((vcxo_param >> 16) & 0x3F);
+	si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
 }
 
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
@@ -1041,7 +1099,7 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 /* Private functions */
 /*********************/
 
-uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t correction)
+uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t correction, uint8_t vcxo)
 {
 	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
@@ -1082,25 +1140,22 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	do_div(lltmp, ref_freq);
 
 	b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
-	c = b ? RFRAC_DENOM : 1;
-
-	/*
-	b = 0;
-	c = 1;
-	if (rfrac)
+	if(vcxo)
 	{
-		rational_best_approximation(rfrac, denom,
-				    SI5351_PLL_B_MAX, SI5351_PLL_C_MAX, &b, &c);
+		c = RFRAC_DENOM;
 	}
-	*/
+	else
+	{
+		c = b ? RFRAC_DENOM : 1;
+	}
 
 	// Calculate parameters
-    p1 = 128 * a + ((128 * b) / c) - 512;
-    p2 = 128 * b - c * ((128 * b) / c);
-    p3 = c;
+  p1 = 128 * a + ((128 * b) / c) - 512;
+  p2 = 128 * b - c * ((128 * b) / c);
+  p3 = c;
 
 	// Recalculate frequency as fIN * (a + b/c)
-	lltmp  = ref_freq;
+	lltmp = ref_freq;
 	lltmp *= b;
 	do_div(lltmp, c);
 	freq = lltmp;
@@ -1110,7 +1165,14 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	reg->p2 = p2;
 	reg->p3 = p3;
 
-	return freq;
+	if(vcxo)
+	{
+		return (uint64_t)(128 * a * SI5351_VCXO_MARGIN + b * SI5351_VCXO_MARGIN);
+	}
+	else
+	{
+		return freq;
+	}
 }
 
 uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
