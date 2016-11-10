@@ -1046,8 +1046,7 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 	delete params;
 
 	// Write the VCXO parameters
-	//vcxo_param = (vcxo_param * ppm) / RFRAC_DENOM;
-	vcxo_param = (vcxo_param / RFRAC_DENOM) * ppm;
+	vcxo_param = (vcxo_param * ppm) / RFRAC_DENOM;
 
 	temp = (uint8_t)(vcxo_param & 0xFF);
 	si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
