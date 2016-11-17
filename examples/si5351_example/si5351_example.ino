@@ -1,7 +1,7 @@
 /*
- * si5351example.ino - Simple example of using Si5351Arduino library
+ * si5351_example.ino - Simple example of using Si5351Arduino library
  *
- * Copyright (C) 2015 Jason Milldrum <milldrum@gmail.com>
+ * Copyright (C) 2015 - 2016 Jason Milldrum <milldrum@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ void setup()
 {
   // Start serial and initialize the Si5351
   Serial.begin(57600);
-  si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
+  si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
 
   // Set CLK0 to output 14 MHz
   si5351.set_freq(1400000000ULL, SI5351_CLK0);
