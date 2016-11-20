@@ -51,6 +51,8 @@
 #define SI5351_MULTISYNTH67_MAX_FREQ	  	SI5351_MULTISYNTH_DIVBY4_FREQ
 #define SI5351_CLKOUT_MIN_FREQ			    	4000
 #define SI5351_CLKOUT_MAX_FREQ			    	SI5351_MULTISYNTH_MAX_FREQ
+#define SI5351_CLKOUT67_MS_MIN            SI5351_PLL_VCO_MIN / SI5351_MULTISYNTH67_A_MAX
+#define SI5351_CLKOUT67_MIN_FREQ          SI5351_CLKOUT67_MS_MIN / 128
 #define SI5351_CLKOUT67_MAX_FREQ		    	SI5351_MULTISYNTH67_MAX_FREQ
 
 #define SI5351_PLL_A_MIN			        		15
@@ -316,6 +318,7 @@ private:
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
 	uint8_t select_r_div(uint64_t *);
+  uint8_t select_r_div_ms67(uint64_t *);
 	int32_t ref_correction;
 	//uint8_t lock_plla, lock_pllb;
 };

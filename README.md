@@ -133,12 +133,14 @@ The calibration method is called like this:
     
 However, you may use the third argument in the *init* method to specify the frequeny correction and may not actually need to use the explict *set_correction* method in your code.
 
-A handy calibration program is provided with the library in the example folder named _si5351calibration_. To use it, simply hook up your Arduino to your Si5351, then connect it to a PC with the Arduino IDE. Connect the CLK0 output of the Si5351 to a frequency counter capable of measuring at 10 MHz (the more resolution, the better). Load the sketch then open the serial terminal window. Follow the prompts in the serial terminal to change the output frequency until your frequency counter reads exactly 10.000 000 00 MHz. The output from the Arduino on your serial terminal will tell you the correction factor you will need for future use of that reference oscillator/Si5351 combination.
+A handy calibration program is provided with the library in the example folder named _si5351_calibration_. To use it, simply hook up your Arduino to your Si5351, then connect it to a PC with the Arduino IDE. Connect the CLK0 output of the Si5351 to a frequency counter capable of measuring at 10 MHz (the more resolution, the better). Load the sketch then open the serial terminal window. Follow the prompts in the serial terminal to change the output frequency until your frequency counter reads exactly 10.000 000 00 MHz. The output from the Arduino on your serial terminal will tell you the correction factor you will need for future use of that reference oscillator/Si5351 combination.
 
 One thing to note: the library is set for a 25 MHz reference crystal. If you are using a 27 MHz crystal, use the second parameter in the *init* method to specify that as the reference oscillator frequency.
 
 Phase
 ------
+_Please see the example sketch **si5351_phase.ino**_
+
 The phase of the output clock signal can be changed by using the set_phase() method. Phase is in relation to (and measured against the period of) the PLL that the output multisynth is referencing. When you change the phase register from its default of 0, you will need to keep a few considerations in mind.
 
 Setting the phase of a clock requires that you manually set the PLL and take the PLL frequency into account when calculation the value to place in the phase register. As shown on page 10 of Silicon Labs Application Note 619 (AN619), the phase register is a 7-bit register, where a bit represents a phase difference of 1/4 the PLL period. Therefore, the best way to get an accurate phase setting is to make the PLL an even multiple of the clock frequency, depending on what phase you need.
@@ -147,42 +149,40 @@ If you need a 90 degree phase shift (as in many RF applications), then it is qui
 
 You can see this in action in a sketch in the examples folder called _si5351phase_. It shows how one would set up an I/Q pair of signals at 14.1 MHz.
 
-	  // We will output 14.1 MHz on CLK0 and CLK1.
-	  // A PLLA frequency of 705 MHz was chosen to give an even
-	  // divisor by 14.1 MHz.
-	  unsigned long long freq = 1410000000ULL;
-	  unsigned long long pll_freq = 70500000000ULL;
+    // We will output 14.1 MHz on CLK0 and CLK1.
+    // A PLLA frequency of 705 MHz was chosen to give an even
+    // divisor by 14.1 MHz.
+    unsigned long long freq = 1410000000ULL;
+    unsigned long long pll_freq = 70500000000ULL;
 
-	  // Set PLLA to the chosen frequency
-	  si5351.set_pll(pll_freq, SI5351_PLLA);
+    // Set CLK0 and CLK1 to output 14.1 MHz with a fixed PLL frequency
+    si5351.set_freq_manual(freq, pll_freq, SI5351_CLK0);
+    si5351.set_freq_manual(freq, pll_freq, SI5351_CLK1);
 
-	  // Set CLK0 and CLK1 to use PLLA as the MS source
-	  si5351.set_ms_source(SI5351_CLK0, SI5351_PLLA);
-	  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLA);
+    // Now we can set CLK1 to have a 90 deg phase shift by entering
+    // 50 in the CLK1 phase register, since the ratio of the PLL to
+    // the clock frequency is 50.
+    si5351.set_phase(SI5351_CLK0, 0);
+    si5351.set_phase(SI5351_CLK1, 50);
 
-	  // Set CLK0 and CLK1 to output 14.1 MHz with a fixed PLL frequency
-	  si5351.set_freq_manual(freq, pll_freq, SI5351_CLK0);
-	  si5351.set_freq_manual(freq, pll_freq, SI5351_CLK1);
-
-	  // Now we can set CLK1 to have a 90 deg phase shift by entering
-	  // 50 in the CLK1 phase register, since the ratio of the PLL to
-	  // the clock frequency is 50.
-	  si5351.set_phase(SI5351_CLK0, 0);
-	  si5351.set_phase(SI5351_CLK1, 50);
-
-	  // We need to reset the PLL before they will be in phase alignment
-      si5351.pll_reset(SI5351_PLLA);
+    // We need to reset the PLL before they will be in phase alignment
+    si5351.pll_reset(SI5351_PLLA);
 
 
 CLK Output Options
 ------------------
+_Please see the example sketch **si5351_outputs.ino**_
+
+In most cases, you will most likely end up using the multisynth associated with t
 
 Using the VCXO (Si5351B)
 -----------------------
+_Please see the example sketch **si5351_vcxo.ino**_
 
 
 Using an External Reference (Si5351C)
 -------------------------------------
+_Please see the example sketch **si5351_ext_ref.ino**_
 
 
 Startup Conditions
@@ -198,8 +198,8 @@ All CLK outputs are set to 0 Hz.
 Constraints
 -----------
 * Two multisynths cannot share a PLL with when both outputs are >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
-
 * Setting phase will be limited in the extreme edges of the output tuning ranges. Because the phase register is 7-bits in size and is denominated in units representing 1/4 the PLL period, not all phases can be set for all output frequencies. For example, if you need a 90&deg; phase shift, the lowest frequency you can set it at is 4.6875 MHz (600 MHz PLL/128).
+* The frequency range of Multisynth 6 and 7 is ~18.45 kHz to 150 MHz.
 
 Public Methods
 --------------
@@ -599,27 +599,27 @@ Changelog
 ---------
 * v2.0.0
 
-    Complete rewrite of tuning algorithm.
+    * Complete rewrite of tuning algorithm
+    * 
+    * Change interface of _init()_ and _set_freq()_
+    * Add _reset()_
     
 * v1.1.2
 
-    Fix error where register 183 is not pre-loaded with correct value per AN619. Add define for SI5351_CRYSTAL_LOAD_0PF (undocumented in AN619 but present in the official ClockBuilder software).
+    * Fix error where register 183 is not pre-loaded with correct value per AN619. Add define for SI5351_CRYSTAL_LOAD_0PF (undocumented in AN619 but present in the official ClockBuilder software).
 
 * v1.1.1
 
-    Fix if statement eval error in set_clock_disable()
+    * Fix if statement eval error in set_clock_disable()
 
 * v1.1.0
 
-    Added set_pll_input() method to allow toggling the PLL reference source for the Si5351C variant and added support to init() for different PLL reference frequencies from 10 to 100 MHz.
+    * Added set_pll_input() method to allow toggling the PLL reference source for the Si5351C variant and added support to init() for different PLL reference frequencies from 10 to 100 MHz.
 
 * v1.0.0
 
-    Initial release
+    * Initial release
     
-TODO
-----
-- [ ] VCXO Settings
 
 
   [1]: http://www.silabs.com

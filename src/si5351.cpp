@@ -327,7 +327,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		// -----------------
 
 		// Lower bounds check
-		if(freq > 0 && freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT)
+		if(freq > 0 && freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT)
 		{
 			freq = SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT;
 		}
@@ -338,8 +338,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
 		}
 
-		//set_pll(pllb_freq, SI5351_PLLB);
-
 		// If one of CLK6 or CLK7 is already set when trying to set the other,
 		// we have to ensure that it will also have an integer division ratio
 		// with the same PLL, otherwise do not set it.
@@ -347,7 +345,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		{
 			if(clk_freq[7] != 0)
 			{
-				if(pllb_freq % freq != 0)
+				if(pllb_freq % freq == 0)
 				{
 					if((pllb_freq / freq) % 2 != 0)
 					{
@@ -356,6 +354,12 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 					}
 					else
 					{
+						// Set the freq in memory
+						clk_freq[(uint8_t)clk] = freq;
+
+						// Select the proper R div value
+						r_div = select_r_div_ms67(&freq);
+
 						multisynth67_calc(freq, pllb_freq, &ms_reg);
 					}
 				}
@@ -368,6 +372,13 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			else
 			{
 				// No previous assignment, so set PLLB based on CLK6
+
+				// Set the freq in memory
+				clk_freq[(uint8_t)clk] = freq;
+
+				// Select the proper R div value
+				r_div = select_r_div_ms67(&freq);
+
 				pll_freq = multisynth67_calc(freq, 0, &ms_reg);
 				pllb_freq = pll_freq;
 				set_pll(pllb_freq, SI5351_PLLB);
@@ -377,7 +388,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		{
 			if(clk_freq[6] != 0)
 			{
-				if(pllb_freq % freq != 0)
+				if(pllb_freq % freq == 0)
 				{
 					if((pllb_freq / freq) % 2 != 0)
 					{
@@ -386,6 +397,12 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 					}
 					else
 					{
+						// Set the freq in memory
+						clk_freq[(uint8_t)clk] = freq;
+
+						// Select the proper R div value
+						r_div = select_r_div_ms67(&freq);
+
 						multisynth67_calc(freq, pllb_freq, &ms_reg);
 					}
 				}
@@ -398,6 +415,13 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			else
 			{
 				// No previous assignment, so set PLLB based on CLK7
+
+				// Set the freq in memory
+				clk_freq[(uint8_t)clk] = freq;
+
+				// Select the proper R div value
+				r_div = select_r_div_ms67(&freq);
+
 				pll_freq = multisynth67_calc(freq, 0, &ms_reg);
 				pllb_freq = pll_freq;
 				set_pll(pllb_freq, pll_assignment[clk]);
@@ -407,17 +431,11 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		// Enable the output
 		output_enable(clk, 1);
 
-		// Set the freq in memory
-		clk_freq[(uint8_t)clk] = freq;
-
 		div_by_4 = 0;
 		int_mode = 0;
 
 		// Set multisynth registers (MS must be set before PLL)
 		set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
-
-		//set_pll(pllb_freq, SI5351_PLLB);
-		//pll_reset(pll_assignment[clk]);
 
 		return 0;
 	}
@@ -1454,13 +1472,14 @@ uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si53
 		}
 
 		pll_freq = a * freq;
+
 		// PLL bounds checking
-		if(pll_freq > SI5351_PLL_VCO_MAX)
+		if(pll_freq > (SI5351_PLL_VCO_MAX * SI5351_FREQ_MULT))
 		{
 			a -= 2;
 			pll_freq = a * freq;
 		}
-		else if(pll_freq < SI5351_PLL_VCO_MIN)
+		else if(pll_freq < (SI5351_PLL_VCO_MIN * SI5351_FREQ_MULT))
 		{
 			a += 2;
 			pll_freq = a * freq;
@@ -1552,26 +1571,45 @@ void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 			reg_addr = SI5351_CLK5_PARAMETERS + 2;
 			break;
 		case SI5351_CLK6:
-			return;
+			reg_addr = SI5351_CLK6_7_OUTPUT_DIVIDER;
+			break;
 		case SI5351_CLK7:
-			return;
+			reg_addr = SI5351_CLK6_7_OUTPUT_DIVIDER;
+			break;
 	}
 
 	reg_val = si5351_read(reg_addr);
 
-	// Clear the relevant bits
-	reg_val &= ~(0x7c);
-
-	if(div_by_4 == 0)
+	if(clk <= (uint8_t)SI5351_CLK5)
 	{
-		reg_val &= ~(SI5351_OUTPUT_CLK_DIVBY4);
-	}
-	else
-	{
-		reg_val |= (SI5351_OUTPUT_CLK_DIVBY4);
-	}
+		// Clear the relevant bits
+		reg_val &= ~(0x7c);
 
-	reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
+		if(div_by_4 == 0)
+		{
+			reg_val &= ~(SI5351_OUTPUT_CLK_DIVBY4);
+		}
+		else
+		{
+			reg_val |= (SI5351_OUTPUT_CLK_DIVBY4);
+		}
+
+		reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
+	}
+	else if(clk == SI5351_CLK6)
+	{
+		// Clear the relevant bits
+		reg_val &= ~(0x07);
+
+		reg_val |= r_div;
+	}
+	else if(clk == SI5351_CLK7)
+	{
+		// Clear the relevant bits
+		reg_val &= ~(0x70);
+
+		reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
+	}
 
 	si5351_write(reg_addr, reg_val);
 }
@@ -1612,6 +1650,50 @@ uint8_t Si5351::select_r_div(uint64_t *freq)
 		*freq *= 4ULL;
 	}
 	else if((*freq >= SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 64) && (*freq < SI5351_CLKOUT_MIN_FREQ * SI5351_FREQ_MULT * 128))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_2;
+		*freq *= 2ULL;
+	}
+
+	return r_div;
+}
+
+uint8_t Si5351::select_r_div_ms67(uint64_t *freq)
+{
+	uint8_t r_div = SI5351_OUTPUT_CLK_DIV_1;
+
+	// Choose the correct R divider
+	if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 2))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_128;
+		*freq *= 128ULL;
+	}
+	else if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 2) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 4))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_64;
+		*freq *= 64ULL;
+	}
+	else if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 4) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 8))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_32;
+		*freq *= 32ULL;
+	}
+	else if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 8) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 16))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_16;
+		*freq *= 16ULL;
+	}
+	else if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 16) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 32))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_8;
+		*freq *= 8ULL;
+	}
+	else if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 32) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 64))
+	{
+		r_div = SI5351_OUTPUT_CLK_DIV_4;
+		*freq *= 4ULL;
+	}
+	else if((*freq >= SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 64) && (*freq < SI5351_CLKOUT67_MIN_FREQ * SI5351_FREQ_MULT * 128))
 	{
 		r_div = SI5351_OUTPUT_CLK_DIV_2;
 		*freq *= 2ULL;

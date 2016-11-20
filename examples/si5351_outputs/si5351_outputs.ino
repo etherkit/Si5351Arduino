@@ -1,7 +1,8 @@
 /*
- * si5351_example.ino - Simple example of using Si5351Arduino library
+ * si5351_outputs.ino - How to set different output sources
+ *                      with the Si5351Arduino library
  *
- * Copyright (C) 2015 - 2016 Jason Milldrum <milldrum@gmail.com>
+ * Copyright (C) 2016 Jason Milldrum <milldrum@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,12 +32,23 @@ void setup()
   // Set CLK0 to output 14 MHz
   si5351.set_freq(1400000000ULL, SI5351_CLK0);
 
-  // Set CLK1 to output 175 MHz
-  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLB);
-  si5351.set_freq_manual(17500000000ULL, 70000000000ULL, SI5351_CLK1);
+  // Enable clock fanout for the XO
+  si5351.set_clock_fanout(SI5351_FANOUT_XO, 1);
 
-  // Query a status update and wait a bit to let the Si5351 populate the
-  // status flags correctly.
+  // Enable clock fanout for MS
+  si5351.set_clock_fanout(SI5351_FANOUT_MS, 1);
+
+  // Set CLK1 to output the XO signal
+  si5351.set_clock_source(SI5351_CLK1, SI5351_CLK_SRC_XTAL);
+  si5351.output_enable(SI5351_CLK1, 1);
+
+  // Set CLK2 to mirror the MS0 (CLK0) output
+  si5351.set_clock_source(SI5351_CLK2, SI5351_CLK_SRC_MS0);
+  si5351.output_enable(SI5351_CLK2, 1);
+
+  // Change CLK0 output to 10 MHz, observe how CLK2 also changes
+  si5351.set_freq(1000000000ULL, SI5351_CLK0);
+
   si5351.update_status();
   delay(500);
 }
@@ -45,7 +57,7 @@ void loop()
 {
   // Read the Status Register and print it every 10 seconds
   si5351.update_status();
-  Serial.print("SYS_INIT: ");
+  Serial.print("  SYS_INIT: ");
   Serial.print(si5351.dev_status.SYS_INIT);
   Serial.print("  LOL_A: ");
   Serial.print(si5351.dev_status.LOL_A);

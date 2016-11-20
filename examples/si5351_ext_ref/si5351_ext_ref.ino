@@ -1,7 +1,8 @@
 /*
- * si5351_example.ino - Simple example of using Si5351Arduino library
+ * si5351_ext_ref.ino - Simple example of using an external reference
+ *                      clock with the Si5351Arduino library
  *
- * Copyright (C) 2015 - 2016 Jason Milldrum <milldrum@gmail.com>
+ * Copyright (C) 2016 Jason Milldrum <milldrum@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,19 +25,19 @@ Si5351 si5351;
 
 void setup()
 {
-  // Start serial and initialize the Si5351
+  // Start serial
   Serial.begin(57600);
-  si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+
+  // Initialize the Si5351 to use a 10 MHz clock input on CLKIN
+  si5351.init(SI5351_CRYSTAL_LOAD_0PF, 10000000UL, 0);
+
+  // Set PLLA and PLLB to use the signal on CLKIN instead of the XTAL
+  si5351.set_pll_input(SI5351_PLLA, SI5351_PLL_INPUT_CLKIN);
+  si5351.set_pll_input(SI5351_PLLB, SI5351_PLL_INPUT_CLKIN);
 
   // Set CLK0 to output 14 MHz
   si5351.set_freq(1400000000ULL, SI5351_CLK0);
 
-  // Set CLK1 to output 175 MHz
-  si5351.set_ms_source(SI5351_CLK1, SI5351_PLLB);
-  si5351.set_freq_manual(17500000000ULL, 70000000000ULL, SI5351_CLK1);
-
-  // Query a status update and wait a bit to let the Si5351 populate the
-  // status flags correctly.
   si5351.update_status();
   delay(500);
 }
@@ -45,7 +46,7 @@ void loop()
 {
   // Read the Status Register and print it every 10 seconds
   si5351.update_status();
-  Serial.print("SYS_INIT: ");
+  Serial.print("  SYS_INIT: ");
   Serial.print(si5351.dev_status.SYS_INIT);
   Serial.print("  LOL_A: ");
   Serial.print(si5351.dev_status.LOL_A);
