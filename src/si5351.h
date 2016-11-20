@@ -320,7 +320,6 @@ private:
 	uint8_t select_r_div(uint64_t *);
   uint8_t select_r_div_ms67(uint64_t *);
 	int32_t ref_correction;
-	//uint8_t lock_plla, lock_pllb;
 };
 
 #endif /* SI5351_H_ */

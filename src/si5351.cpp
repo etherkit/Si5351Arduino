@@ -171,8 +171,6 @@ void Si5351::reset(void)
 	// Then reset the PLLs
 	pll_reset(SI5351_PLLA);
 	pll_reset(SI5351_PLLB);
-
-	//update_status();
 }
 
 /*
@@ -270,8 +268,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 						div_by_4 = 0;
 						int_mode = 0;
-
-						//clk_freq[i] = temp_freq;
 
 						// Set multisynth registers
 						set_ms((enum si5351_clock)i, temp_reg, int_mode, r_div, div_by_4);
@@ -498,9 +494,6 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 
 	// Set multisynth registers (MS must be set before PLL)
 	set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
-
-	//set_pll(pll_freq, pll_assignment[clk]);
-	//pll_reset(pll_assignment[clk]);
 }
 
 /*
