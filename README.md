@@ -30,7 +30,7 @@ Changes from v1 to v2
 ---------------------
 The public interface to the v2 library is similar to the v1 library, but a few of the most-used methods have had their signatures changed, so your old programs won't compile right out-of-the-box after a library upgrade. Most importantly, the _init()_ and _set_freq()_ methods are different, so you'll at least need to change these calls in your old sketches.
 
-The _init()_ method now has three paramaters: the crystal load capacitance, the reference frequency, and the frequency correction value (with this last parameter being a new addition). You'll need to add that third paramater to your old _init()_ calls, but then you can delete any _set_correction()_ calls after that (unless you explicitly are changing the frequency correction after the initialization).
+The _init()_ method now has three parameters: the crystal load capacitance, the reference frequency, and the frequency correction value (with this last parameter being a new addition). You'll need to add that third parameter to your old _init()_ calls, but then you can delete any _set_correction()_ calls after that (unless you explicitly are changing the frequency correction after the initialization).
 
 The _set_freq()_ method is now more streamlined and only requires two parameters: the desired output frequency (from 4 kHz to 150 MHz) and clock output. In your old code, you can delete the 2nd parameter in _set_freq()_, which was the PLL frequency. In case you want to do things manually, there is now a new method called _set_freq_manual()_ (see below for details).
 
@@ -131,7 +131,7 @@ Individual outputs can be turned on and off. In the second argument, use a 0 to 
 
 You may invert a clock output signal by using this command:
 
-	set_clock_invert(SI5351_CLK0, 1);
+	si5351.set_clock_invert(SI5351_CLK0, 1);
 
 Calibration
 -----------
