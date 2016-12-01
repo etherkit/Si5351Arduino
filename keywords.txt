@@ -1,7 +1,7 @@
 Si5351	KEYWORD1
 
 init KEYWORD2
-set_freqKEYWORD2
+set_freq KEYWORD2
 set_pll	 KEYWORD2
 set_ms KEYWORD2
 output_enable	KEYWORD2
