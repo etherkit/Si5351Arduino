@@ -1,6 +1,9 @@
-/* Simple calibration routine for the Si5351 breakout board.
+/*
+ * si5351_calibration.ino - Simple calibration routine for the Si5351
+ *                          breakout board.
  *
- * Copyright 2015 Paul Warren <pwarren@pwarren.id.au>
+ * Copyright 2015 - 2016 Paul Warren <pwarren@pwarren.id.au>
+ *                       Jason Milldrum <milldrum@gmail.com>
  *
  * Uses code from https://github.com/darksidelemm/open_radio_miniconf_2015
  * and the old version of the calibration sketch
@@ -22,7 +25,7 @@
 
 Si5351 si5351;
 
-int32_t cal_factor;
+int32_t cal_factor = 0;
 int32_t old_cal;
 
 uint64_t rx_freq;
@@ -32,40 +35,38 @@ void setup()
 {
   // Start serial and initialize the Si5351
   Serial.begin(57600);
-  si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0);
 
-  // get old cal factor
-  //old_cal = si5351.get_correction();  
-  si5351.set_correction(0);
-  // start on target frequency
-  si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-  si5351.set_freq(target_freq, SI5351_PLL_FIXED, SI5351_CLK0);
+  // The crystal load value needs to match in order to have an accurate calibration
+  si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+
+  // Start on target frequency
+  si5351.set_freq(target_freq, SI5351_CLK0);
 }
 
 void loop()
 {
   si5351.update_status();
-  if (si5351.dev_status.SYS_INIT == 1) {
-     Serial.println("Initialising Si5351, you shouldn't see many of these!");
+  if (si5351.dev_status.SYS_INIT == 1)
+  {
+     Serial.println(F("Initialising Si5351, you shouldn't see many of these!"));
      delay(500);
-  } else {
-    cal_factor = 0;
-//    Serial.print("Old cal factor was: ");
-//    Serial.println(old_cal);
-//    Serial.println("Cal factor now set to 0");
-//    si5351.set_correction(0);
+  }
+  else
+  {
     Serial.println();
-    Serial.println(F("Adjust until your frequency counter reads as close to 10 MHz as possible"));
+    Serial.println(F("Adjust until your frequency counter reads as close to 10 MHz as possible."));
+    Serial.println(F("Press 'q' when complete."));
     vfo_interface();
+
+    Serial.println();
     Serial.print(F("Calibration factor is "));
     Serial.println(cal_factor);
-    Serial.println("Setting calibration factor");
+    Serial.println(F("Setting calibration factor"));
     si5351.set_correction(cal_factor);
-    Serial.println("Resetting target frequency");
-    si5351.set_freq(target_freq, SI5351_PLL_FIXED, SI5351_CLK0);
-  }  
-  
-  
+    Serial.println(F("Resetting target frequency"));
+    si5351.set_freq(target_freq, SI5351_CLK0);
+    si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
+  }
 }
 
 static void flush_input(void)
@@ -80,10 +81,13 @@ static void vfo_interface(void)
   Serial.println(F("   Up:   r   t  y  u  i   o  p"));
   Serial.println(F(" Down:   f   g  h  j  k   l  ;"));
   Serial.println(F("   Hz: 0.01 0.1 1 10 100 1K 10k"));
-  while (1) {
-  if (Serial.available() > 0) {
+  while (1)
+  {
+  if (Serial.available() > 0)
+  {
     char c = Serial.read();
-    switch (c) {
+    switch (c)
+    {
       case 'q':
         flush_input();
         return;
@@ -105,11 +109,12 @@ static void vfo_interface(void)
         // Do nothing
       continue;
     }
-    si5351.set_freq(rx_freq,SI5351_PLL_FIXED,SI5351_CLK0);
+
     cal_factor = (int32_t)(target_freq - rx_freq);
-    Serial.print("Current difference:");
+    si5351.set_correction(cal_factor);
+    si5351.set_freq(target_freq, SI5351_CLK0);
+    Serial.print(F("Current difference:"));
     Serial.println(cal_factor);
     }
   }
 }
-
