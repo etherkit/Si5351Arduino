@@ -288,6 +288,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			output_enable(clk, 1);
 
 			// Set PLL
+			/*
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
 				set_pll(plla_freq, pll_assignment[clk]);
@@ -295,12 +296,12 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			{
 				set_pll(pllb_freq, pll_assignment[clk]);
 			}
+			*/
 
 			// Select the proper R div value
 			r_div = select_r_div(&freq);
 
 			// Calculate the synth parameters
-			// TODO: handle CLK6 and CLK7
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
 				multisynth_calc(freq, plla_freq, &ms_reg);
