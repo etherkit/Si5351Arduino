@@ -660,6 +660,10 @@ This library does not curently support the spread spectrum function of the Si535
 
 Changelog
 ---------
+* v2.0.1
+
+    * Remove unnecessary set_pll() in set_freq() which causes errors in setting multiple clocks >100 MHz
+		
 * v2.0.0
 
     * Complete rewrite of tuning algorithm
