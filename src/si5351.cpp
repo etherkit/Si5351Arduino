@@ -209,7 +209,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		// method. For >=150 MHz, you'll have to manually set the paramters
 		if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
 		{
-			freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1; 1;
+			freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
 		}
 
 		// If requested freq >112.5 MHz and no other outputs are already >112.5 MHz,
