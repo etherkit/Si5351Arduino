@@ -139,8 +139,8 @@ void Si5351::reset(void)
 	set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
 	set_pll(SI5351_PLL_FIXED, SI5351_PLLB);
 
-	plla_freq = SI5351_PLL_FIXED;
-	pllb_freq = SI5351_PLL_FIXED;
+	//plla_freq = SI5351_PLL_FIXED;
+	//pllb_freq = SI5351_PLL_FIXED;
 
 	// Make PLL to CLK assignments for automatic tuning
 	pll_assignment[0] = SI5351_PLLA;
@@ -239,6 +239,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 			// Calculate the proper PLL frequency
 			pll_freq = multisynth_calc(freq, 0, &ms_reg);
+			/*
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
 				plla_freq = pll_freq;
@@ -247,8 +248,9 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			{
 				pllb_freq = pll_freq;
 			}
+			*/
 
-			// Set PLL?
+			// Set PLL
 			set_pll(pll_freq, pll_assignment[clk]);
 
 			// Recalculate params for other synths on same PLL
@@ -267,8 +269,17 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 						multisynth_calc(temp_freq, pll_freq, &temp_reg);
 
-						div_by_4 = 0;
-						int_mode = 0;
+						if(i == (uint8_t)clk)
+						{
+							div_by_4 = 1;
+							int_mode = 1;
+						}
+						else
+						{
+							div_by_4 = 0;
+							int_mode = 0;
+						}
+						//int_mode = 0;
 
 						// Set multisynth registers
 						set_ms((enum si5351_clock)i, temp_reg, int_mode, r_div, div_by_4);
@@ -277,7 +288,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			}
 
 			// Reset the PLL
-			//set_pll(pll_freq, pll_assignment[clk]);
 			pll_reset(pll_assignment[clk]);
 		}
 		else
@@ -288,6 +298,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			output_enable(clk, 1);
 
 			// Set PLL
+			/*
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
 				set_pll(plla_freq, pll_assignment[clk]);
@@ -295,12 +306,12 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			{
 				set_pll(pllb_freq, pll_assignment[clk]);
 			}
+			*/
 
 			// Select the proper R div value
 			r_div = select_r_div(&freq);
 
 			// Calculate the synth parameters
-			// TODO: handle CLK6 and CLK7
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
 				multisynth_calc(freq, plla_freq, &ms_reg);
@@ -377,8 +388,8 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 				r_div = select_r_div_ms67(&freq);
 
 				pll_freq = multisynth67_calc(freq, 0, &ms_reg);
-				pllb_freq = pll_freq;
-				set_pll(pllb_freq, SI5351_PLLB);
+				//pllb_freq = pll_freq;
+				set_pll(pll_freq, SI5351_PLLB);
 			}
 		}
 		else
@@ -420,8 +431,8 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 				r_div = select_r_div_ms67(&freq);
 
 				pll_freq = multisynth67_calc(freq, 0, &ms_reg);
-				pllb_freq = pll_freq;
-				set_pll(pllb_freq, pll_assignment[clk]);
+				//pllb_freq = pll_freq;
+				set_pll(pll_freq, pll_assignment[clk]);
 			}
 		}
 
@@ -553,10 +564,12 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
   if(target_pll == SI5351_PLLA)
   {
     si5351_write_bulk(SI5351_PLLA_PARAMETERS, i, params);
+		plla_freq = pll_freq;
   }
   else if(target_pll == SI5351_PLLB)
   {
     si5351_write_bulk(SI5351_PLLB_PARAMETERS, i, params);
+		pllb_freq = pll_freq;
   }
 
   delete params;
