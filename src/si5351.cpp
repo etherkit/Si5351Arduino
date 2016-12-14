@@ -239,6 +239,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 			// Calculate the proper PLL frequency
 			pll_freq = multisynth_calc(freq, 0, &ms_reg);
+
 			/*
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
@@ -254,7 +255,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			set_pll(pll_freq, pll_assignment[clk]);
 
 			// Recalculate params for other synths on same PLL
-			for(i = 0; i < 8; i++)
+			for(i = 0; i < 6; i++)
 			{
 				if(clk_freq[i] != 0)
 				{
@@ -279,7 +280,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 							div_by_4 = 0;
 							int_mode = 0;
 						}
-						//int_mode = 0;
 
 						// Set multisynth registers
 						set_ms((enum si5351_clock)i, temp_reg, int_mode, r_div, div_by_4);
@@ -298,15 +298,14 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			output_enable(clk, 1);
 
 			// Set PLL
-			/*
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
 				set_pll(plla_freq, pll_assignment[clk]);
 			}
+			else
 			{
 				set_pll(pllb_freq, pll_assignment[clk]);
 			}
-			*/
 
 			// Select the proper R div value
 			r_div = select_r_div(&freq);
@@ -1377,6 +1376,14 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 		{
 			lltmp = SI5351_PLL_VCO_MAX * SI5351_FREQ_MULT; // margin needed?
 			do_div(lltmp, freq);
+			if(lltmp == 5)
+			{
+				lltmp = 4;
+			}
+			else if(lltmp == 7)
+			{
+				lltmp = 6;
+			}
 			a = (uint32_t)lltmp;
 		}
 		else
