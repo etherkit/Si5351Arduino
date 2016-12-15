@@ -656,7 +656,7 @@ If you need to read and write raw data to the Si5351, there is public access to 
 
 Unsupported Features
 --------------------
-This library does not curently support the spread spectrum function of the Si5351.
+This library does not currently support the spread spectrum function of the Si5351.
 
 Changelog
 ---------
