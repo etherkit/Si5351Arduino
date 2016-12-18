@@ -95,7 +95,7 @@ Setting the Output Frequency
 ----------------------------
 As indicated above, the library accepts and indicates clock and PLL frequencies in units of 0.01 Hz, as an _unsigned long long_ variable type (or _uint64_t_). When entering literal values, append ```ULL``` to make an explicit unsigned long long number to ensure proper tuning. Since many applications won't require sub-Hertz tuning, you may wish to use an _unsigned long_ (or _uint32_t_) variable to hold your tune frequency, then scale it up by multiplying by 100ULL before passing it to the _set_freq()_ method.
 
-Using the _set_freq()_ method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 112.5 MHz. Therefore, once one CLK output has been set above 112.5 MHz, no more CLKs on the same PLL will be allowed to be set greater than 112.5 MHz (unless the one which is already set is changed to a frequency below this threshold). Also, due to the special PLL requirements for output frequencies above 150 MHz, the _set_freq()_ method will not tune above 150 MHz. Refer to the next section for instructions on how to generate these output frequencies.
+Using the _set_freq()_ method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 112.5 MHz. Therefore, once one CLK output has been set above 112.5 MHz, no more CLKs on the same PLL will be allowed to be set greater than 112.5 MHz (unless the one which is already set is changed to a frequency below this threshold).
 
 If the above constraints are not suitable, you need glitch-free tuning, or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs.
 
@@ -114,8 +114,6 @@ This means that if any output is greater than 112.5 MHz (900 MHz/8), then this o
 of the VCO frequencies.
 
 To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 112.5 MHz, then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
-
-Furthermore, you must use the _set_freq_manual()_ method to set an output frequency greater than 150 MHz because of the requirement of the reference PLL to be a mutiple of 4 of the output frequency in this case. You can see this in the code example earlier in this section. This will most likely prevent you from using other CLK outputs locked to the same PLL (unless you can use another output on the exact same frequency).
 
 Further Details
 ---------------
@@ -660,6 +658,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+* v2.0.1
+
+		* Increase maximum frequency in set_freq() to 225 MHz
+
 * v2.0.1
 
     * Fix logic error in set_freq() which causes errors in setting multiple clocks >100 MHz
