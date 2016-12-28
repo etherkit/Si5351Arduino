@@ -658,8 +658,8 @@ Changelog
 ---------
 * v2.0.2
 
-		* Increase maximum frequency in _set_freq()_ to 225 MHz
-		* Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 110 MHz due to stability issues
+    * Increase maximum frequency in _set_freq()_ to 225 MHz
+    * Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 110 MHz due to stability issues
 
 * v2.0.1
 
