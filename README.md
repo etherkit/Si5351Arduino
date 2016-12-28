@@ -673,7 +673,7 @@ Changelog
     * Change interface of _init()_ and _set_freq()_
     * Add _set_freq_manual()_ method
     * Add _reset()_ method
-    * Added many new example sketechs
+    * Added many new example sketches
 
 * v1.1.2
 
