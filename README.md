@@ -95,7 +95,7 @@ Setting the Output Frequency
 ----------------------------
 As indicated above, the library accepts and indicates clock and PLL frequencies in units of 0.01 Hz, as an _unsigned long long_ variable type (or _uint64_t_). When entering literal values, append ```ULL``` to make an explicit unsigned long long number to ensure proper tuning. Since many applications won't require sub-Hertz tuning, you may wish to use an _unsigned long_ (or _uint32_t_) variable to hold your tune frequency, then scale it up by multiplying by 100ULL before passing it to the _set_freq()_ method.
 
-Using the _set_freq()_ method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 112.5 MHz. Therefore, once one CLK output has been set above 112.5 MHz, no more CLKs on the same PLL will be allowed to be set greater than 112.5 MHz (unless the one which is already set is changed to a frequency below this threshold).
+Using the _set_freq()_ method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 110 MHz. Therefore, once one CLK output has been set above 110 MHz, no more CLKs on the same PLL will be allowed to be set greater than 110 MHz (unless the one which is already set is changed to a frequency below this threshold).
 
 If the above constraints are not suitable, you need glitch-free tuning, or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs.
 
@@ -113,7 +113,7 @@ When you are setting the PLL manually you need to be mindful of the limits of th
 This means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
 of the VCO frequencies.
 
-To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 112.5 MHz, then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
+To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 110 MHz (changed in this library from the stated 112.5 MHz due to stability issues which were noticed), then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
 
 Further Details
 ---------------
@@ -246,7 +246,7 @@ All CLK outputs are set to 0 Hz and disabled.
 
 Constraints
 -----------
-* Two multisynths cannot share a PLL with when both outputs are >= 112.5 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
+* Two multisynths cannot share a PLL with when both outputs are >= 110 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
 * Setting phase will be limited in the extreme edges of the output tuning ranges. Because the phase register is 7-bits in size and is denominated in units representing 1/4 the PLL period, not all phases can be set for all output frequencies. For example, if you need a 90&deg; phase shift, the lowest frequency you can set it at is 4.6875 MHz (600 MHz PLL/128).
 * The frequency range of Multisynth 6 and 7 is ~18.45 kHz to 150 MHz. The library assigns PLLB to these two multisynths, so if you choose to use both, then both frequencies must be an even divisor of the PLL frequency (between 6 and 254), so plan accordingly. You can see the current PLLB frequency by accessing the _pllb_freq_ public member.
 * VCXO pull range can be &plusmn;30 to &plusmn;240 ppm
@@ -661,6 +661,7 @@ Changelog
 * v2.0.2
 
 		* Increase maximum frequency in set_freq() to 225 MHz
+		* Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 110 MHz due to stability issues
 
 * v2.0.1
 
