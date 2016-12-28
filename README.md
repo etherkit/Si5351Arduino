@@ -658,12 +658,12 @@ Changelog
 ---------
 * v2.0.2
 
-		* Increase maximum frequency in set_freq() to 225 MHz
+		* Increase maximum frequency in _set_freq()_ to 225 MHz
 		* Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 110 MHz due to stability issues
 
 * v2.0.1
 
-    * Fix logic error in set_freq() which causes errors in setting multiple clocks >100 MHz
+    * Fix logic error in _set_freq()_ which causes errors in setting multiple clocks >100 MHz
 
 * v2.0.0
 
@@ -681,11 +681,11 @@ Changelog
 
 * v1.1.1
 
-    * Fix if statement eval error in set_clock_disable()
+    * Fix if statement eval error in _set_clock_disable()_
 
 * v1.1.0
 
-    * Added set_pll_input() method to allow toggling the PLL reference source for the Si5351C variant and added support to init() for different PLL reference frequencies from 10 to 100 MHz.
+    * Added _set_pll_input()_ method to allow toggling the PLL reference source for the Si5351C variant and added support to _init()_ for different PLL reference frequencies from 10 to 100 MHz.
 
 * v1.0.0
 
