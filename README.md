@@ -131,13 +131,13 @@ You may invert a clock output signal by using this command:
 
 Calibration
 -----------
-There will be some inherent error in the reference oscillator's actual frequency, so we can account for this by measuring the difference between the uncalibrated actual and nominal output frequencies, then using that difference as a correction factor in the library. The _set_correction()_ method uses a signed integer calibration constant measured in parts-per-billion. The easist way to determine this correction factor is to measure a 10 MHz signal from one of the clock outputs (in Hz, or better resolution if you can measure it), scale it to parts-per-billion, then use it in the _set_correction()_ method in future use of this particular reference oscillator. Once this correction factor is determined, it should not need to be measured again for the same reference oscillator/Si5351 pair unless you want to redo the calibration. With an accurate measurement at one frequency, this calibration should be good across the entire tuning range.
+There will be some inherent error in the reference oscillator's actual frequency, so we can account for this by measuring the difference between the uncalibrated actual and nominal output frequencies, then using that difference as a correction factor in the library. The _init()_ and _set_correction()_ methods use a signed integer calibration constant measured in parts-per-billion. The easiest way to determine this correction factor is to measure a 10 MHz signal from one of the clock outputs (in Hz, or better resolution if you can measure it), scale it to parts-per-billion, then use it in the _set_correction()_ method in future use of this particular reference oscillator. Once this correction factor is determined, it should not need to be measured again for the same reference oscillator/Si5351 pair unless you want to redo the calibration. With an accurate measurement at one frequency, this calibration should be good across the entire tuning range.
 
 The calibration method is called like this:
 
     si5351.set_correction(-6190);
 
-However, you may use the third argument in the _init()_ method to specify the frequeny correction and may not actually need to use the explict _set_correction()_ method in your code.
+However, you may use the third argument in the _init()_ method to specify the frequency correction and may not actually need to use the explict _set_correction()_ method in your code.
 
 A handy calibration program is provided with the library in the example folder named _si5351_calibration_. To use it, simply hook up your Arduino to your Si5351, then connect it to a PC with the Arduino IDE. Connect the CLK0 output of the Si5351 to a frequency counter capable of measuring at 10 MHz (the more resolution, the better). Load the sketch then open the serial terminal window. Follow the prompts in the serial terminal to change the output frequency until your frequency counter reads exactly 10.000 000 00 MHz. The output from the Arduino on your serial terminal will tell you the correction factor you will need for future use of that reference oscillator/Si5351 combination.
 
