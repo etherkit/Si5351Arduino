@@ -219,14 +219,13 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		// on same PLL
 		if(freq > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
 		{
-			// Check other clocks
-			// TODO: only check clocks on same PLL
+			// Check other clocks on same PLL
 			uint8_t i;
-			for(i = 0; i < 8; i++)
+			for(i = 0; i < 6; i++)
 			{
 				if(clk_freq[i] > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
 				{
-					if(i != (uint8_t)clk)
+					if(i != (uint8_t)clk && pll_assignment[i] == pll_assignment[clk])
 					{
 						return 1; // won't set if any other clks already >112.5 MHz
 					}
