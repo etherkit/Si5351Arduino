@@ -93,7 +93,7 @@ Setting the Output Frequency
 ----------------------------
 As indicated above, the library accepts and indicates clock and PLL frequencies in units of 0.01 Hz, as an _unsigned long long_ variable type (or _uint64_t_). When entering literal values, append ```ULL``` to make an explicit unsigned long long number to ensure proper tuning. Since many applications won't require sub-Hertz tuning, you may wish to use an _unsigned long_ (or _uint32_t_) variable to hold your tune frequency, then scale it up by multiplying by 100ULL before passing it to the _set_freq()_ method.
 
-Using the _set_freq()_ method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 110 MHz. Therefore, once one CLK output has been set above 110 MHz, no more CLKs on the same PLL will be allowed to be set greater than 110 MHz (unless the one which is already set is changed to a frequency below this threshold).
+Using the _set_freq()_ method is the easiest way to use the library and gives you a wide range of tuning options, but has some constraints in its usage. Outputs CLK0 through CLK5 by default are all locked to PLLA while CLK6 and CLK7 are locked to PLLB. Due to the nature of the Si5351 architecture, there may only be one CLK output among those sharing a PLL which may be set greater than 110 MHz. Therefore, once one CLK output has been set above 100 MHz, no more CLKs on the same PLL will be allowed to be set greater than 100 MHz (unless the one which is already set is changed to a frequency below this threshold).
 
 If the above constraints are not suitable, you need glitch-free tuning, or you are counting on multiple clocks being locked to the same reference, you may set the PLL frequency manually then make clock reference assignments to either of the PLLs.
 
@@ -111,7 +111,7 @@ When you are setting the PLL manually you need to be mindful of the limits of th
 This means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
 of the VCO frequencies.
 
-To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 110 MHz (changed in this library from the stated 112.5 MHz due to stability issues which were noticed), then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
+To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 100 MHz (changed in this library from the stated 112.5 MHz due to stability issues which were noticed), then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
 
 Further Details
 ---------------
@@ -231,6 +231,13 @@ The _set_pll_input()_ method is used to set the desired PLLs to reference to the
     si5351.set_pll_input(SI5351_PLLB, SI5351_PLL_INPUT_CLKIN);
 
 Once that is set, the library can be used as you normally would, with all of the frequency calculations done based on the reference frequency set in _init()_.
+
+
+Alternate I2C Addresses
+-----------------------
+The standard I2C bus address for the Si5351 is 0x60, however there are other ICs in the wild that use alternate bus addresses. In order to accommodate these ICs, the class constructor can be called with the I2C bus address as a parameter, as shown in this example:
+
+    Si5351 si5351(0x61);
 
 Startup Conditions
 ------------------
@@ -577,13 +584,13 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 
 Public Variables
 ----------------
-    struct Si5351Status dev_status;
+  struct Si5351Status dev_status;
 	struct Si5351IntStatus dev_int_status;
-    enum si5351_pll pll_assignment[8];
-    uint64_t clk_freq[8];
+  enum si5351_pll pll_assignment[8];
+  uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
-    uint32_t xtal_freq;
+  uint32_t xtal_freq;
 
 Tokens
 ------
@@ -659,7 +666,9 @@ Changelog
 * v2.0.2
 
     * Increase maximum frequency in _set_freq()_ to 225 MHz
-    * Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 110 MHz due to stability issues
+    * Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 100 MHz due to stability issues
+		* Add explict reset of VCXO param in reset()
+    * Add I2C bus address parameter and default to class constructor
 
 * v2.0.1
 
