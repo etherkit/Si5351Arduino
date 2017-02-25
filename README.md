@@ -667,7 +667,7 @@ Changelog
 
     * Increase maximum frequency in _set_freq()_ to 225 MHz
     * Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 100 MHz due to stability issues
-		* Add explict reset of VCXO param in reset()
+    * Add explicit reset of VCXO param in reset()
     * Add I2C bus address parameter and default to class constructor
 
 * v2.0.1
