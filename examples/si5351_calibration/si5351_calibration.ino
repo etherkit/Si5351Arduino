@@ -2,7 +2,7 @@
  * si5351_calibration.ino - Simple calibration routine for the Si5351
  *                          breakout board.
  *
- * Copyright 2015 - 2016 Paul Warren <pwarren@pwarren.id.au>
+ * Copyright 2015 - 2017 Paul Warren <pwarren@pwarren.id.au>
  *                       Jason Milldrum <milldrum@gmail.com>
  *
  * Uses code from https://github.com/darksidelemm/open_radio_miniconf_2015
@@ -26,7 +26,7 @@
 Si5351 si5351;
 
 int32_t cal_factor = 0;
-int32_t old_cal;
+int32_t old_cal = 0;
 
 uint64_t rx_freq;
 uint64_t target_freq = 1000000000ULL; // 10 MHz, in hundredths of hertz
@@ -40,6 +40,8 @@ void setup()
   si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
 
   // Start on target frequency
+  si5351.set_correction(cal_factor);
+  si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
   si5351.set_freq(target_freq, SI5351_CLK0);
 }
 
@@ -57,15 +59,6 @@ void loop()
     Serial.println(F("Adjust until your frequency counter reads as close to 10 MHz as possible."));
     Serial.println(F("Press 'q' when complete."));
     vfo_interface();
-
-    Serial.println();
-    Serial.print(F("Calibration factor is "));
-    Serial.println(cal_factor);
-    Serial.println(F("Setting calibration factor"));
-    si5351.set_correction(cal_factor);
-    Serial.println(F("Resetting target frequency"));
-    si5351.set_freq(target_freq, SI5351_CLK0);
-    si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
   }
 }
 
@@ -78,6 +71,7 @@ static void flush_input(void)
 static void vfo_interface(void)
 {
   rx_freq = target_freq;
+  cal_factor = old_cal;
   Serial.println(F("   Up:   r   t  y  u  i   o  p"));
   Serial.println(F(" Down:   f   g  h  j  k   l  ;"));
   Serial.println(F("   Hz: 0.01 0.1 1 10 100 1K 10k"));
@@ -90,6 +84,15 @@ static void vfo_interface(void)
     {
       case 'q':
         flush_input();
+        Serial.println();
+        Serial.print(F("Calibration factor is "));
+        Serial.println(cal_factor);
+        Serial.println(F("Setting calibration factor"));
+        si5351.set_correction(cal_factor);
+        si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
+        Serial.println(F("Resetting target frequency"));
+        si5351.set_freq(target_freq, SI5351_CLK0);
+        old_cal = cal_factor;
         return;
       case 'r': rx_freq += 1; break;
       case 'f': rx_freq -= 1; break;
@@ -110,8 +113,10 @@ static void vfo_interface(void)
       continue;
     }
 
-    cal_factor = (int32_t)(target_freq - rx_freq);
+    cal_factor = (int32_t)(target_freq - rx_freq) + old_cal;
     si5351.set_correction(cal_factor);
+    si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
+    si5351.pll_reset(SI5351_PLLA);
     si5351.set_freq(target_freq, SI5351_CLK0);
     Serial.print(F("Current difference:"));
     Serial.println(cal_factor);

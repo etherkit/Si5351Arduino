@@ -669,6 +669,7 @@ Changelog
     * Change SI5351_MULTISYNTH_SHARE_MAX from 112.5 MHz to 100 MHz due to stability issues
     * Add explicit reset of VCXO param in _reset()_
     * Add I2C bus address parameter and default to class constructor
+    * Update si5351_calibration example sketch
 
 * v2.0.1
 
