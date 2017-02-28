@@ -140,9 +140,6 @@ void Si5351::reset(void)
 	set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
 	set_pll(SI5351_PLL_FIXED, SI5351_PLLB);
 
-	//plla_freq = SI5351_PLL_FIXED;
-	//pllb_freq = SI5351_PLL_FIXED;
-
 	// Make PLL to CLK assignments for automatic tuning
 	pll_assignment[0] = SI5351_PLLA;
 	pll_assignment[1] = SI5351_PLLA;
@@ -244,17 +241,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			// Calculate the proper PLL frequency
 			pll_freq = multisynth_calc(freq, 0, &ms_reg);
 
-			/*
-			if(pll_assignment[clk] == SI5351_PLLA)
-			{
-				plla_freq = pll_freq;
-			}
-			else
-			{
-				pllb_freq = pll_freq;
-			}
-			*/
-
 			// Set PLL
 			set_pll(pll_freq, pll_assignment[clk]);
 
@@ -273,17 +259,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 						r_div = select_r_div(&temp_freq);
 
 						multisynth_calc(temp_freq, pll_freq, &temp_reg);
-
-						// if(i == (uint8_t)clk)
-						// {
-						// 	div_by_4 = 1;
-						// 	int_mode = 1;
-						// }
-						// else
-						// {
-						// 	div_by_4 = 0;
-						// 	int_mode = 0;
-						// }
 
 						// If freq > 150 MHz, we need to use DIVBY4 and integer mode
 						if(temp_freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
@@ -311,23 +286,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			clk_freq[(uint8_t)clk] = freq;
 
 			// Enable the output
-			//uint8_t reg_val;
-			//reg_val = si5351_read(SI5351_OUTPUT_ENABLE_CTRL);
-
-			//if((reg_val >> clk) & 1 == 1)
-			//{
-				output_enable(clk, 1);
-			//}
-
-			// Set PLL
-			// if(pll_assignment[clk] == SI5351_PLLA)
-			// {
-			// 	set_pll(plla_freq, pll_assignment[clk]);
-			// }
-			// else
-			// {
-			// 	set_pll(pllb_freq, pll_assignment[clk]);
-			// }
+			output_enable(clk, 1);
 
 			// Select the proper R div value
 			r_div = select_r_div(&freq);
@@ -341,8 +300,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			{
 				multisynth_calc(freq, pllb_freq, &ms_reg);
 			}
-			// div_by_4 = 0;
-			// int_mode = 0;
 
 			// Set multisynth registers
 			set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
@@ -1300,12 +1257,10 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
 	uint64_t lltmp, denom;
-	//int64_t ref_temp;
 
 	// Factor calibration value into nominal crystal frequency
 	// Measured in parts-per-billion
 
-	// ref_freq = ref_freq + (int32_t)((((((int64_t)correction) << 31) / 1000000000LL) * ref_freq) >> 31);
 	ref_freq = ref_freq + (int32_t)((((((int64_t)correction) << 31) / 1000000000LL) * ref_freq) >> 31);
 
 	// PLL bounds checking
