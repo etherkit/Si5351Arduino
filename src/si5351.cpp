@@ -212,10 +212,8 @@ uint64_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		}
 
 		// Upper bounds check
-		//if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
 		if(freq > SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT)
 		{
-			//freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
 			freq = SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT;
 		}
 
@@ -354,7 +352,7 @@ uint64_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			pll_reset(pll_assignment[clk]);
 		}
 
-		return temp;
+		return 0;
 	}
 	else
 	{
@@ -1283,7 +1281,7 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 	Wire.write(addr);
 	Wire.endTransmission();
 
-	Wire.requestFrom(i2c_bus_addr, 1, false);
+	Wire.requestFrom(i2c_bus_addr, 1, (uint8_t)false);
 
 	while(Wire.available())
 	{
