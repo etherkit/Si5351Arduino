@@ -190,7 +190,7 @@ void Si5351::reset(void)
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
-uint64_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
+uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 {
 	struct Si5351RegSet ms_reg;
 	uint64_t pll_freq;
