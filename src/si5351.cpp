@@ -194,7 +194,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 	uint8_t int_mode = 0;
 	uint8_t div_by_4 = 0;
 	uint8_t r_div = 0;
-				uint64_t temp = 1;
 
 	// Check which Multisynth is being set
 	if((uint8_t)clk <= (uint8_t)SI5351_CLK5)
@@ -294,7 +293,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			// Calculate the synth parameters
 			if(pll_assignment[clk] == SI5351_PLLA)
 			{
-				temp = multisynth_calc(freq, plla_freq, &ms_reg);
+				multisynth_calc(freq, plla_freq, &ms_reg);
 			}
 			else
 			{
@@ -1238,7 +1237,7 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 	Wire.write(addr);
 	Wire.endTransmission();
 
-	Wire.requestFrom(i2c_bus_addr, 1, (uint8_t)false);
+	Wire.requestFrom(i2c_bus_addr, (uint8_t)1, (uint8_t)false);
 
 	while(Wire.available())
 	{
