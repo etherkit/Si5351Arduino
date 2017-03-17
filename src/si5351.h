@@ -46,7 +46,7 @@
 #define SI5351_MULTISYNTH_MIN_FREQ      500000
 #define SI5351_MULTISYNTH_DIVBY4_FREQ   150000000
 #define SI5351_MULTISYNTH_MAX_FREQ      225000000
-#define SI5351_MULTISYNTH_SHARE_MAX     112500000
+#define SI5351_MULTISYNTH_SHARE_MAX     100000000
 #define SI5351_MULTISYNTH_SHARE_MIN     1024000
 #define SI5351_MULTISYNTH67_MAX_FREQ    SI5351_MULTISYNTH_DIVBY4_FREQ
 #define SI5351_CLKOUT_MIN_FREQ          4000
@@ -279,7 +279,7 @@ struct Si5351IntStatus
 class Si5351
 {
 public:
-Si5351(void);
+  Si5351(uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
 	void init(uint8_t, uint32_t, int32_t);
 	void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
@@ -322,6 +322,7 @@ private:
 	uint8_t select_r_div(uint64_t *);
 	uint8_t select_r_div_ms67(uint64_t *);
 	int32_t ref_correction;
+  uint8_t i2c_bus_addr;
 };
 
 #endif /* SI5351_H_ */
