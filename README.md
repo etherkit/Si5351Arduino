@@ -258,7 +258,7 @@ Constraints
 
 Public Methods
 --------------
-###init()
+### init()
 ```
 /*
  * init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
@@ -275,7 +275,7 @@ Public Methods
  */
 void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_freq)
 ```
-###reset()
+### reset()
 ```
 /*
  * reset(void)
@@ -285,7 +285,7 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_f
  */
 void Si5351::reset(void)
 ```
-###set_freq()
+### set_freq()
 ```
 /*
  * set_freq(uint64_t freq, enum si5351_clock clk)
@@ -298,7 +298,7 @@ void Si5351::reset(void)
  */
 uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 ```
-###set_freq_manual()
+### set_freq_manual()
 ```
 /*
  * set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
@@ -316,7 +316,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  *   (use the si5351_clock enum)
  */
 ```
-###set_pll()
+### set_pll()
 ```
 /*
  * set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
@@ -329,7 +329,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  */
 void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 ```
-###set_ms()
+### set_ms()
 ```
 /*
  * set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t int_mode, uint8_t r_div, uint8_t div_by_4)
@@ -346,7 +346,7 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
  */
 void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t int_mode, uint8_t r_div, uint8_t div_by_4)
 ```
-###output_enable()
+### output_enable()
 ```
 /*
  * output_enable(enum si5351_clock clk, uint8_t enable)
@@ -358,7 +358,7 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
  */
 void Si5351::output_enable(enum si5351_clock clk, uint8_t enable)
 ```
-###drive_strength()
+### drive_strength()
 ```
 /*
  * drive_strength(enum si5351_clock clk, enum si5351_drive drive)
@@ -372,7 +372,7 @@ void Si5351::output_enable(enum si5351_clock clk, uint8_t enable)
  */
 void Si5351::drive_strength(enum si5351_clock clk, enum si5351_drive drive)
 ```
-###update_status()
+### update_status()
 ```
 /*
  * update_status(void)
@@ -386,7 +386,7 @@ void Si5351::drive_strength(enum si5351_clock clk, enum si5351_drive drive)
  */
 void Si5351::update_status(void)
 ```
-###set_correction()
+### set_correction()
 ```
 /*
  * set_correction(int32_t corr)
@@ -412,7 +412,7 @@ void Si5351::update_status(void)
  */
 void Si5351::set_correction(int32_t corr)
 ```
-###set_phase()
+### set_phase()
 ```
 /*
  * set_phase(enum si5351_clock clk, uint8_t phase)
@@ -428,7 +428,7 @@ void Si5351::set_correction(int32_t corr)
  */
 void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 ```
-###get_correction()
+### get_correction()
 ```
 /*
  * get_correction(void)
@@ -438,7 +438,7 @@ void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
  */
 int32_t Si5351::get_correction(void)
 ```
-###pll_reset()
+### pll_reset()
 ```
 /*
  * pll_reset(enum si5351_pll target_pll)
@@ -450,7 +450,7 @@ int32_t Si5351::get_correction(void)
  */
 void Si5351::pll_reset(enum si5351_pll target_pll)
 ```
-###set_ms_source()
+### set_ms_source()
 ```
 /*
  * set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
@@ -464,7 +464,7 @@ void Si5351::pll_reset(enum si5351_pll target_pll)
  */
 void Si5351::set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
 ```
-###set_int()
+### set_int()
 ```
 /*
  * set_int(enum si5351_clock clk, uint8_t int_mode)
@@ -477,7 +477,7 @@ void Si5351::set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
  */
 void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
 ```
-###set_clock_pwr()
+### set_clock_pwr()
 ```
 /*
  * set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
@@ -491,7 +491,7 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
  */
 void Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
 ```
-###set_clock_invert()
+### set_clock_invert()
 ```
 /*
  * set_clock_invert(enum si5351_clock clk, uint8_t inv)
@@ -504,7 +504,7 @@ void Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
  */
 void Si5351::set_clock_invert(enum si5351_clock clk, uint8_t inv)
 ```
-###set_clock_source()
+### set_clock_source()
 ```
 /*
  * set_clock_source(enum si5351_clock clk, enum si5351_clock_source src)
@@ -521,7 +521,7 @@ void Si5351::set_clock_invert(enum si5351_clock clk, uint8_t inv)
  */
 void Si5351::set_clock_source(enum si5351_clock clk, enum si5351_clock_source src)
 ```
-###set_clock_disable()
+### set_clock_disable()
 ```
 /*
  * set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable dis_state)
@@ -537,7 +537,7 @@ void Si5351::set_clock_source(enum si5351_clock clk, enum si5351_clock_source sr
  */
 void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable dis_state)
 ```
-###set_clock_fanout()
+### set_clock_fanout()
 ```
 /*
  * set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
@@ -554,7 +554,7 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
  */
 void Si5351::set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
 ```
-###set_pll_input()
+### set_pll_input()
 ```
 /*
  * set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
@@ -568,15 +568,15 @@ void Si5351::set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
  */
 void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 ```
-###si5351_write_bulk()
+### si5351_write_bulk()
 ```
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
 ```
-###si5351_write()
+### si5351_write()
 ```
 uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 ```
-###si5351_read()
+### si5351_read()
 ```
 uint8_t Si5351::si5351_read(uint8_t addr)
 
