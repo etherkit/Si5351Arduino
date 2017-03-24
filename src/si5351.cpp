@@ -282,7 +282,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		}
 		else
 		{
-			//uint64_t temp_freq = freq;
 			clk_freq[(uint8_t)clk] = freq;
 
 			// Enable the output
