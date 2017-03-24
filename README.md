@@ -584,13 +584,13 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 
 Public Variables
 ----------------
-  struct Si5351Status dev_status;
-	struct Si5351IntStatus dev_int_status;
-  enum si5351_pll pll_assignment[8];
-  uint64_t clk_freq[8];
-	uint64_t plla_freq;
-	uint64_t pllb_freq;
-  uint32_t xtal_freq;
+    struct Si5351Status dev_status;
+    struct Si5351IntStatus dev_int_status;
+    enum si5351_pll pll_assignment[8];
+    uint64_t clk_freq[8];
+    uint64_t plla_freq;
+    uint64_t pllb_freq;
+    uint32_t xtal_freq;
 
 Tokens
 ------
@@ -666,7 +666,7 @@ Changelog
 * v2.0.3
 
     * Fix regression in _set_freq()_ that wiped out proper R div setting, causing errors in setting low frequency outputs
-    
+
 * v2.0.2
 
     * Increase maximum frequency in _set_freq()_ to 225 MHz
