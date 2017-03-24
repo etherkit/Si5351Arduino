@@ -282,6 +282,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		}
 		else
 		{
+			//uint64_t temp_freq = freq;
 			clk_freq[(uint8_t)clk] = freq;
 
 			// Enable the output
@@ -302,7 +303,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 			// Set multisynth registers
 			set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
-			ms_div(clk, 0, 0);
 
 			// Reset the PLL
 			pll_reset(pll_assignment[clk]);
