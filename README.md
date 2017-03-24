@@ -663,6 +663,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+* v2.0.3
+
+    * Fix regression in _set_freq()_ that wiped out proper R div setting, causing errors in setting low frequency outputs
+    
 * v2.0.2
 
     * Increase maximum frequency in _set_freq()_ to 225 MHz
