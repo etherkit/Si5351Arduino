@@ -69,7 +69,7 @@
 #define SI5351_MULTISYNTH_P3_MAX        ((1<<20)-1)
 #define SI5351_VCXO_PULL_MIN            30
 #define SI5351_VCXO_PULL_MAX            240
-#define SI5351_VCXO_MARGIN              1030000
+#define SI5351_VCXO_MARGIN              103
 
 #define SI5351_DEVICE_STATUS            0
 #define SI5351_INTERRUPT_STATUS         1

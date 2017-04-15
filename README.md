@@ -249,6 +249,8 @@ PLLA and PLLB are set to 800 MHz (also defined as _SI5351_PLL_FIXED_ in the libr
 
 All CLK outputs are set to 0 Hz and disabled.
 
+Default drive strength is 2 mA on each output.
+
 Constraints
 -----------
 * Two multisynths cannot share a PLL with when both outputs are >= 100 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
@@ -663,6 +665,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+* v2.0.4
+
+    * Fix error in VCXO algorithm
+
 * v2.0.3
 
     * Fix regression in _set_freq()_ that wiped out proper R div setting, causing errors in setting low frequency outputs

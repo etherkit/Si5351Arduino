@@ -1197,7 +1197,7 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 	delete params;
 
 	// Write the VCXO parameters
-	vcxo_param = (vcxo_param * ppm) / RFRAC_DENOM;
+	vcxo_param = ((vcxo_param * ppm * SI5351_VCXO_MARGIN) / 100ULL) / 1000000ULL;
 
 	temp = (uint8_t)(vcxo_param & 0xFF);
 	si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
@@ -1319,7 +1319,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 
 	if(vcxo)
 	{
-		return (uint64_t)(128 * a * SI5351_VCXO_MARGIN + b * SI5351_VCXO_MARGIN);
+		return (uint64_t)(128 * a * 1000000ULL + b);
 	}
 	else
 	{
