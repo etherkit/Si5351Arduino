@@ -665,6 +665,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 
+* v2.0.5
+
+    * Remove PLL reset from set_freq() when not necessary
+
 * v2.0.4
 
     * Fix error in VCXO algorithm

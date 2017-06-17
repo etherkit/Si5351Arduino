@@ -304,7 +304,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
 
 			// Reset the PLL
-			pll_reset(pll_assignment[clk]);
+			//pll_reset(pll_assignment[clk]);
 		}
 
 		return 0;
