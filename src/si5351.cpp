@@ -768,6 +768,10 @@ void Si5351::update_status(void)
 void Si5351::set_correction(int32_t corr)
 {
 	ref_correction = corr;
+
+	// Recalculate and set PLL freqs based on correction value
+	set_pll(plla_freq, SI5351_PLLA);
+	set_pll(pllb_freq, SI5351_PLLB);
 }
 
 /*
