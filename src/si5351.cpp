@@ -913,7 +913,7 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
  */
 void Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
 {
-	uint8_t reg_val, reg;
+	uint8_t reg_val; //, reg;
 	reg_val = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
 
 	if(pwr == 1)
@@ -1261,7 +1261,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 {
 	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
-	uint64_t lltmp, denom;
+	uint64_t lltmp; //, denom;
 
 	// Factor calibration value into nominal crystal frequency
 	// Measured in parts-per-billion
@@ -1435,7 +1435,7 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
 {
 	//uint8_t p1;
-	uint8_t ret_val = 0;
+	// uint8_t ret_val = 0;
 	uint32_t a;
 	uint64_t lltmp;
 
