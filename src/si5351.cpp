@@ -486,6 +486,8 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 
 	// Set multisynth registers (MS must be set before PLL)
 	set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
+
+    return 0;
 }
 
 /*
@@ -1221,7 +1223,8 @@ uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
 	{
 		Wire.write(data[i]);
 	}
-	Wire.endTransmission();
+	return Wire.endTransmission();
+
 }
 
 uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
@@ -1229,7 +1232,7 @@ uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 	Wire.beginTransmission(i2c_bus_addr);
 	Wire.write(addr);
 	Wire.write(data);
-	Wire.endTransmission();
+	return Wire.endTransmission();
 }
 
 uint8_t Si5351::si5351_read(uint8_t addr)
