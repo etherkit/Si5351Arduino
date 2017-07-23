@@ -1237,7 +1237,7 @@ uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 
 uint8_t Si5351::si5351_read(uint8_t addr)
 {
-	uint8_t reg_val;
+	uint8_t reg_val = 0;
 
 	Wire.beginTransmission(i2c_bus_addr);
 	Wire.write(addr);
@@ -1550,7 +1550,8 @@ void Si5351::update_int_status(struct Si5351IntStatus *int_status)
 
 void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 {
-	uint8_t reg_val, reg_addr;
+	uint8_t reg_val = 0;
+    uint8_t reg_addr = 0;
 
 	switch(clk)
 	{
