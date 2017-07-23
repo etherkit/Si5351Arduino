@@ -486,6 +486,8 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 
 	// Set multisynth registers (MS must be set before PLL)
 	set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
+
+    return 0;
 }
 
 /*
@@ -911,7 +913,7 @@ void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
  */
 void Si5351::set_clock_pwr(enum si5351_clock clk, uint8_t pwr)
 {
-	uint8_t reg_val, reg;
+	uint8_t reg_val; //, reg;
 	reg_val = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
 
 	if(pwr == 1)
@@ -1221,7 +1223,8 @@ uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
 	{
 		Wire.write(data[i]);
 	}
-	Wire.endTransmission();
+	return Wire.endTransmission();
+
 }
 
 uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
@@ -1229,12 +1232,12 @@ uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 	Wire.beginTransmission(i2c_bus_addr);
 	Wire.write(addr);
 	Wire.write(data);
-	Wire.endTransmission();
+	return Wire.endTransmission();
 }
 
 uint8_t Si5351::si5351_read(uint8_t addr)
 {
-	uint8_t reg_val;
+	uint8_t reg_val = 0;
 
 	Wire.beginTransmission(i2c_bus_addr);
 	Wire.write(addr);
@@ -1258,7 +1261,7 @@ uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t corre
 {
 	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
-	uint64_t lltmp, denom;
+	uint64_t lltmp; //, denom;
 
 	// Factor calibration value into nominal crystal frequency
 	// Measured in parts-per-billion
@@ -1432,7 +1435,7 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
 {
 	//uint8_t p1;
-	uint8_t ret_val = 0;
+	// uint8_t ret_val = 0;
 	uint32_t a;
 	uint64_t lltmp;
 
@@ -1547,7 +1550,8 @@ void Si5351::update_int_status(struct Si5351IntStatus *int_status)
 
 void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 {
-	uint8_t reg_val, reg_addr;
+	uint8_t reg_val = 0;
+    uint8_t reg_addr = 0;
 
 	switch(clk)
 	{
