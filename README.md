@@ -666,6 +666,10 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.0.7
+
+    * Change _set_freq()_ behavior so that the output is only automatically enabled the very first time that _set_freq()_ is called
+
 * v2.0.6
 
     * Call _set_pll()_ in _set_correction()_ to ensure that the new correction factor is applied

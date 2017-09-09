@@ -308,6 +308,7 @@ public:
 	struct Si5351Status dev_status;
 	struct Si5351IntStatus dev_int_status;
 	enum si5351_pll pll_assignment[8];
+  bool clk_first_set[8];
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;

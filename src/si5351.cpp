@@ -125,7 +125,6 @@ void Si5351::reset(void)
 	si5351_write(22, 0x80);
 	si5351_write(23, 0x80);
 
-
 	// Turn the clocks back on...
 	si5351_write(16, 0x0c);
 	si5351_write(17, 0x0c);
@@ -174,6 +173,7 @@ void Si5351::reset(void)
 	{
 		clk_freq[i] = 0;
 		output_enable((enum si5351_clock)i, 0);
+		clk_first_set[i] = false;
 	}
 }
 
@@ -231,8 +231,12 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 				}
 			}
 
-			// Enable the output
-			output_enable(clk, 1);
+			// Enable the output on first set_freq only
+			if(clk_first_set[(uint8_t)clk] == false)
+			{
+				output_enable(clk, 1);
+				clk_first_set[(uint8_t)clk] = true;
+			}
 
 			// Set the freq in memory
 			clk_freq[(uint8_t)clk] = freq;
@@ -284,8 +288,12 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		{
 			clk_freq[(uint8_t)clk] = freq;
 
-			// Enable the output
-			output_enable(clk, 1);
+			// Enable the output on first set_freq only
+			if(clk_first_set[(uint8_t)clk] == false)
+			{
+				output_enable(clk, 1);
+				clk_first_set[(uint8_t)clk] = true;
+			}
 
 			// Select the proper R div value
 			r_div = select_r_div(&freq);
@@ -415,9 +423,6 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 				set_pll(pll_freq, pll_assignment[clk]);
 			}
 		}
-
-		// Enable the output
-		output_enable(clk, 1);
 
 		div_by_4 = 0;
 		int_mode = 0;
