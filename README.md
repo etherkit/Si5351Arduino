@@ -135,7 +135,7 @@ There will be some inherent error in the reference oscillator's actual frequency
 
 The calibration method is called like this:
 
-    si5351.set_correction(-6190);
+    si5351.set_correction(-6190, SI5351_PLL_INPUT_XO);
 
 However, you may use the third argument in the _init()_ method to specify the frequency correction and may not actually need to use the explict _set_correction()_ method in your code.
 
