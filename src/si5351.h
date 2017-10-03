@@ -248,7 +248,7 @@ enum si5351_clock_disable {SI5351_CLK_DISABLE_LOW, SI5351_CLK_DISABLE_HIGH, SI53
 
 enum si5351_clock_fanout {SI5351_FANOUT_CLKIN, SI5351_FANOUT_XO, SI5351_FANOUT_MS};
 
-enum si5351_pll_input{SI5351_PLL_INPUT_XO, SI5351_PLL_INPUT_CLKIN};
+enum si5351_pll_input {SI5351_PLL_INPUT_XO, SI5351_PLL_INPUT_CLKIN};
 
 /* Struct definitions */
 
@@ -289,9 +289,9 @@ public:
 	void output_enable(enum si5351_clock, uint8_t);
 	void drive_strength(enum si5351_clock, enum si5351_drive);
 	void update_status(void);
-	void set_correction(int32_t);
+	void set_correction(int32_t, enum si5351_pll_input);
 	void set_phase(enum si5351_clock, uint8_t);
-	int32_t get_correction(void);
+	int32_t get_correction(enum si5351_pll_input);
 	void pll_reset(enum si5351_pll);
 	void set_ms_source(enum si5351_clock, enum si5351_pll);
 	void set_int(enum si5351_clock, uint8_t);
@@ -302,19 +302,21 @@ public:
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
 	void set_pll_input(enum si5351_pll, enum si5351_pll_input);
 	void set_vcxo(uint64_t, uint8_t);
+  void set_ref_freq(uint32_t, enum si5351_pll_input);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
 	struct Si5351Status dev_status;
 	struct Si5351IntStatus dev_int_status;
 	enum si5351_pll pll_assignment[8];
-  bool clk_first_set[8];
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
-	uint32_t xtal_freq;
+  enum si5351_pll_input plla_ref_osc;
+  enum si5351_pll_input pllb_ref_osc;
+	uint32_t xtal_freq[2];
 private:
-	uint64_t pll_calc(uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
+	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	void update_sys_status(struct Si5351Status *);
@@ -322,8 +324,10 @@ private:
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
 	uint8_t select_r_div(uint64_t *);
 	uint8_t select_r_div_ms67(uint64_t *);
-	int32_t ref_correction;
+	int32_t ref_correction[2];
+  uint8_t clkin_div;
   uint8_t i2c_bus_addr;
+  bool clk_first_set[8];
 };
 
 #endif /* SI5351_H_ */

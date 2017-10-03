@@ -47,7 +47,12 @@ Si5351::Si5351(uint8_t i2c_addr):
 	dev_int_status.LOL_A_STKY = 0;
 	dev_int_status.LOS_STKY = 0;
 
-	xtal_freq = SI5351_XTAL_FREQ;
+	xtal_freq[0] = SI5351_XTAL_FREQ;
+
+	// Start by using XO ref osc as default for each PLL
+	plla_ref_osc = SI5351_PLL_INPUT_XO;
+	pllb_ref_osc = SI5351_PLL_INPUT_XO;
+	clkin_div = SI5351_CLKIN_DIV_1;
 }
 
 /*
@@ -58,12 +63,12 @@ Si5351::Si5351(uint8_t i2c_addr):
  *
  * xtal_load_c - Crystal load capacitance. Use the SI5351_CRYSTAL_LOAD_*PF
  * defines in the header file
- * ref_osc_freq - Crystal/reference oscillator frequency in 1 Hz increments.
+ * xo_freq - Crystal/reference oscillator frequency in 1 Hz increments.
  * Defaults to 25000000 if a 0 is used here.
  * corr - Frequency correction constant in parts-per-billion
  *
  */
-void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
+void Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 {
 	// Start I2C comms
 	Wire.begin();
@@ -71,37 +76,18 @@ void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, int32_t corr)
 	// Set crystal load capacitance
 	si5351_write(SI5351_CRYSTAL_LOAD, (xtal_load_c & SI5351_CRYSTAL_LOAD_MASK) | 0b00010010);
 
-	// Change the ref osc freq if different from default
-	// Divide down if greater than 30 MHz
-	if (ref_osc_freq != 0)
+	// Set up the XO reference frequency
+	if (xo_freq != 0)
 	{
-		uint8_t reg_val;
-		reg_val = si5351_read(SI5351_PLL_INPUT_SOURCE);
-
-		// Clear the bits first
-		reg_val &= ~(SI5351_CLKIN_DIV_MASK);
-
-		if(ref_osc_freq <= 30000000UL)
-		{
-			xtal_freq = ref_osc_freq;
-			reg_val |= SI5351_CLKIN_DIV_1;
-		}
-		else if(ref_osc_freq > 30000000UL && ref_osc_freq <= 60000000UL)
-		{
-			xtal_freq = ref_osc_freq / 2;
-			reg_val |= SI5351_CLKIN_DIV_2;
-		}
-		else if(ref_osc_freq > 60000000UL && ref_osc_freq <= 100000000UL)
-		{
-			xtal_freq = ref_osc_freq / 4;
-			reg_val |= SI5351_CLKIN_DIV_4;
-		}
-
-		si5351_write(SI5351_PLL_INPUT_SOURCE, reg_val);
+		set_ref_freq(xo_freq, SI5351_PLL_INPUT_XO);
+	}
+	else
+	{
+		set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_XO);
 	}
 
-	// Set the frequency calibration
-	set_correction(corr);
+	// Set the frequency calibration for the XO
+	set_correction(corr, SI5351_PLL_INPUT_XO);
 
 	reset();
 }
@@ -135,7 +121,7 @@ void Si5351::reset(void)
 	si5351_write(22, 0x0c);
 	si5351_write(23, 0x0c);
 
-	// Set PLLA to 800 MHz for automatic tuning
+	// Set PLLA and PLLB to 800 MHz for automatic tuning
 	set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
 	set_pll(SI5351_PLL_FIXED, SI5351_PLLB);
 
@@ -445,7 +431,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  * track that all settings are sane yourself.
  *
  * freq - Output frequency in Hz
- * pll_freq - Frequency of the PLL driving the Multisynth
+ * pll_freq - Frequency of the PLL driving the Multisynth in Hz * 100
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
@@ -500,7 +486,7 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
  *
  * Set the specified PLL to a specific oscillation frequency
  *
- * pll_freq - Desired PLL frequency
+ * pll_freq - Desired PLL frequency in Hz * 100
  * target_pll - Which PLL to set
  *     (use the si5351_pll enum)
  */
@@ -508,7 +494,14 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 {
   struct Si5351RegSet pll_reg;
 
-  pll_calc(pll_freq, &pll_reg, ref_correction, 0);
+	if(target_pll == SI5351_PLLA)
+	{
+		pll_calc(SI5351_PLLA, pll_freq, &pll_reg, ref_correction[plla_ref_osc], 0);
+	}
+	else
+	{
+		pll_calc(SI5351_PLLB, pll_freq, &pll_reg, ref_correction[pllb_ref_osc], 0);
+	}
 
   // Derive the register values to write
 
@@ -751,7 +744,11 @@ void Si5351::update_status(void)
 }
 
 /*
- * set_correction(int32_t corr)
+ * set_correction(int32_t corr, enum si5351_pll_input ref_osc)
+ *
+ * corr - Correction factor in ppb
+ * ref_osc - Desired reference oscillator
+ *     (use the si5351_pll_input enum)
  *
  * Use this to set the oscillator correction factor.
  * This value is a signed 32-bit integer of the
@@ -772,9 +769,9 @@ void Si5351::update_status(void)
  * should not have to be done again for the same Si5351 and
  * crystal.
  */
-void Si5351::set_correction(int32_t corr)
+void Si5351::set_correction(int32_t corr, enum si5351_pll_input ref_osc)
 {
-	ref_correction = corr;
+	ref_correction[(uint8_t)ref_osc] = corr;
 
 	// Recalculate and set PLL freqs based on correction value
 	set_pll(plla_freq, SI5351_PLLA);
@@ -802,14 +799,18 @@ void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 }
 
 /*
- * get_correction(void)
+ * get_correction(enum si5351_pll_input ref_osc)
+ *
+ * ref_osc - Desired reference oscillator
+ *     0: crystal oscillator (XO)
+ *     1: external clock input (CLKIN)
  *
  * Returns the oscillator correction factor stored
  * in RAM.
  */
-int32_t Si5351::get_correction(void)
+int32_t Si5351::get_correction(enum si5351_pll_input ref_osc)
 {
-	return ref_correction;
+	return ref_correction[(uint8_t)ref_osc];
 }
 
 /*
@@ -1117,26 +1118,35 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 	uint8_t reg_val;
 	reg_val = si5351_read(SI5351_PLL_INPUT_SOURCE);
 
+	// Clear the bits first
+	//reg_val &= ~(SI5351_CLKIN_DIV_MASK);
+
 	switch(pll)
 	{
 	case SI5351_PLLA:
 		if(input == SI5351_PLL_INPUT_CLKIN)
 		{
 			reg_val |= SI5351_PLLA_SOURCE;
+			reg_val |= clkin_div;
+			plla_ref_osc = SI5351_PLL_INPUT_CLKIN;
 		}
 		else
 		{
 			reg_val &= ~(SI5351_PLLA_SOURCE);
+			plla_ref_osc = SI5351_PLL_INPUT_XO;
 		}
 		break;
 	case SI5351_PLLB:
 		if(input == SI5351_PLL_INPUT_CLKIN)
 		{
 			reg_val |= SI5351_PLLB_SOURCE;
+			reg_val |= clkin_div;
+			pllb_ref_osc = SI5351_PLL_INPUT_CLKIN;
 		}
 		else
 		{
 			reg_val &= ~(SI5351_PLLB_SOURCE);
+			pllb_ref_osc = SI5351_PLL_INPUT_XO;
 		}
 		break;
 	default:
@@ -1144,8 +1154,19 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 	}
 
 	si5351_write(SI5351_PLL_INPUT_SOURCE, reg_val);
+
+	set_pll(plla_freq, SI5351_PLLA);
+	set_pll(pllb_freq, SI5351_PLLB);
 }
 
+/*
+ * set_vcxo(uint64_t pll_freq, uint8_t ppm)
+ *
+ * pll_freq - Desired PLL base frequency in Hz * 100
+ * ppm - VCXO pull limit in ppm
+ *
+ * Set the parameters for the VCXO on the Si5351B.
+ */
 void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 {
 	struct Si5351RegSet pll_reg;
@@ -1163,7 +1184,7 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 	}
 
 	// Set PLLB params
-	vcxo_param = pll_calc(pll_freq, &pll_reg, ref_correction, 1);
+	vcxo_param = pll_calc(SI5351_PLLB, pll_freq, &pll_reg, ref_correction[pllb_ref_osc], 1);
 
 	// Derive the register values to write
 
@@ -1220,6 +1241,58 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 	si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
 }
 
+/*
+ * set_ref_freq(uint32_t ref_freq, enum si5351_pll_input ref_osc)
+ *
+ * ref_freq - Reference oscillator frequency in Hz
+ * ref_osc - Which reference oscillator frequency to set
+ *    (use the si5351_pll_input enum)
+ *
+ * Set the reference frequency value for the desired reference oscillator
+ */
+void Si5351::set_ref_freq(uint32_t ref_freq, enum si5351_pll_input ref_osc)
+{
+	// uint8_t reg_val;
+	//reg_val = si5351_read(SI5351_PLL_INPUT_SOURCE);
+
+	// Clear the bits first
+	//reg_val &= ~(SI5351_CLKIN_DIV_MASK);
+
+	if(ref_freq <= 30000000UL)
+	{
+		xtal_freq[(uint8_t)ref_osc] = ref_freq;
+		//reg_val |= SI5351_CLKIN_DIV_1;
+		if(ref_osc == SI5351_PLL_INPUT_CLKIN)
+		{
+			clkin_div = SI5351_CLKIN_DIV_1;
+		}
+	}
+	else if(ref_freq > 30000000UL && ref_freq <= 60000000UL)
+	{
+		xtal_freq[(uint8_t)ref_osc] = ref_freq / 2;
+		//reg_val |= SI5351_CLKIN_DIV_2;
+		if(ref_osc == SI5351_PLL_INPUT_CLKIN)
+		{
+			clkin_div = SI5351_CLKIN_DIV_2;
+		}
+	}
+	else if(ref_freq > 60000000UL && ref_freq <= 100000000UL)
+	{
+		xtal_freq[(uint8_t)ref_osc] = ref_freq / 4;
+		//reg_val |= SI5351_CLKIN_DIV_4;
+		if(ref_osc == SI5351_PLL_INPUT_CLKIN)
+		{
+			clkin_div = SI5351_CLKIN_DIV_4;
+		}
+	}
+	else
+	{
+		//reg_val |= SI5351_CLKIN_DIV_1;
+	}
+
+	//si5351_write(SI5351_PLL_INPUT_SOURCE, reg_val);
+}
+
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
 {
 	Wire.beginTransmission(i2c_bus_addr);
@@ -1262,9 +1335,18 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 /* Private functions */
 /*********************/
 
-uint64_t Si5351::pll_calc(uint64_t freq, struct Si5351RegSet *reg, int32_t correction, uint8_t vcxo)
+uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSet *reg, int32_t correction, uint8_t vcxo)
 {
-	uint64_t ref_freq = xtal_freq * SI5351_FREQ_MULT;
+	uint64_t ref_freq;
+	if(pll == SI5351_PLLA)
+	{
+		ref_freq = xtal_freq[(uint8_t)plla_ref_osc] * SI5351_FREQ_MULT;
+	}
+	else
+	{
+		ref_freq = xtal_freq[(uint8_t)pllb_ref_osc] * SI5351_FREQ_MULT;
+	}
+	//ref_freq = 15974400ULL * SI5351_FREQ_MULT;
 	uint32_t a, b, c, p1, p2, p3;
 	uint64_t lltmp; //, denom;
 

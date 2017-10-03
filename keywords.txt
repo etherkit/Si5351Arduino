@@ -22,6 +22,7 @@ set_clock_disable	KEYWORD2
 set_clock_fanout	KEYWORD2
 set_pll_input	KEYWORD2
 set_vcxo	KEYWORD2
+set_ref_freq	KEYWORD2
 si5351_write_bulk	KEYWORD2
 si5351_write	KEYWORD2
 si5351_read	KEYWORD2
@@ -32,6 +33,8 @@ clk_freq	KEYWORD2
 plla_freq	KEYWORD2
 pllb_freq	KEYWORD2
 xtal_freq	KEYWORD2
+plla_ref_osc	KEYWORD2
+pllb_ref_osc	KEYWORD2
 
 SI5351_PLL_FIXED	LITERAL1
 SI5351_FREQ_MULT	LITERAL1

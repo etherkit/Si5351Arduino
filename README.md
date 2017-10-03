@@ -135,7 +135,7 @@ There will be some inherent error in the reference oscillator's actual frequency
 
 The calibration method is called like this:
 
-    si5351.set_correction(-6190);
+    si5351.set_correction(-6190, SI5351_PLL_INPUT_XO);
 
 However, you may use the third argument in the _init()_ method to specify the frequency correction and may not actually need to use the explict _set_correction()_ method in your code.
 
@@ -219,10 +219,17 @@ Using an External Reference (Si5351C)
 -------------------------------------
 _Please see the example sketch **si5351_ext_ref.ino**_
 
-The Si5351C variant has a CLKIN input (pin 6) which allows the use of an alternate external CMOS clock reference from 10 to 100 MHz. Either PLLA and/or PLLB can be locked to this external reference. The library currently only supports the calculations to use one reference signal, which is declared at initialization:
+The Si5351C variant has a CLKIN input (pin 6) which allows the use of an alternate external CMOS clock reference from 10 to 100 MHz. Either PLLA and/or PLLB can be locked to this external reference. The library tracks the referenced frequencies and correction factors individually for both the crystal oscillator reference (XO) and external reference (CLKIN).
 
-    // Initialize the Si5351 to use a 10 MHz clock input on CLKIN
-    si5351.init(SI5351_CRYSTAL_LOAD_0PF, 10000000UL, 0);
+The XO reference frequency is set during the call to _init()_. If you are going to use the external reference clock, then set its nominal frequency with the _set_ref_freq()_ method:
+
+    // Set the CLKIN reference frequency to 10 MHz
+    si5351.set_ref_freq(10000000UL, SI5351_PLL_INPUT_CLKIN);
+
+A correction factor for the external reference clock may also now be set:
+
+    // Apply a correction factor to CLKIN
+    si5351.set_correction(0, SI5351_PLL_INPUT_CLKIN);
 
 The _set_pll_input()_ method is used to set the desired PLLs to reference to the external reference signal on CLKIN instead of the XO signal:
 
@@ -230,7 +237,7 @@ The _set_pll_input()_ method is used to set the desired PLLs to reference to the
     si5351.set_pll_input(SI5351_PLLA, SI5351_PLL_INPUT_CLKIN);
     si5351.set_pll_input(SI5351_PLLB, SI5351_PLL_INPUT_CLKIN);
 
-Once that is set, the library can be used as you normally would, with all of the frequency calculations done based on the reference frequency set in _init()_.
+Once that is set, the library can be used as you normally would, with all of the frequency calculations done based on the reference frequency set in _set_ref_freq()_.
 
 
 Alternate I2C Addresses
@@ -313,7 +320,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  * track that all settings are sane yourself.
  *
  * freq - Output frequency in Hz
- * pll_freq - Frequency of the PLL driving the Multisynth
+ * pll_freq - Frequency of the PLL driving the Multisynth in Hz * 100
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
@@ -325,7 +332,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  *
  * Set the specified PLL to a specific oscillation frequency
  *
- * pll_freq - Desired PLL frequency
+ * pll_freq - Desired PLL frequency in Hz * 100
  * target_pll - Which PLL to set
  *     (use the si5351_pll enum)
  */
@@ -391,7 +398,11 @@ void Si5351::update_status(void)
 ### set_correction()
 ```
 /*
- * set_correction(int32_t corr)
+ * set_correction(int32_t corr, enum si5351_pll_input ref_osc)
+ *
+ * corr - Correction factor in ppb
+ * ref_osc - Desired reference oscillator
+ *     (use the si5351_pll_input enum)
  *
  * Use this to set the oscillator correction factor.
  * This value is a signed 32-bit integer of the
@@ -412,7 +423,7 @@ void Si5351::update_status(void)
  * should not have to be done again for the same Si5351 and
  * crystal.
  */
-void Si5351::set_correction(int32_t corr)
+void Si5351::set_correction(int32_t corr, enum si5351_pll_input ref_osc)
 ```
 ### set_phase()
 ```
@@ -433,12 +444,16 @@ void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 ### get_correction()
 ```
 /*
- * get_correction(void)
+ * get_correction(enum si5351_pll_input ref_osc)
+ *
+ * ref_osc - Desired reference oscillator
+ *     0: crystal oscillator (XO)
+ *     1: external clock input (CLKIN)
  *
  * Returns the oscillator correction factor stored
  * in RAM.
  */
-int32_t Si5351::get_correction(void)
+int32_t Si5351::get_correction(enum si5351_pll_input ref_osc)
 ```
 ### pll_reset()
 ```
@@ -570,6 +585,31 @@ void Si5351::set_clock_fanout(enum si5351_clock_fanout fanout, uint8_t enable)
  */
 void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 ```
+### set_vcxo()
+```
+/*
+ * set_vcxo(uint64_t pll_freq, uint8_t ppm)
+ *
+ * pll_freq - Desired PLL base frequency in Hz * 100
+ * ppm - VCXO pull limit in ppm
+ *
+ * Set the parameters for the VCXO on the Si5351B.
+ */
+void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
+```
+### set_ref_freq()
+```
+/*
+ * set_ref_freq(uint32_t ref_freq, enum si5351_pll_input ref_osc)
+ *
+ * ref_freq - Reference oscillator frequency in Hz
+ * ref_osc - Which reference oscillator frequency to set
+ *    (use the si5351_pll_input enum)
+ *
+ * Set the reference frequency value for the desired reference oscillator
+ */
+void Si5351::set_ref_freq(uint32_t ref_freq, enum si5351_pll_input ref_osc)
+```
 ### si5351_write_bulk()
 ```
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
@@ -665,6 +705,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+
+* v2.1.0
+
+    * Add support for reference frequencies and corrections for both the XO and CLKIN
 
 * v2.0.7
 
