@@ -51,7 +51,9 @@ Before you do anything with the Si5351, you will need to include the "si5351.h" 
 
 Now in the _Setup()_ function, let's initialize communications with the Si5351, specify the load capacitance of the reference crystal, that we want to use the default reference oscillator frequency of 25 MHz (the second argument of "0" indicates that we want to use the default), and that we will apply no frequency correction at this point (the third argument of "0"):
 
-    si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+    i2c_found = si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+
+The _init()_ method returns a _bool_ which indicates whether the Arduino can communicate with a device on the I2C bus at the specified address (it does not verify that the device is an actual Si5351, but this is useful for ensuring that I2C communication is working).
 
 Next, let's set the CLK0 output to 14 MHz:
 
@@ -277,12 +279,15 @@ Public Methods
  *
  * xtal_load_c - Crystal load capacitance. Use the SI5351_CRYSTAL_LOAD_*PF
  * defines in the header file
- * ref_osc_freq - Crystal/reference oscillator frequency in 1 Hz increments.
+ * xo_freq - Crystal/reference oscillator frequency in 1 Hz increments.
  * Defaults to 25000000 if a 0 is used here.
  * corr - Frequency correction constant in parts-per-billion
  *
+ * Returns a boolean that indicates whether a device was found on the desired
+ * I2C address.
+ *
  */
-void Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_freq)
+bool Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_freq)
 ```
 ### reset()
 ```
