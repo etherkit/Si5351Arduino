@@ -711,6 +711,10 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.1.1
+
+    * Add bool return value to _init()_ indicating whether a device is on the I2C bus
+    
 * v2.1.0
 
     * Add support for reference frequencies and corrections for both the XO and CLKIN
