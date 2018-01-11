@@ -552,6 +552,75 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 		pllb_freq = pll_freq;
   }
 
+  // write the correct spread spectrum parameters in case that feature is enabled by physical pin
+  if(target_pll == SI5351_PLLA)
+  {
+    i = 0;
+    
+    uint16_t ssudp = (uint16_t)((uint32_t)xtal_freq[(uint8_t)plla_ref_osc] / (4ULL * 31500ULL));
+    uint64_t ssud = ((uint64_t)32768 * (uint64_t)128 * (((uint64_t)pll_reg.a * (uint64_t)pll_reg.c) + (uint64_t)pll_reg.b) * (uint64_t)SI5351_SSCAMP_x1000) / (((uint64_t)1000 - (uint64_t)SI5351_SSCAMP_x1000) * (uint64_t)ssudp * (uint64_t)pll_reg.c);
+    uint16_t ssud_p1 = (uint16_t)((ssud >> 15) & 0x0fff);
+    uint16_t ssud_p2 = (uint16_t)((ssud >> 0) & 0x3fff);
+    uint16_t ssud_p3 = 0x7fff;
+
+    // Registers 149
+	// use "0x80  | ..." in order to enable the spread spectrum feature
+	// enable is the OR between bit 7 and physical pin
+    temp = (uint8_t)(0x00 | ((ssud_p2 >> 8) & 0x7f));
+    params[i++] = temp;
+
+    // Registers 150
+    temp = (uint8_t)(ssud_p2  & 0xFF);
+    params[i++] = temp;
+
+    // Register 151
+    temp = (uint8_t)(0x80 | ((ssud_p3 >> 8) & 0x7f));
+    params[i++] = temp;
+
+    // Registers 152
+    temp = (uint8_t)(ssud_p3  & 0xFF);
+    params[i++] = temp;
+
+    // Registers 153
+    temp = (uint8_t)(ssud_p1  & 0xFF);
+    params[i++] = temp;
+
+    // Register 154
+    temp = (uint8_t)((ssudp >> 4) & 0xF0);
+    temp += (uint8_t)((ssud_p1 >> 8) & 0x0F);
+    params[i++] = temp;
+
+    // Registers 155
+    temp = (uint8_t)(ssudp & 0xFF);
+    params[i++] = temp;
+
+    // Registers 156
+    temp = (uint8_t)((ssud_p2 >> 8) & 0x7f);
+    params[i++] = temp;
+
+    // Registers 157
+    temp = (uint8_t)(ssud_p2 & 0xff);
+    params[i++] = temp;
+
+    // Register 158
+    temp = (uint8_t)((ssud_p3 >> 8) & 0x7f);
+    params[i++] = temp;
+
+    // Registers 159
+    temp = (uint8_t)(ssud_p3  & 0xFF);
+    params[i++] = temp;
+
+    // Registers 160
+    temp = (uint8_t)(ssud_p1  & 0xFF);
+    params[i++] = temp;
+
+    // Registers 161
+    temp = (uint8_t)((ssud_p1 >> 8) & 0x0F);
+    params[i++] = temp;
+
+    si5351_write_bulk(SI5351_SSC_PARAM0, i, params);
+  }
+
   delete params;
 }
 
@@ -825,11 +894,15 @@ void Si5351::pll_reset(enum si5351_pll target_pll)
 {
 	if(target_pll == SI5351_PLLA)
  	{
-    	si5351_write(SI5351_PLL_RESET, SI5351_PLL_RESET_A);
+	    // 0x0c is a datasheet undocumented value. It is only present in AN619.
+	    // Without this value reset seems to be ignored...
+	    si5351_write(SI5351_PLL_RESET, 0x0c | SI5351_PLL_RESET_A);
 	}
 	else if(target_pll == SI5351_PLLB)
 	{
-	    si5351_write(SI5351_PLL_RESET, SI5351_PLL_RESET_B);
+	    // 0x0c is a datasheet undocumented value. It is only present in AN619.
+	    // Without this value reset seems to be ignored...
+	    si5351_write(SI5351_PLL_RESET, 0x0c | SI5351_PLL_RESET_B);
 	}
 }
 
@@ -1407,6 +1480,9 @@ uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSe
 	freq = lltmp;
 	freq += ref_freq * a;
 
+	reg->a = a;
+	reg->b = b;
+	reg->c = c;
 	reg->p1 = p1;
 	reg->p2 = p2;
 	reg->p3 = p3;
@@ -1505,6 +1581,9 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
     p3 = c;
 	}
 
+	reg->a = a;
+	reg->b = b;
+	reg->c = c;
 	reg->p1 = p1;
 	reg->p2 = p2;
 	reg->p3 = p3;
