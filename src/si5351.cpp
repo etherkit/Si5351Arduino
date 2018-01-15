@@ -36,17 +36,6 @@
 Si5351::Si5351(uint8_t i2c_addr):
 	i2c_bus_addr(i2c_addr)
 {
-	dev_status.SYS_INIT = 0;
-	dev_status.LOL_B = 0;
-	dev_status.LOL_A = 0;
-	dev_status.LOS = 0;
-	dev_status.REVID = 0;
-
-	dev_int_status.SYS_INIT_STKY = 0;
-	dev_int_status.LOL_B_STKY = 0;
-	dev_int_status.LOL_A_STKY = 0;
-	dev_int_status.LOS_STKY = 0;
-
 	xtal_freq[0] = SI5351_XTAL_FREQ;
 
 	// Start by using XO ref osc as default for each PLL
@@ -67,29 +56,53 @@ Si5351::Si5351(uint8_t i2c_addr):
  * Defaults to 25000000 if a 0 is used here.
  * corr - Frequency correction constant in parts-per-billion
  *
+ * Returns a boolean that indicates whether a device was found on the desired
+ * I2C address.
+ *
  */
-void Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
+bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 {
 	// Start I2C comms
 	Wire.begin();
 
-	// Set crystal load capacitance
-	si5351_write(SI5351_CRYSTAL_LOAD, (xtal_load_c & SI5351_CRYSTAL_LOAD_MASK) | 0b00010010);
+	// Check for a device on the bus, bail out if it is not there
+	Wire.beginTransmission(i2c_bus_addr);
+	uint8_t reg_val;
+  reg_val = Wire.endTransmission();
 
-	// Set up the XO reference frequency
-	if (xo_freq != 0)
+	if(reg_val == 0)
 	{
-		set_ref_freq(xo_freq, SI5351_PLL_INPUT_XO);
+		// Wait for SYS_INIT flag to be clear, indicating that device is ready
+		uint8_t status_reg = 0;
+		do
+		{
+			status_reg = si5351_read(SI5351_DEVICE_STATUS);
+		} while (status_reg >> 7 == 1);
+
+		// Set crystal load capacitance
+		si5351_write(SI5351_CRYSTAL_LOAD, (xtal_load_c & SI5351_CRYSTAL_LOAD_MASK) | 0b00010010);
+
+		// Set up the XO reference frequency
+		if (xo_freq != 0)
+		{
+			set_ref_freq(xo_freq, SI5351_PLL_INPUT_XO);
+		}
+		else
+		{
+			set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_XO);
+		}
+
+		// Set the frequency calibration for the XO
+		set_correction(corr, SI5351_PLL_INPUT_XO);
+
+		reset();
+
+		return true;
 	}
 	else
 	{
-		set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_XO);
+		return false;
 	}
-
-	// Set the frequency calibration for the XO
-	set_correction(corr, SI5351_PLL_INPUT_XO);
-
-	reset();
 }
 
 /*

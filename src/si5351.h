@@ -280,7 +280,7 @@ class Si5351
 {
 public:
   Si5351(uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
-	void init(uint8_t, uint32_t, int32_t);
+	bool init(uint8_t, uint32_t, int32_t);
 	void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
 	uint8_t set_freq_manual(uint64_t, uint64_t, enum si5351_clock);
@@ -306,8 +306,10 @@ public:
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
-	struct Si5351Status dev_status;
-	struct Si5351IntStatus dev_int_status;
+	struct Si5351Status dev_status = {.SYS_INIT = 0, .LOL_B = 0, .LOL_A = 0,
+    .LOS = 0, .REVID = 0};
+	struct Si5351IntStatus dev_int_status = {.SYS_INIT_STKY = 0, .LOL_B_STKY = 0,
+    .LOL_A_STKY = 0, .LOS_STKY = 0};
 	enum si5351_pll pll_assignment[8];
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
