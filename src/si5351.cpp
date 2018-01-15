@@ -36,17 +36,6 @@
 Si5351::Si5351(uint8_t i2c_addr):
 	i2c_bus_addr(i2c_addr)
 {
-	// dev_status.SYS_INIT = 0;
-	// dev_status.LOL_B = 0;
-	// dev_status.LOL_A = 0;
-	// dev_status.LOS = 0;
-	// dev_status.REVID = 0;
-  //
-	// dev_int_status.SYS_INIT_STKY = 0;
-	// dev_int_status.LOL_B_STKY = 0;
-	// dev_int_status.LOL_A_STKY = 0;
-	// dev_int_status.LOS_STKY = 0;
-
 	xtal_freq[0] = SI5351_XTAL_FREQ;
 
 	// Start by using XO ref osc as default for each PLL
