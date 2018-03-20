@@ -31,7 +31,7 @@ void setup()
   i2c_found = si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
   if(!i2c_found)
   {
-    Serial.println("Device not found on I2C bus!")
+    Serial.println("Device not found on I2C bus!");
   }
 
   // Set CLK0 to output 14 MHz
