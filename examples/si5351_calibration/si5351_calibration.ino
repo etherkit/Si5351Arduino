@@ -2,7 +2,7 @@
  * si5351_calibration.ino - Simple calibration routine for the Si5351
  *                          breakout board.
  *
- * Copyright 2015 - 2017 Paul Warren <pwarren@pwarren.id.au>
+ * Copyright 2015 - 2018 Paul Warren <pwarren@pwarren.id.au>
  *                       Jason Milldrum <milldrum@gmail.com>
  *
  * Uses code from https://github.com/darksidelemm/open_radio_miniconf_2015
@@ -40,7 +40,7 @@ void setup()
   si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
 
   // Start on target frequency
-  si5351.set_correction(cal_factor);
+  si5351.set_correction(cal_factor, SI5351_PLL_INPUT_XO);
   si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
   si5351.set_freq(target_freq, SI5351_CLK0);
 }
@@ -88,7 +88,7 @@ static void vfo_interface(void)
         Serial.print(F("Calibration factor is "));
         Serial.println(cal_factor);
         Serial.println(F("Setting calibration factor"));
-        si5351.set_correction(cal_factor);
+        si5351.set_correction(cal_factor, SI5351_PLL_INPUT_XO);
         si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
         Serial.println(F("Resetting target frequency"));
         si5351.set_freq(target_freq, SI5351_CLK0);
@@ -114,7 +114,7 @@ static void vfo_interface(void)
     }
 
     cal_factor = (int32_t)(target_freq - rx_freq) + old_cal;
-    si5351.set_correction(cal_factor);
+    si5351.set_correction(cal_factor, SI5351_PLL_INPUT_XO);
     si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
     si5351.pll_reset(SI5351_PLLA);
     si5351.set_freq(target_freq, SI5351_CLK0);
