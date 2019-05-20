@@ -1044,6 +1044,7 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
 	{
 		reg = SI5351_CLK7_4_DISABLE_STATE;
 	}
+	else return;
 
 	reg_val = si5351_read(reg);
 
