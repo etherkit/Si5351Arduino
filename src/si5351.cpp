@@ -1,7 +1,7 @@
 /*
  * si5351.cpp - Si5351 library for Arduino
  *
- * Copyright (C) 2015 - 2016 Jason Milldrum <milldrum@gmail.com>
+ * Copyright (C) 2015 - 2019 Jason Milldrum <milldrum@gmail.com>
  *                           Dana H. Myers <k6jq@comcast.net>
  *
  * Some tuning algorithms derived from clk-si5351.c in the Linux kernel.
