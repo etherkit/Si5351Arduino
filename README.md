@@ -711,6 +711,10 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.1.4
+
+    * Fix warning "reg may be uninitialized"
+
 * v2.1.3
 
     * Correct error in si5351_example.ino sketch
