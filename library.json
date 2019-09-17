@@ -1,0 +1,22 @@
+{
+    "name": "Etherkit Si5351",
+    "keywords": "si5351",
+    "description": "A full-featured library for the Si5351 series of clock generator ICs from Silicon Labs",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/etherkit/Si5351Arduino"
+    },
+    "authors":
+    [
+      {
+        "name": "Jason Milldrum",
+        "email": "milldrum@gmail.com",
+        "url": "http://nt7s.com",
+        "maintainer": true
+      }
+    ],
+    "version": "2.1.4",
+    "frameworks": "arduino",
+    "platforms": "*"
+  }
