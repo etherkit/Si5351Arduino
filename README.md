@@ -8,7 +8,7 @@ This library is focused towards usage in RF/amateur radio applications, but it m
 
 Thanks For Your Support!
 ------------------------
-If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](https://www.etherkit.com) and/or sending a [PayPal tip](https://paypal.me/NT7S). Thank you!
+If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](https://www.etherkit.com) sending a [one-time PayPal tip](https://paypal.me/NT7S), or [subscribe to me on SubscribeStar](https://www.subscribestar.com/nt7s) for an ongoing contribution. Thank you!
 
 Library Installation
 ---------------------
