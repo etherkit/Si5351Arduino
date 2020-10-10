@@ -18,6 +18,9 @@
 #define _STM32_HAL_Interface_h
 
 #include <stdint.h>
+// NOTE: Add the appropriate HAL include here:
+#include "stm32f4xx_hal.h"
+
 #include "I2CInterface.h"
 
 // An STM32/HAL based implementation of the I2CInterface.

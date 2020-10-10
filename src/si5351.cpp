@@ -24,26 +24,18 @@
 
 #include <stdint.h>
 
-// Uncomment the relevant hardware environment.  Arduino
-// is the default
-//#define SI5351_DEMO
-#define SI5351_STM32
-//#define SI5351_ARDINO
+// Remove this to turn off the Arduino hardware environment.  Arduino
+// is the default.
+#define SI5351_ARDUINO
 
-// Bring in the relevant interface to the I2C bus.  This has been 
-// abstracted to allow the library to be used in differnet 
-// hardware environments.
-#if defined(SI5351_STM32)
-	#include "STM32_HAL_Interface.h"
-	static STM32_HAL_Interface I2C_Interface_Instance;
-#elif defined(SI5351_DEMO)
-	#include "TestInterface.h"
-	static TestInterface I2C_Interface_Instance;
-#elif defined(SI5351_ARDUINO)
+#if defined(SI5351_ARDUINO)
 	#include "Arduino.h"
 	#include "Wire.h"
 	#include "ArduinoInterface.h"
 	static ArduinoInterface I2C_Interface_Instance;
+#else
+	#include "TestInterface.h"
+	static TestInterface I2C_Interface_Instance;
 #endif
 
 #include "si5351.h"
@@ -55,9 +47,24 @@
 Si5351::Si5351(uint8_t i2c_addr):
 	i2c_bus_addr(i2c_addr)
 {
-	// Connect to the appropriate I2C interface
+	// Connect to the default I2C interface
 	i2c_interface = &I2C_Interface_Instance;
-	
+
+	setup();
+}
+
+Si5351::Si5351(uint8_t i2c_addr, I2CInterface* i2c):
+	i2c_bus_addr(i2c_addr),
+	i2c_interface(i2c)
+{
+	setup();
+}
+
+/*
+ * Common setup code
+ */
+void Si5351::setup() {
+
 	xtal_freq[0] = SI5351_XTAL_FREQ;
 
 	// Start by using XO ref osc as default for each PLL
