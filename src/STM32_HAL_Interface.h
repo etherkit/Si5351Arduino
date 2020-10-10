@@ -26,21 +26,58 @@
 //
 class STM32_HAL_Interface : public I2CInterface {
 public:
-    // TODO: WILL PASS THE HAL I2C STRUCTURE HERE
-    STM32_HAL_Interface() {
+
+    STM32_HAL_Interface(I2C_HandleTypeDef* hi2c)
+    :   _hi2c(hi2c),
+        _errorCount(0),
+        _timeoutMs(10) {
     }
+
     uint8_t check_address(uint8_t i2c_bus_addr) {
-        return 0;
+        HAL_StatusTypeDef status = HAL_I2C_IsDeviceReady(_hi2c, (uint16_t)(i2c_bus_addr << 1), 1, _timeoutMs);
+        if (status == HAL_OK) {
+           return 0;
+        } else {
+            return -1;
+        }
     }
+    
     uint8_t read(uint8_t i2c_bus_addr, uint8_t addr) {
-        return 0;
+        uint8_t reg_val = 0;
+        // NOTE: PER HAL DOCUMENTATION, ADDRESS NEEDS TO BE SHIFTED LEFT
+        HAL_StatusTypeDef status = HAL_I2C_Mem_Read(_hi2c, (uint16_t)(i2c_bus_addr << 1), (uint16_t)(addr), 1, 
+            &reg_val, 1, _timeoutMs);
+        if (status != HAL_OK) {
+            _errorCount++;
+        }
+        return reg_val;        
     }
+    
     uint8_t write(uint8_t i2c_bus_addr, uint8_t addr, uint8_t data) {
-        return 0;
+        // NOTE: PER HAL DOCUMENTATION, ADDRESS NEEDS TO BE SHIFTED LEFT
+	    HAL_StatusTypeDef status = HAL_I2C_Mem_Write(_hi2c, (uint16_t)(i2c_bus_addr << 1), addr, 1, 
+            &data, 1, _timeoutMs);
+        if (status != HAL_OK) {
+            _errorCount++;
+        }
+        return 1;
     }
+
     uint8_t write_bulk(uint8_t i2c_bus_addr, uint8_t addr, uint8_t bytes, uint8_t *data)  {
-        return 0;
+        // NOTE: PER HAL DOCUMENTATION, ADDRESS NEEDS TO BE SHIFTED LEFT
+	    HAL_StatusTypeDef status = HAL_I2C_Mem_Write(_hi2c, (uint16_t)(i2c_bus_addr << 1), addr, 1, 
+            data, bytes, _timeoutMs);
+        if (status != HAL_OK) {
+            _errorCount++;
+        }
+        return bytes;
     }
+
+private:
+
+    I2C_HandleTypeDef* _hi2c;
+    int _errorCount;
+    uint32_t _timeoutMs;
 };
 
 #endif

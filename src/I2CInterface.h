@@ -27,21 +27,25 @@ public:
     
     /**
      * Determmines whether a device is connected at the specified address.
+     * @return 0 if things are good, -1 if there is a problem.
      */
     virtual uint8_t check_address(uint8_t i2c_bus_addr) = 0;
 
     /**
      * Standard read operation.
+     * @return The received byte
      */
     virtual uint8_t read(uint8_t i2c_bus_addr, uint8_t addr) = 0;
 
     /** 
      * Standard write operation.
+     * @return Then number of bytes written
      */
     virtual uint8_t write(uint8_t i2c_bus_addr, uint8_t addr, uint8_t data) = 0;
 
     /**
      * Multi-byte write operation
+     * @return The number of bytes written
      */
     virtual uint8_t write_bulk(uint8_t i2c_bus_addr, uint8_t addr, uint8_t bytes, uint8_t *data) = 0;
 };

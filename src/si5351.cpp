@@ -24,7 +24,11 @@
 
 #include <stdint.h>
 
-#define SI5351_DEMO
+// Uncomment the relevant hardware environment.  Arduino
+// is the default
+//#define SI5351_DEMO
+#define SI5351_STM32
+//#define SI5351_ARDINO
 
 // Bring in the relevant interface to the I2C bus.  This has been 
 // abstracted to allow the library to be used in differnet 
@@ -35,7 +39,7 @@
 #elif defined(SI5351_DEMO)
 	#include "TestInterface.h"
 	static TestInterface I2C_Interface_Instance;
-#else
+#elif defined(SI5351_ARDUINO)
 	#include "Arduino.h"
 	#include "Wire.h"
 	#include "ArduinoInterface.h"
