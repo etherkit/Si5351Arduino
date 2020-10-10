@@ -24,17 +24,22 @@
 
 #include <stdint.h>
 
+#define SI5351_DEMO
+
 // Bring in the relevant interface to the I2C bus.  This has been 
 // abstracted to allow the library to be used in differnet 
 // hardware environments.
-#ifndef STM32
-#include "STM32_HAL_Interface.h"
-static STM32_HAL_Interface I2C_Interface_Instance;
+#if defined(SI5351_STM32)
+	#include "STM32_HAL_Interface.h"
+	static STM32_HAL_Interface I2C_Interface_Instance;
+#elif defined(SI5351_DEMO)
+	#include "TestInterface.h"
+	static TestInterface I2C_Interface_Instance;
 #else
-#include "Arduino.h"
-#include "Wire.h"
-#include "ArduinoInterface.h"
-static ArduinoInterface I2C_Interface_Instance;
+	#include "Arduino.h"
+	#include "Wire.h"
+	#include "ArduinoInterface.h"
+	static ArduinoInterface I2C_Interface_Instance;
 #endif
 
 #include "si5351.h"

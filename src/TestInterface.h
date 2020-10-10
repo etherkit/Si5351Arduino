@@ -14,31 +14,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _STM32_HAL_Interface_h
-#define _STM32_HAL_Interface_h
+#ifndef _Test_Interface_h
+#define _Test_Interface_h
 
 #include <stdint.h>
+#include <stdio.h>
 #include "I2CInterface.h"
 
-// An STM32/HAL based implementation of the I2CInterface.
+// A dummy interface for testing.
 // 
-// NOT IMPLEMENTED YET!!
-//
-class STM32_HAL_Interface : public I2CInterface {
+class TestInterface : public I2CInterface {
 public:
-    // TODO: WILL PASS THE HAL I2C STRUCTURE HERE
-    STM32_HAL_Interface() {
+    TestInterface() {
+        printf("TestInterface initialized\n");
     }
     uint8_t check_address(uint8_t i2c_bus_addr) {
+        printf("check_address\n");
         return 0;
     }
     uint8_t read(uint8_t i2c_bus_addr, uint8_t addr) {
+        printf("read(%x,%x)\n", i2c_bus_addr, addr);
         return 0;
     }
     uint8_t write(uint8_t i2c_bus_addr, uint8_t addr, uint8_t data) {
+        printf("write(%x, %x, %x)\n", i2c_bus_addr, addr, data);
         return 0;
     }
     uint8_t write_bulk(uint8_t i2c_bus_addr, uint8_t addr, uint8_t bytes, uint8_t *data)  {
+        printf("write_bulk(%x, %x, ", i2c_bus_addr, addr);
+        for (int i = 0; i < bytes; i++) {
+            printf("%x ", data[i]);
+        }
+        printf(")\n");
         return 0;
     }
 };
