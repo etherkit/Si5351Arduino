@@ -29,9 +29,8 @@
 #ifndef SI5351_H_
 #define SI5351_H_
 
-#include "Arduino.h"
-#include "Wire.h"
 #include <stdint.h>
+#include "I2CInterface.h"
 
 /* Define definitions */
 
@@ -330,6 +329,7 @@ private:
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
   bool clk_first_set[8];
+	I2CInterface* i2c_interface;
 };
 
 #endif /* SI5351_H_ */
