@@ -21,6 +21,10 @@
 #include "Wire.h"
 #include "I2CInterface.h"
 
+/**
+ * The standard Ardiuno way of talking to I2C
+ * via the Wire.h library.
+ */
 class ArduinoInterface : public I2CInterface {
 public:
 

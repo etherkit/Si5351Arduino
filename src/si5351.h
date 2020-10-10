@@ -329,6 +329,7 @@ private:
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
   bool clk_first_set[8];
+	// This is a connection to the I2C bus
 	I2CInterface* i2c_interface;
 };
 

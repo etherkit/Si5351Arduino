@@ -24,7 +24,9 @@
 
 #include <stdint.h>
 
-// Bring in the relevant interface to the I2C bus
+// Bring in the relevant interface to the I2C bus.  This has been 
+// abstracted to allow the library to be used in differnet 
+// hardware environments.
 #ifndef STM32
 #include "STM32_HAL_Interface.h"
 static STM32_HAL_Interface I2C_Interface_Instance;
