@@ -82,18 +82,21 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 		// Set crystal load capacitance
 		si5351_write(SI5351_CRYSTAL_LOAD, (xtal_load_c & SI5351_CRYSTAL_LOAD_MASK) | 0b00010010);
 
-		// Set up the XO reference frequency
+		// Set up the XO and CLKIN reference frequencies
 		if (xo_freq != 0)
 		{
 			set_ref_freq(xo_freq, SI5351_PLL_INPUT_XO);
+            set_ref_freq(xo_freq, SI5351_PLL_INPUT_CLKIN);
 		}
 		else
 		{
 			set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_XO);
+            set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_CLKIN);
 		}
 
-		// Set the frequency calibration for the XO
+		// Set the frequency calibrations for the XO and CLKIN
 		set_correction(corr, SI5351_PLL_INPUT_XO);
+        set_correction(corr, SI5351_PLL_INPUT_CLKIN);
 
 		reset();
 
