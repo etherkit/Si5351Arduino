@@ -711,6 +711,11 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.2.0
+
+    * Fix "Si5351 init does not initialize the ref freq nor corr entries for clkin", thanks to conr2286
+    * Fix bug in read that would hang the micro when using ATtiny3226 (and probably other types of microcontrollers)
+
 * v2.1.4
 
     * Fix warning "reg may be uninitialized"

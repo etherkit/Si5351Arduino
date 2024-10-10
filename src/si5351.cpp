@@ -1338,7 +1338,7 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 	Wire.write(addr);
 	Wire.endTransmission();
 
-	Wire.requestFrom(i2c_bus_addr, (uint8_t)1, (uint8_t)false);
+	Wire.requestFrom(i2c_bus_addr, (uint8_t)1);
 
 	while(Wire.available())
 	{
