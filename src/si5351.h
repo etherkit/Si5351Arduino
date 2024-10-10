@@ -29,9 +29,8 @@
 #ifndef SI5351_H_
 #define SI5351_H_
 
-#include "Arduino.h"
-#include "Wire.h"
 #include <stdint.h>
+#include "I2CInterface.h"
 
 /* Define definitions */
 
@@ -279,7 +278,19 @@ struct Si5351IntStatus
 class Si5351
 {
 public:
+
+  /**
+   * Use this constructor when using the (default) Arduino
+   * I2C interface.
+   */
   Si5351(uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
+
+  /**
+   * Use this constructor when explicitly passing the I2CInterface
+   * object.
+   */
+  Si5351(uint8_t i2c_addr, I2CInterface* i2c);
+
 	bool init(uint8_t, uint32_t, int32_t);
 	void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
@@ -318,6 +329,7 @@ public:
   enum si5351_pll_input pllb_ref_osc;
 	uint32_t xtal_freq[2];
 private:
+	void setup();
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
@@ -330,6 +342,8 @@ private:
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
   bool clk_first_set[8];
+	// This is a connection to the I2C bus
+	I2CInterface* i2c_interface;
 };
 
 #endif /* SI5351_H_ */

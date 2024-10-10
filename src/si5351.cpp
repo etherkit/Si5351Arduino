@@ -24,10 +24,21 @@
 
 #include <stdint.h>
 
-#include "Arduino.h"
-#include "Wire.h"
-#include "si5351.h"
+// Remove this to turn off the Arduino hardware environment.  Arduino
+// is the default.
+#define SI5351_ARDUINO
 
+#if defined(SI5351_ARDUINO)
+	#include "Arduino.h"
+	#include "Wire.h"
+	#include "ArduinoInterface.h"
+	static ArduinoInterface I2C_Interface_Instance;
+#else
+	#include "TestInterface.h"
+	static TestInterface I2C_Interface_Instance;
+#endif
+
+#include "si5351.h"
 
 /********************/
 /* Public functions */
@@ -36,6 +47,24 @@
 Si5351::Si5351(uint8_t i2c_addr):
 	i2c_bus_addr(i2c_addr)
 {
+	// Connect to the default I2C interface
+	i2c_interface = &I2C_Interface_Instance;
+
+	setup();
+}
+
+Si5351::Si5351(uint8_t i2c_addr, I2CInterface* i2c):
+	i2c_bus_addr(i2c_addr),
+	i2c_interface(i2c)
+{
+	setup();
+}
+
+/*
+ * Common setup code
+ */
+void Si5351::setup() {
+
 	xtal_freq[0] = SI5351_XTAL_FREQ;
 
 	// Start by using XO ref osc as default for each PLL
@@ -62,13 +91,8 @@ Si5351::Si5351(uint8_t i2c_addr):
  */
 bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 {
-	// Start I2C comms
-	Wire.begin();
-
 	// Check for a device on the bus, bail out if it is not there
-	Wire.beginTransmission(i2c_bus_addr);
-	uint8_t reg_val;
-  reg_val = Wire.endTransmission();
+	uint8_t reg_val = i2c_interface->check_address(i2c_bus_addr);
 
 	if(reg_val == 0)
 	{
@@ -568,7 +592,7 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 		pllb_freq = pll_freq;
   }
 
-  delete params;
+  delete [] params;
 }
 
 /*
@@ -675,7 +699,7 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 			break;
 	}
 
-	delete params;
+	delete [] params;
 }
 
 /*
@@ -1243,7 +1267,7 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 	// Write the parameters
 	si5351_write_bulk(SI5351_PLLB_PARAMETERS, i, params);
 
-	delete params;
+	delete [] params;
 
 	// Write the VCXO parameters
 	vcxo_param = ((vcxo_param * ppm * SI5351_VCXO_MARGIN) / 100ULL) / 1000000ULL;
@@ -1312,40 +1336,17 @@ void Si5351::set_ref_freq(uint32_t ref_freq, enum si5351_pll_input ref_osc)
 
 uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
 {
-	Wire.beginTransmission(i2c_bus_addr);
-	Wire.write(addr);
-	for(int i = 0; i < bytes; i++)
-	{
-		Wire.write(data[i]);
-	}
-	return Wire.endTransmission();
-
+	return i2c_interface->write_bulk(i2c_bus_addr, addr, bytes, data);
 }
 
 uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 {
-	Wire.beginTransmission(i2c_bus_addr);
-	Wire.write(addr);
-	Wire.write(data);
-	return Wire.endTransmission();
+	return i2c_interface->write(i2c_bus_addr, addr, data);
 }
 
 uint8_t Si5351::si5351_read(uint8_t addr)
 {
-	uint8_t reg_val = 0;
-
-	Wire.beginTransmission(i2c_bus_addr);
-	Wire.write(addr);
-	Wire.endTransmission();
-
-	Wire.requestFrom(i2c_bus_addr, (uint8_t)1, (uint8_t)false);
-
-	while(Wire.available())
-	{
-		reg_val = Wire.read();
-	}
-
-	return reg_val;
+	return i2c_interface->read(i2c_bus_addr, addr);
 }
 
 /*********************/
