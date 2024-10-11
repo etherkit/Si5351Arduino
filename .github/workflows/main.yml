@@ -1,2 +1,7 @@
-- name: arduino/arduino-lint-action
-  uses: arduino/arduino-lint-action@v2.0.0
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/arduino-lint-action@v2
