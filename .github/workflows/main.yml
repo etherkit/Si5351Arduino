@@ -1,26 +1,13 @@
-  - name: arduino/arduino-lint-action
-  # You may pin to the exact commit or the version.
-  # uses: arduino/arduino-lint-action@4de5fc895deecbda2f6b1cc05de7a8fdd5c4c51f
+- name: arduino/arduino-lint-action
   uses: arduino/arduino-lint-action@v2.0.0
   with:
-    # Path containing Arduino projects.
-    path: # optional
-    # Version of the Arduino Lint tool to use.
-    version: # optional, default is 1.x
-    # How strict the checks are.
-    compliance: # optional, default is specification
-    # Configuration of the checks for libraries in the Arduino Library Manager index.
-    library-manager: # optional
-    # The type of project to check.
-    project-type: # optional, default is all
-    # Search path recursively for projects to check.
-    recursive: # optional, default is false
-    # Save a JSON formatted report on the checks to this file.
-    report-file: # optional
-    # Show more information on the checks being run.
-    verbose: # optional, default is false
-    # Run the checks that only apply to official (non 3rd party) Arduino projects.
-    official: # optional, default is false
-    # GitHub access token used to get information from the GitHub API.
-    token: # optional, default is ${{ github.token }}
-          
+    path: null
+    version: null
+    compliance: null
+    library-manager: null
+    project-type: null
+    recursive: null
+    report-file: null
+    verbose: null
+    official: null
+    token: null
