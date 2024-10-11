@@ -40,6 +40,7 @@
 #define SI5351_PLL_FIXED                80000000000ULL
 #define SI5351_FREQ_MULT                100ULL
 #define SI5351_DEFAULT_CLK              1000000000ULL
+#define SI5351_SSCAMP_x1000             1ULL
 
 #define SI5351_PLL_VCO_MIN              600000000
 #define SI5351_PLL_VCO_MAX              900000000
@@ -254,6 +255,10 @@ enum si5351_pll_input {SI5351_PLL_INPUT_XO, SI5351_PLL_INPUT_CLKIN};
 
 struct Si5351RegSet
 {
+	// a, b and c used for spread sectrum parameters calculation
+	uint32_t a;
+	uint32_t b;
+	uint32_t c;
 	uint32_t p1;
 	uint32_t p2;
 	uint32_t p3;
