@@ -1,0 +1,2 @@
+- name: arduino/arduino-lint-action
+uses: arduino/arduino-lint-action@v2.0.0
