@@ -33,7 +33,22 @@
 #include "Wire.h"
 #include <stdint.h>
 
+//#define SI5351_WITH_CLK67 0
+
+#ifndef SI5351_WITH_CLK67
+#define SI5351_WITH_CLK67 1
+#endif
+#ifndef SI5351_WITH_NEW
+#define SI5351_WITH_NEW 0
+#endif
+
 /* Define definitions */
+
+#if WITH_CLK67
+#define SI5351_CLK_LAST SI5351_CLK7
+#else
+#define SI5351_CLK_LAST SI5351_CLK5
+#endif
 
 #define SI5351_BUS_BASE_ADDR            0x60
 #define SI5351_XTAL_FREQ                25000000
@@ -89,14 +104,6 @@
 #define SI5351_PLLB_SOURCE              (1<<3)
 #define SI5351_PLLA_SOURCE              (1<<2)
 
-#define SI5351_CLK0_CTRL                16
-#define SI5351_CLK1_CTRL                17
-#define SI5351_CLK2_CTRL                18
-#define SI5351_CLK3_CTRL                19
-#define SI5351_CLK4_CTRL                20
-#define SI5351_CLK5_CTRL                21
-#define SI5351_CLK6_CTRL                22
-#define SI5351_CLK7_CTRL                23
 #define SI5351_CLK_POWERDOWN            (1<<7)
 #define SI5351_CLK_INTEGER_MODE         (1<<6)
 #define SI5351_CLK_PLL_SELECT           (1<<5)
@@ -123,14 +130,9 @@
 #define SI5351_PARAMETERS_LENGTH        8
 #define SI5351_PLLA_PARAMETERS          26
 #define SI5351_PLLB_PARAMETERS          34
-#define SI5351_CLK0_PARAMETERS          42
-#define SI5351_CLK1_PARAMETERS          50
-#define SI5351_CLK2_PARAMETERS          58
-#define SI5351_CLK3_PARAMETERS          66
-#define SI5351_CLK4_PARAMETERS          74
-#define SI5351_CLK5_PARAMETERS          82
-#define SI5351_CLK6_PARAMETERS          90
-#define SI5351_CLK7_PARAMETERS          91
+
+#define SI5351_CLK_PARAM_REGS           {42,50,58,66,74,82,90,91}
+
 #define SI5351_CLK6_7_OUTPUT_DIVIDER    92
 #define SI5351_OUTPUT_CLK_DIV_MASK      (7 << 4)
 #define SI5351_OUTPUT_CLK6_DIV_MASK     (7 << 0)
@@ -163,13 +165,6 @@
 #define SI5351_VXCO_PARAMETERS_LOW      162
 #define SI5351_VXCO_PARAMETERS_MID      163
 #define SI5351_VXCO_PARAMETERS_HIGH     164
-
-#define SI5351_CLK0_PHASE_OFFSET        165
-#define SI5351_CLK1_PHASE_OFFSET        166
-#define SI5351_CLK2_PHASE_OFFSET        167
-#define SI5351_CLK3_PHASE_OFFSET        168
-#define SI5351_CLK4_PHASE_OFFSET        169
-#define SI5351_CLK5_PHASE_OFFSET        170
 
 #define SI5351_PLL_RESET                177
 #define SI5351_PLL_RESET_B              (1<<7)
@@ -235,8 +230,13 @@ enum si5351_variant {
 };
 */
 
-enum si5351_clock {SI5351_CLK0, SI5351_CLK1, SI5351_CLK2, SI5351_CLK3,
-	SI5351_CLK4, SI5351_CLK5, SI5351_CLK6, SI5351_CLK7};
+enum si5351_clock {
+	SI5351_CLK0, SI5351_CLK1, SI5351_CLK2,
+	SI5351_CLK3, SI5351_CLK4, SI5351_CLK5,
+#if SI5351_WITH_CLK67
+	SI5351_CLK6, SI5351_CLK7
+#endif
+};
 
 enum si5351_pll {SI5351_PLLA, SI5351_PLLB};
 
@@ -276,6 +276,16 @@ struct Si5351IntStatus
 	uint8_t LOS_STKY;
 };
 
+// inline functions are like but better than macros because the
+// parameters are type checked at compile-time
+inline uint8_t SI5351_CLK_PHASE_OFFSET(enum si5351_clock clkid) { 
+       return 165+(uint8_t)clkid;
+}
+inline uint8_t SI5351_CLK_CTRL(enum si5351_clock clkid) { 
+       return 16+(uint8_t)clkid;
+}
+
+
 class Si5351
 {
 public:
@@ -302,7 +312,7 @@ public:
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
 	void set_pll_input(enum si5351_pll, enum si5351_pll_input);
 	void set_vcxo(uint64_t, uint8_t);
-  void set_ref_freq(uint32_t, enum si5351_pll_input);
+	void set_ref_freq(uint32_t, enum si5351_pll_input);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
@@ -314,18 +324,22 @@ public:
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
-  enum si5351_pll_input plla_ref_osc;
-  enum si5351_pll_input pllb_ref_osc;
+	enum si5351_pll_input plla_ref_osc;
+	enum si5351_pll_input pllb_ref_osc;
 	uint32_t xtal_freq[2];
+
 private:
+	void set_ctrl_bit(enum si5351_clock, uint8_t, bool);
+	void write_pll_parameters(enum si5351_pll, struct Si5351RegSet *);
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
+#if SI5351_WITH_CLK67
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
+#endif
 	void update_sys_status(struct Si5351Status *);
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
-	uint8_t select_r_div(uint64_t *);
-	uint8_t select_r_div_ms67(uint64_t *);
+	uint8_t calc_r_div(uint64_t *freq, uint64_t fmin);
 	int32_t ref_correction[2];
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
