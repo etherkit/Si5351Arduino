@@ -173,10 +173,24 @@ void Si5351::reset(void)
 	uint8_t i;
 	for(i = 0; i < 8; i++)
 	{
-		clk_freq[i] = 0;
-		output_enable((enum si5351_clock)i, 0);
-		clk_first_set[i] = false;
+		reset_freq((enum si5351_clock)i);
 	}
+}
+
+/*
+ * reset_freq(enum si5351_clock clk)
+ *
+ * Sets the clock frequency of the specified CLK output to initial value.
+ * Set 0 Hz and disable output.
+ *
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ */
+void Si5351::reset_freq(enum si5351_clock clk)
+{
+	clk_freq[(uint8_t)clk] = 0;
+	output_enable(clk, 0);
+	clk_first_set[(uint8_t)clk] = false;
 }
 
 /*
