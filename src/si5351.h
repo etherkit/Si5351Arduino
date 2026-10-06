@@ -324,8 +324,7 @@ private:
 	void update_sys_status(struct Si5351Status *);
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
-	uint8_t select_r_div(uint64_t *);
-	uint8_t select_r_div_ms67(uint64_t *);
+	uint8_t select_r_div(uint64_t *, uint32_t);
 	int32_t ref_correction[2];
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
