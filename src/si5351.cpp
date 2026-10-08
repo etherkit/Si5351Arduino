@@ -530,6 +530,8 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 	{
 		// Preserve non-p1 bits in the p1[17:16] parameter byte
 		uint8_t reg_val = si5351_read((SI5351_CLK0_PARAMETERS + 2) + ((uint8_t)clk * 8));
+		// MS currently in DIVBY4 mode and being switched out of it? (#65)
+		uint8_t leaving_divby4 = ((reg_val & SI5351_OUTPUT_CLK_DIVBY4) == SI5351_OUTPUT_CLK_DIVBY4) && !div_by_4;
 		reg_val &= ~(0x03);
 		pack_reg_set(&ms_reg, params, reg_val);
 
@@ -538,6 +540,15 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 			SI5351_PARAMETERS_LENGTH, params);
 		set_int(clk, int_mode);
 		ms_div(clk, r_div, div_by_4);
+
+		// A Multisynth leaving DIVBY4 mode produces no output until its PLL is
+		// reset (issue #65, e.g. 156 MHz -> 80 MHz). Reset only on that
+		// transition so normal tuning stays glitch-free. reset() leaves the
+		// DIVBY4 bits set, so this also covers reset() followed by set_freq().
+		if(leaving_divby4)
+		{
+			pll_reset(pll_assignment[clk]);
+		}
 	}
 	else if((uint8_t)clk <= (uint8_t)SI5351_CLK7)
 	{
