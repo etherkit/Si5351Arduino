@@ -36,6 +36,10 @@
 /* Pack p1/p2/p3 into the 8-byte Si5351 parameter block used by PLL/MS regs.
  * p1_extra is ORed into the p1[17:16] byte (byte 2); set_ms uses this to
  * preserve other bits already in that register. set_pll/set_vcxo pass 0. */
+// Set while set_freq() re-plans a PLL: it resets that PLL once after all
+// PLL and MS writes, so set_ms() must not issue its own DIVBY4-exit reset.
+static uint8_t defer_pll_reset;
+
 static void pack_reg_set(const struct Si5351RegSet *reg, uint8_t *params, uint8_t p1_extra)
 {
 	params[0] = (uint8_t)((reg->p3 >> 8) & 0xFF);
@@ -299,6 +303,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		set_pll(pll_freq, pll_assignment[clk]);
 
 		// Recalculate params for other synths on same PLL
+		defer_pll_reset = 1;
 		for(i = 0; i < 6; i++)
 		{
 			if(clk_freq[i] != 0 && pll_assignment[i] == pll_assignment[clk])
@@ -320,7 +325,8 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			}
 		}
 
-		// Reset the PLL
+		// Reset the PLL (once, after all PLL and MS writes)
+		defer_pll_reset = 0;
 		pll_reset(pll_assignment[clk]);
 
 		return 0;
@@ -541,7 +547,7 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 		// reset (issue #65, e.g. 156 MHz -> 80 MHz). Reset only on that
 		// transition so normal tuning stays glitch-free. reset() leaves the
 		// DIVBY4 bits set, so this also covers reset() followed by set_freq().
-		if(leaving_divby4)
+		if(leaving_divby4 && !defer_pll_reset)
 		{
 			pll_reset(pll_assignment[clk]);
 		}
