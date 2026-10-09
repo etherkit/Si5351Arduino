@@ -285,7 +285,43 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			// making the MS ratio for this output < 8, outside the valid
 			// fractional range (155 -> 96 MHz gave ~88.5 MHz, issue #65). If no
 			// other output holds the PLL, re-plan it at the fixed 800 MHz below.
-			if(pll_held || pll_freq >= freq * 8)
+			uint8_t replan = 0;
+			if(pll_freq < freq * 8)
+			{
+				replan = 1;
+				if(pll_held)
+				{
+					// The PLL is held above 100 MHz by another output (#65:
+					// 155 MHz on CLK0, then 99 MHz on CLK2), so move this output
+					// to the other PLL: reuse it as is if it gives a valid ratio,
+					// or re-plan it if no other output uses it. Otherwise keep
+					// the old behaviour.
+					enum si5351_pll other = (pll_assignment[clk] == SI5351_PLLA) ? SI5351_PLLB : SI5351_PLLA;
+					uint64_t other_freq = (other == SI5351_PLLA) ? plla_freq : pllb_freq;
+					uint8_t other_used = 0;
+					for(i = 0; i < 8; i++)
+					{
+						if(i != (uint8_t)clk && clk_freq[i] != 0 && pll_assignment[i] == other)
+						{
+							other_used = 1;
+						}
+					}
+
+					replan = 0;
+					if(other_freq >= freq * 8)
+					{
+						set_ms_source(clk, other);
+						pll_freq = other_freq;
+					}
+					else if(!other_used)
+					{
+						set_ms_source(clk, other);
+						replan = 1;
+					}
+				}
+			}
+
+			if(!replan)
 			{
 				// Calculate the synth parameters
 				multisynth_calc(freq, pll_freq, &ms_reg);
