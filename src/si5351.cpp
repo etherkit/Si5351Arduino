@@ -162,12 +162,12 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 		} while (status_reg >> 7 == 1);
 
 		// Set crystal load capacitance. XTAL_CL = 00b (SI5351_CRYSTAL_LOAD_0PF)
-		// is reserved ("do not select", AN619 reg 183), so use the smallest
-		// valid internal load, 6 pF, instead.
+		// is reserved ("do not select", AN619 reg 183) and 0 pF is not
+		// supported, so keep the chip default of 10 pF instead.
 		xtal_load_c &= SI5351_CRYSTAL_LOAD_MASK;
 		if(xtal_load_c == SI5351_CRYSTAL_LOAD_0PF)
 		{
-			xtal_load_c = SI5351_CRYSTAL_LOAD_6PF;
+			xtal_load_c = SI5351_CRYSTAL_LOAD_10PF;
 		}
 		si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c | 0b00010010);
 
