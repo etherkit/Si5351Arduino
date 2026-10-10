@@ -1146,8 +1146,8 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 	uint8_t reg_val;
 	reg_val = si5351_read(SI5351_PLL_INPUT_SOURCE);
 
-	// Clear the bits first
-	//reg_val &= ~(SI5351_CLKIN_DIV_MASK);
+	// CLKIN_DIV[1:0] is a 2-bit field shared by both PLLs: replace it (not
+	// OR into it) when a PLL is switched to CLKIN, leave it alone for XO
 
 	switch(pll)
 	{
@@ -1155,7 +1155,7 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 		if(input == SI5351_PLL_INPUT_CLKIN)
 		{
 			reg_val |= SI5351_PLLA_SOURCE;
-			reg_val |= clkin_div;
+			reg_val = (reg_val & ~(SI5351_CLKIN_DIV_MASK)) | clkin_div;
 			plla_ref_osc = SI5351_PLL_INPUT_CLKIN;
 		}
 		else
@@ -1168,7 +1168,7 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
 		if(input == SI5351_PLL_INPUT_CLKIN)
 		{
 			reg_val |= SI5351_PLLB_SOURCE;
-			reg_val |= clkin_div;
+			reg_val = (reg_val & ~(SI5351_CLKIN_DIV_MASK)) | clkin_div;
 			pllb_ref_osc = SI5351_PLL_INPUT_CLKIN;
 		}
 		else
