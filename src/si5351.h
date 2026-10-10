@@ -177,7 +177,7 @@
 
 #define SI5351_CRYSTAL_LOAD             183
 #define SI5351_CRYSTAL_LOAD_MASK        (3<<6)
-#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)
+#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)   /* reserved in AN619, unsupported: init() keeps 10 pF */
 #define SI5351_CRYSTAL_LOAD_6PF         (1<<6)
 #define SI5351_CRYSTAL_LOAD_8PF         (2<<6)
 #define SI5351_CRYSTAL_LOAD_10PF        (3<<6)

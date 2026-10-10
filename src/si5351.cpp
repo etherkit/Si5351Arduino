@@ -87,6 +87,14 @@ static uint8_t ms67_div(uint64_t pll_freq, uint64_t freq, uint8_t *r_div)
 	return 0;
 }
 
+// AN619: feedback ratio 15..90 and VCO 600..900 MHz. A reference outside
+// 6.67..60 MHz (e.g. 5 MHz) has no valid setting; such PLLs are not written.
+static uint8_t ref_ok(uint32_t ref)
+{
+	return (uint64_t)ref * SI5351_PLL_A_MAX >= SI5351_PLL_VCO_MIN
+		&& (uint64_t)ref * SI5351_PLL_A_MIN <= SI5351_PLL_VCO_MAX;
+}
+
 static void pack_reg_set(const struct Si5351RegSet *reg, uint8_t *params, uint8_t p1_extra)
 {
 	params[0] = (uint8_t)((reg->p3 >> 8) & 0xFF);
@@ -629,6 +637,11 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 	if(target_pll == SI5351_PLLB && vcxo_pull)
 	{
 		set_vcxo(pll_freq, vcxo_pull);
+		return;
+	}
+
+	if(!ref_ok(xtal_freq[(uint8_t)((target_pll == SI5351_PLLA) ? plla_ref_osc : pllb_ref_osc)]))
+	{
 		return;
 	}
 
@@ -1244,6 +1257,11 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 		ppm = SI5351_VCXO_PULL_MAX;
 	}
 
+	if(!ref_ok(xtal_freq[(uint8_t)pllb_ref_osc]))
+	{
+		return;
+	}
+
 	// Remember the VCXO setting so later PLLB updates keep c = 10^6
 	vcxo_pull = ppm;
 	pllb_freq = pll_freq;
@@ -1402,10 +1420,12 @@ uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSe
 
 	if (a < SI5351_PLL_A_MIN)
 	{
+		a = SI5351_PLL_A_MIN;
 		freq = ref_freq * SI5351_PLL_A_MIN;
 	}
 	if (a > SI5351_PLL_A_MAX)
 	{
+		a = SI5351_PLL_A_MAX;
 		freq = ref_freq * SI5351_PLL_A_MAX;
 	}
 
