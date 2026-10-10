@@ -160,8 +160,15 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 			status_reg = si5351_read(SI5351_DEVICE_STATUS);
 		} while (status_reg >> 7 == 1);
 
-		// Set crystal load capacitance
-		si5351_write(SI5351_CRYSTAL_LOAD, (xtal_load_c & SI5351_CRYSTAL_LOAD_MASK) | 0b00010010);
+		// Set crystal load capacitance. XTAL_CL = 00b (SI5351_CRYSTAL_LOAD_0PF)
+		// is reserved ("do not select", AN619 reg 183), so use the smallest
+		// valid internal load, 6 pF, instead.
+		xtal_load_c &= SI5351_CRYSTAL_LOAD_MASK;
+		if(xtal_load_c == SI5351_CRYSTAL_LOAD_0PF)
+		{
+			xtal_load_c = SI5351_CRYSTAL_LOAD_6PF;
+		}
+		si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c | 0b00010010);
 
 		// Set up the XO and CLKIN reference frequencies
 		if (xo_freq != 0)
