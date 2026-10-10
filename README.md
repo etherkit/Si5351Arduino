@@ -711,6 +711,19 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.3.1
+
+    * Keep CLK6/CLK7 Multisynth ratios within the valid even-integer range 6..254, using the R divider where needed (very low CLK6/7 frequencies and set_freq_manual() on CLK6/7 no longer write a truncated divider)
+    * set_freq() and set_freq_manual() on CLK6/CLK7 return 1 without writing anything when no valid divider exists (including 0 Hz)
+    * Enable CLK6/CLK7 on their first set_freq(), like CLK0-CLK5
+    * Clamp CLK0-CLK5 output to the 200 MHz datasheet maximum (was 225 MHz)
+    * set_freq_manual() refuses Multisynth ratios that AN619 doesn't allow (anything other than 4 via divide-by-4, 6, or 8 and up) and caps the divide-by-4 PLL at 800 MHz
+    * set_phase() and set_int() do nothing on CLK6/CLK7 (no phase register; reg 22/23 bit 6 is the PLL integer-mode bit)
+    * Fix set_pll_input() ORing the CLKIN divider bits instead of replacing them
+    * SI5351_CRYSTAL_LOAD_0PF no longer writes a reserved value; the chip default of 10 pF is used
+    * Keep the VCXO PLLB setup (c = 10^6 and frequency) when PLLB is reprogrammed
+    * Don't write illegal PLL feedback ratios for references outside the usable range (e.g. 5 MHz)
+
 * v2.3.0
 
     * Reduce flash usage by roughly 0.6 to 3 KB on AVR (depending on which features a sketch uses) with no change to the public API
