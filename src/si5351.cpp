@@ -1456,6 +1456,8 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 
 		if (a < SI5351_MULTISYNTH_A_MIN)
 		{
+			// Clamp to ratio 6; a must follow or ratio 5 is written (DEV-05)
+			a = SI5351_MULTISYNTH_A_MIN;
 			freq = pll_freq / SI5351_MULTISYNTH_A_MIN;
 		}
 		if (a > SI5351_MULTISYNTH_A_MAX)
