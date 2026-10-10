@@ -318,6 +318,7 @@ public:
   enum si5351_pll_input pllb_ref_osc;
 	uint32_t xtal_freq[2];
 private:
+  void pll_update(enum si5351_pll, uint64_t);
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);

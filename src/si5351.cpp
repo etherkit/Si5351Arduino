@@ -39,6 +39,12 @@
 // Set while set_freq() re-plans a PLL: it resets that PLL once after all
 // PLL and MS writes, so set_ms() must not issue its own DIVBY4-exit reset.
 static uint8_t defer_pll_reset;
+// DIVBY4 exit seen while defer_pll_reset was set (reset still owed)
+static uint8_t reset_owed;
+// Clock whose MS the caller is about to write itself (skipped by recalc)
+static uint8_t recalc_skip = 0xFF;
+// Make pll_update() recalculate even if the PLL frequency is unchanged
+static uint8_t recalc_force;
 
 // Datasheet / AN619 maximum output (and MS0-5 output) frequency. The public
 // SI5351_MULTISYNTH_MAX_FREQ / SI5351_CLKOUT_MAX_FREQ (225 MHz) are kept for
@@ -219,9 +225,11 @@ void Si5351::reset(void)
 	vcxo_pull = 0;
 
 	// Initialize the CLK outputs according to flowchart in datasheet
-	// First, turn them off
+	// First, turn them off (and forget them, so set_pll() below does not
+	// recalculate their dividers)
 	for(i = 0; i < 8; i++)
 	{
+		clk_freq[i] = 0;
 		si5351_write(SI5351_CLK0_CTRL + i, 0x80);
 	}
 
@@ -258,7 +266,6 @@ void Si5351::reset(void)
 	// Set initial frequencies
 	for(i = 0; i < 8; i++)
 	{
-		clk_freq[i] = 0;
 		output_enable((enum si5351_clock)i, 0);
 		clk_first_set[i] = false;
 	}
@@ -401,34 +408,15 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			pll_freq = SI5351_PLL_FIXED;
 		}
 
-		// Set PLL
-		set_pll(pll_freq, pll_assignment[clk]);
-
-		// Recalculate params for other synths on same PLL
+		// Set PLL and recalculate every synth on it, this one included
 		defer_pll_reset = 1;
-		for(i = 0; i < 6; i++)
-		{
-			if(clk_freq[i] != 0 && pll_assignment[i] == pll_assignment[clk])
-			{
-				struct Si5351RegSet temp_reg;
-				uint64_t temp_freq;
-
-				// Select the proper R div value
-				temp_freq = clk_freq[i];
-				r_div = select_r_div(&temp_freq, SI5351_CLKOUT_MIN_FREQ);
-
-				multisynth_calc(temp_freq, pll_freq, &temp_reg);
-
-				// If freq > 150 MHz, we need to use DIVBY4 and integer mode
-				div_by_4 = (temp_freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT);
-
-				// Set multisynth registers
-				set_ms((enum si5351_clock)i, temp_reg, div_by_4, r_div, div_by_4);
-			}
-		}
+		recalc_force = 1;
+		set_pll(pll_freq, pll_assignment[clk]);
+		recalc_force = 0;
 
 		// Reset the PLL (once, after all PLL and MS writes)
 		defer_pll_reset = 0;
+		reset_owed = 0;
 		pll_reset(pll_assignment[clk]);
 
 		return 0;
@@ -490,14 +478,10 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 			pll_freq = multisynth67_calc(freq, 0, &ms_reg);
 			// Preserve original asymmetry: CLK6 hardcodes PLLB; CLK7 uses assignment
-			if(clk == SI5351_CLK6)
-			{
-				set_pll(pll_freq, SI5351_PLLB);
-			}
-			else
-			{
-				set_pll(pll_freq, pll_assignment[clk]);
-			}
+			recalc_skip = clk;
+			defer_pll_reset = 1;
+			set_pll(pll_freq, (clk == SI5351_CLK6) ? SI5351_PLLB : pll_assignment[clk]);
+			recalc_skip = 0xFF;
 		}
 
 		// Enable the output on first set_freq only, as for CLK0-5 (DEV-14).
@@ -513,6 +497,14 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 
 		// Set multisynth registers (MS must be set before PLL)
 		set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
+
+		// One reset, after all PLL and MS writes, if the recalc owes one
+		defer_pll_reset = 0;
+		if(reset_owed)
+		{
+			reset_owed = 0;
+			pll_reset(pll_assignment[clk]);
+		}
 
 		return 0;
 	}
@@ -583,7 +575,10 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 
 	clk_freq[(uint8_t)clk] = freq;
 
+	recalc_skip = clk;
+	defer_pll_reset = 1;
 	set_pll(pll_freq, pll_assignment[clk]);
+	recalc_skip = 0xFF;
 
 	// Enable the output
 	output_enable(clk, 1);
@@ -607,7 +602,15 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 	// Set multisynth registers (MS must be set before PLL)
 	set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
 
-    return 0;
+	// One reset, after all PLL and MS writes, if one is owed
+	defer_pll_reset = 0;
+	if(reset_owed)
+	{
+		reset_owed = 0;
+		pll_reset(pll_assignment[clk]);
+	}
+
+	return 0;
 }
 
 /*
@@ -649,15 +652,74 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 	pack_reg_set(&pll_reg, params, 0);
 
 	// Write the parameters
-	if(target_pll == SI5351_PLLA)
+	si5351_write_bulk((target_pll == SI5351_PLLA) ? SI5351_PLLA_PARAMETERS : SI5351_PLLB_PARAMETERS,
+		SI5351_PARAMETERS_LENGTH, params);
+	pll_update(target_pll, pll_freq);
+}
+
+/*
+ * pll_update(enum si5351_pll pll, uint64_t pll_freq)
+ *
+ * Store a newly programmed PLL frequency. If it changed (and is inside the
+ * VCO range, so pll_calc() did not clamp it), rewrite the MS (and R, DIVBY4,
+ * integer bits) of every active output on this PLL for its stored
+ * frequency, so outputs keep their frequency when the PLL changes. An output with no valid ratio on the new PLL (AN619:
+ * 4 via DIVBY4, 6, 8+; MS6/7 even 6..254) is left as it is. Any reset needed
+ * for a DIVBY4 exit is issued once at the end, or by the caller if it is
+ * deferring resets.
+ */
+void Si5351::pll_update(enum si5351_pll pll, uint64_t pll_freq)
+{
+	uint8_t i, r_div, div_by_4, outer = defer_pll_reset;
+	uint64_t *stored = pll ? &pllb_freq : &plla_freq;
+	struct Si5351RegSet reg;
+
+	i = (*stored != pll_freq) && pll_freq >= SI5351_PLL_VCO_MIN * SI5351_FREQ_MULT
+		&& pll_freq <= SI5351_PLL_VCO_MAX * SI5351_FREQ_MULT;
+	*stored = pll_freq;
+	if(!i && !recalc_force)
 	{
-		si5351_write_bulk(SI5351_PLLA_PARAMETERS, SI5351_PARAMETERS_LENGTH, params);
-		plla_freq = pll_freq;
+		return;
 	}
-	else if(target_pll == SI5351_PLLB)
+
+	defer_pll_reset = 1;
+	for(i = 0; i < 8; i++)
 	{
-		si5351_write_bulk(SI5351_PLLB_PARAMETERS, SI5351_PARAMETERS_LENGTH, params);
-		pllb_freq = pll_freq;
+		uint64_t f = clk_freq[i];
+		if(f == 0 || i == recalc_skip || pll_assignment[i] != pll)
+		{
+			continue;
+		}
+		r_div = 0;
+		if(i >= 6)
+		{
+			reg.p1 = ms67_div(pll_freq, f, &r_div);
+			if(reg.p1 == 0)
+			{
+				continue;
+			}
+			reg.p2 = 0;
+			reg.p3 = 0;
+			div_by_4 = 0;
+		}
+		else
+		{
+			r_div = select_r_div(&f, SI5351_CLKOUT_MIN_FREQ);
+			div_by_4 = (f >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT);
+			uint64_t f4 = f << 2;
+			if(div_by_4 ? (pll_freq != f4) : (pll_freq < (f4 << 1) && pll_freq != f4 + (f << 1)))
+			{
+				continue;
+			}
+			multisynth_calc(f, pll_freq, &reg);
+		}
+		set_ms((enum si5351_clock)i, reg, div_by_4, r_div, div_by_4);
+	}
+	defer_pll_reset = outer;
+	if(reset_owed && !outer)
+	{
+		reset_owed = 0;
+		pll_reset(pll);
 	}
 }
 
@@ -697,6 +759,7 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 		// reset (issue #65, e.g. 156 MHz -> 80 MHz). Reset only on that
 		// transition so normal tuning stays glitch-free. reset() leaves the
 		// DIVBY4 bits set, so this also covers reset() followed by set_freq().
+		reset_owed |= leaving_divby4 && defer_pll_reset;
 		if(leaving_divby4 && !defer_pll_reset)
 		{
 			pll_reset(pll_assignment[clk]);
@@ -1255,7 +1318,6 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 
 	// Remember the VCXO setting so later PLLB updates keep c = 10^6
 	vcxo_pull = ppm;
-	pllb_freq = pll_freq;
 
 	// Set PLLB params
 	vcxo_param = pll_calc(SI5351_PLLB, pll_freq, &pll_reg, ref_correction[pllb_ref_osc], 1);
@@ -1280,6 +1342,8 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 
 	temp = (uint8_t)((vcxo_param >> 16) & 0x3F);
 	si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
+
+	pll_update(SI5351_PLLB, pll_freq);
 }
 
 /*
