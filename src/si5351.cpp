@@ -567,6 +567,21 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 		ms_reg.p3 = 0;
 	}
 
+	else if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
+	{
+		// DIVBY4 output is fVCO / 4: keep it within the 200 MHz maximum
+		if(pll_freq > 4 * SI5351_FOUT_MAX * SI5351_FREQ_MULT)
+		{
+			pll_freq = 4 * SI5351_FOUT_MAX * SI5351_FREQ_MULT;
+		}
+	}
+	else if(freq == 0 || (pll_freq < 8 * freq && pll_freq != 6 * freq))
+	{
+		// AN619: MS ratios are 4 (DIVBY4), 6, 8 or 8+1/1048575..2048 only.
+		// Refuse anything else before writing.
+		return 1;
+	}
+
 	clk_freq[(uint8_t)clk] = freq;
 
 	set_pll(pll_freq, pll_assignment[clk]);
