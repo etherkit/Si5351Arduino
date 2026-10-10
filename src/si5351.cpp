@@ -485,6 +485,14 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			}
 		}
 
+		// Enable the output on first set_freq only, as for CLK0-5 (DEV-14).
+		// reset() already powers up CLK6/7 (reg 22/23 = 0x0C).
+		if(clk_first_set[(uint8_t)clk] == false)
+		{
+			output_enable(clk, 1);
+			clk_first_set[(uint8_t)clk] = true;
+		}
+
 		div_by_4 = 0;
 		int_mode = 0;
 
