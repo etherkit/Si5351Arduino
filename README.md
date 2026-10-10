@@ -711,6 +711,15 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.3.0
+
+    * Reduce flash usage by roughly 0.6 to 3 KB on AVR (depending on which features a sketch uses) with no change to the public API
+    * Remove heap allocation (new/delete) when writing PLL, Multisynth, and VCXO registers
+    * Fix no output after a Multisynth leaves divide-by-4 mode (above 150 MHz) without a PLL reset (#65)
+    * Re-plan the PLL when a frequency of 100 MHz or less would need a Multisynth ratio below 8
+    * Move an output of 100 MHz or less to the other PLL when its PLL is held by an output above 100 MHz
+    * Issue only one PLL reset per re-plan
+
 * v2.2.0
 
     * Fix "Si5351 init does not initialize the ref freq nor corr entries for clkin", thanks to conr2286
