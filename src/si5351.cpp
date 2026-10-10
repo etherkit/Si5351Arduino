@@ -123,6 +123,7 @@ Si5351::Si5351(uint8_t i2c_addr):
 	plla_ref_osc = SI5351_PLL_INPUT_XO;
 	pllb_ref_osc = SI5351_PLL_INPUT_XO;
 	clkin_div = SI5351_CLKIN_DIV_1;
+	vcxo_pull = 0;
 }
 
 /*
@@ -205,6 +206,9 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 void Si5351::reset(void)
 {
 	uint8_t i;
+
+	// VCXO is cleared below
+	vcxo_pull = 0;
 
 	// Initialize the CLK outputs according to flowchart in datasheet
 	// First, turn them off
@@ -596,6 +600,13 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 {
 	struct Si5351RegSet pll_reg;
 	uint8_t params[SI5351_PARAMETERS_LENGTH];
+
+	// While the VCXO is in use, PLLB must keep c = 10^6 (AN619 sec. 3.2, 7)
+	if(target_pll == SI5351_PLLB && vcxo_pull)
+	{
+		set_vcxo(pll_freq, vcxo_pull);
+		return;
+	}
 
 	if(target_pll == SI5351_PLLA)
 	{
@@ -1208,6 +1219,10 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 	{
 		ppm = SI5351_VCXO_PULL_MAX;
 	}
+
+	// Remember the VCXO setting so later PLLB updates keep c = 10^6
+	vcxo_pull = ppm;
+	pllb_freq = pll_freq;
 
 	// Set PLLB params
 	vcxo_param = pll_calc(SI5351_PLLB, pll_freq, &pll_reg, ref_correction[pllb_ref_osc], 1);

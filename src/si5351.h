@@ -329,6 +329,7 @@ private:
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
   bool clk_first_set[8];
+  uint8_t vcxo_pull;
 };
 
 #endif /* SI5351_H_ */
