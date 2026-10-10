@@ -806,6 +806,12 @@ void Si5351::set_correction(int32_t corr, enum si5351_pll_input ref_osc)
  */
 void Si5351::set_phase(enum si5351_clock clk, uint8_t phase)
 {
+	// Only CLK0-5 have a phase offset register (165-170); 171+ are reserved
+	if((uint8_t)clk > (uint8_t)SI5351_CLK5)
+	{
+		return;
+	}
+
 	// Mask off the upper bit since it is reserved
 	phase = phase & 0b01111111;
 
@@ -889,6 +895,13 @@ void Si5351::set_ms_source(enum si5351_clock clk, enum si5351_pll pll)
 void Si5351::set_int(enum si5351_clock clk, uint8_t enable)
 {
 	uint8_t reg_val;
+
+	// MS6/7 are always integer and have no MSx_INT bit: bit 6 of reg 22/23
+	// is FBA_INT/FBB_INT (PLLA/PLLB feedback integer mode), so do nothing
+	if((uint8_t)clk > (uint8_t)SI5351_CLK5)
+	{
+		return;
+	}
 	reg_val = si5351_read(SI5351_CLK0_CTRL + (uint8_t)clk);
 
 	if(enable == 1)
