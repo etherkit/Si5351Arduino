@@ -40,6 +40,11 @@
 // PLL and MS writes, so set_ms() must not issue its own DIVBY4-exit reset.
 static uint8_t defer_pll_reset;
 
+// Datasheet / AN619 maximum output (and MS0-5 output) frequency. The public
+// SI5351_MULTISYNTH_MAX_FREQ / SI5351_CLKOUT_MAX_FREQ (225 MHz) are kept for
+// compatibility but are above the spec; DIVBY4 covers 150 < Fout <= 200 MHz.
+#define SI5351_FOUT_MAX			200000000ULL
+
 // MS6/MS7 divide ratios are even integers 6..254 (AN619 sec. 2.2, 4.1.2), so
 // with fVCO >= 600 MHz the MS6/7 output is at least 600 MHz / 254 and, with
 // R = 128, the lowest CLK6/7 output is 600 MHz / 254 / 128 (rounded up here;
@@ -280,9 +285,9 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		}
 
 		// Upper bounds check
-		if(freq > SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT)
+		if(freq > SI5351_FOUT_MAX * SI5351_FREQ_MULT)
 		{
-			freq = SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT;
+			freq = SI5351_FOUT_MAX * SI5351_FREQ_MULT;
 		}
 
 		// Is another output on the same PLL already >100 MHz (and so
@@ -531,9 +536,9 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 	}
 
 	// Upper bounds check
-	if(freq > SI5351_CLKOUT_MAX_FREQ * SI5351_FREQ_MULT)
+	if(freq > SI5351_FOUT_MAX * SI5351_FREQ_MULT)
 	{
-		freq = SI5351_CLKOUT_MAX_FREQ * SI5351_FREQ_MULT;
+		freq = SI5351_FOUT_MAX * SI5351_FREQ_MULT;
 	}
 
 	uint8_t r_div = 0;
@@ -1400,9 +1405,9 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 	uint8_t ret_val = 0;
 
 	// Multisynth bounds checking
-	if (freq > SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT)
+	if (freq > SI5351_FOUT_MAX * SI5351_FREQ_MULT)
 	{
-		freq = SI5351_MULTISYNTH_MAX_FREQ * SI5351_FREQ_MULT;
+		freq = SI5351_FOUT_MAX * SI5351_FREQ_MULT;
 	}
 	if (freq < SI5351_MULTISYNTH_MIN_FREQ * SI5351_FREQ_MULT)
 	{
