@@ -723,6 +723,7 @@ Changelog
     * SI5351_CRYSTAL_LOAD_0PF no longer writes a reserved value; the chip default of 10 pF is used
     * Keep the VCXO PLLB setup (c = 10^6 and frequency) when PLLB is reprogrammed
     * Don't write illegal PLL feedback ratios for references outside the usable range (e.g. 5 MHz)
+    * When a PLL changes frequency (set_pll(), set_vcxo(), set_freq_manual(), or set_freq() re-planning a PLL, including for CLK6/CLK7), recalculate the dividers of the other outputs on that PLL so they stay on frequency; outputs with no valid divider on the new PLL are left as they are
 
 * v2.3.0
 
