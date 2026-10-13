@@ -282,6 +282,7 @@ public:
   Si5351(uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
 	bool init(uint8_t, uint32_t, int32_t);
 	void reset(void);
+	void reset_freq(enum si5351_clock);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
 	uint8_t set_freq_manual(uint64_t, uint64_t, enum si5351_clock);
 	void set_pll(uint64_t, enum si5351_pll);
@@ -302,7 +303,7 @@ public:
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
 	void set_pll_input(enum si5351_pll, enum si5351_pll_input);
 	void set_vcxo(uint64_t, uint8_t);
-  void set_ref_freq(uint32_t, enum si5351_pll_input);
+  	void set_ref_freq(uint32_t, enum si5351_pll_input);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
@@ -314,8 +315,8 @@ public:
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
 	uint64_t pllb_freq;
-  enum si5351_pll_input plla_ref_osc;
-  enum si5351_pll_input pllb_ref_osc;
+  	enum si5351_pll_input plla_ref_osc;
+  	enum si5351_pll_input pllb_ref_osc;
 	uint32_t xtal_freq[2];
 private:
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);

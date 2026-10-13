@@ -299,6 +299,19 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_f
  */
 void Si5351::reset(void)
 ```
+### reset_freq()
+```
+/*
+ * reset_freq(enum si5351_clock clk)
+ *
+ * Sets the clock frequency of the specified CLK output to initial value.
+ * Set 0 Hz and disable output.
+ *
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ */
+void Si5351::reset_freq(enum si5351_clock clk)
+```
 ### set_freq()
 ```
 /*
