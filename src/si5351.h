@@ -279,7 +279,10 @@ struct Si5351IntStatus
 class Si5351
 {
 public:
-  Si5351(uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
+  // Select the I2C bus (TwoWire instance) and address, e.g. Si5351 si5351(&Wire1);
+  Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
+  // Address only, on the default Wire bus (kept for existing sketches)
+  Si5351(uint8_t i2c_addr);
 	bool init(uint8_t, uint32_t, int32_t);
 	void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
@@ -328,6 +331,7 @@ private:
 	int32_t ref_correction[2];
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
+  TwoWire *_wire;
   bool clk_first_set[8];
 };
 

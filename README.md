@@ -248,6 +248,26 @@ The standard I2C bus address for the Si5351 is 0x60, however there are other ICs
 
     Si5351 si5351(0x61);
 
+Selecting an I2C Bus
+--------------------
+By default the library uses the standard _Wire_ bus. On boards with more than one I2C peripheral (ESP32, RP2040, SAMD, Teensy, STM32 and others), pass a pointer to the _TwoWire_ instance the Si5351 is connected to, optionally followed by the bus address:
+
+    #include "Wire.h"
+    #include "si5351.h"
+
+    Si5351 si5351(&Wire1);          // second I2C bus, address 0x60
+    // Si5351 si5351(&Wire1, 0x61); // second I2C bus, alternate address
+
+    void setup()
+    {
+      Wire1.setPins(13, 15);        // ESP32: choose SDA/SCL before init()
+      si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+    }
+
+A _TwoWire_ object you create yourself (for example `TwoWire wire1(1);` on ESP32) works the same way: `Si5351 si5351(&wire1);`.
+
+_init()_ calls _begin()_ on the selected bus with no arguments, as earlier versions did on _Wire_. That keeps pins set beforehand with _setPins()_ (ESP32) or _setSDA()/setSCL()_ (RP2040). If your board needs pins or a clock passed to _begin()_ itself, call _begin(...)_ on the bus yourself before _init()_; on ESP32 a bus that is already started is left as it is. The existing address-only constructor, `Si5351 si5351(0x61);`, still selects _Wire_.
+
 Startup Conditions
 ------------------
 This library initializes the Si5351 parameters to the following values upon startup and on reset:
@@ -710,6 +730,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+
+* Unreleased
+
+    * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = 0x60)` so the Si5351 can be on Wire1 or any other TwoWire bus (#103, #106). `Si5351()` and `Si5351(addr)` behave as before
 
 * v2.3.0
 
