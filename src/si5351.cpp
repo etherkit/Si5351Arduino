@@ -67,15 +67,16 @@ static void frac_to_reg(uint32_t a, uint32_t b, uint32_t c, struct Si5351RegSet 
 /* Public functions */
 /********************/
 
-Si5351::Si5351(uint8_t i2c_addr):
-	Si5351(&Wire, i2c_addr)
+Si5351::Si5351(TwoWire *wire, uint8_t i2c_addr)
 {
+	setup_obj(wire, i2c_addr);
 }
 
-Si5351::Si5351(TwoWire *wire, uint8_t i2c_addr):
-	i2c_bus_addr(i2c_addr),
-	_wire(wire)
+// Shared constructor body (no C++11 delegating constructor needed)
+void Si5351::setup_obj(TwoWire *wire, uint8_t i2c_addr)
 {
+	i2c_bus_addr = i2c_addr;
+	_wire = wire ? wire : &Wire;
 	xtal_freq[0] = SI5351_XTAL_FREQ;
 
 	// Start by using XO ref osc as default for each PLL

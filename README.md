@@ -260,13 +260,16 @@ By default the library uses the standard _Wire_ bus. On boards with more than on
 
     void setup()
     {
-      Wire1.setPins(13, 15);        // ESP32: choose SDA/SCL before init()
+    #if defined(ARDUINO_ARCH_ESP32)
+      Wire1.setPins(13, 15);        // ESP32 only: choose SDA/SCL before init()
+    #endif
       si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+      // Wire1.setClock(400000);    // optional: set the bus speed after init()
     }
 
 A _TwoWire_ object you create yourself (for example `TwoWire wire1(1);` on ESP32) works the same way: `Si5351 si5351(&wire1);`.
 
-_init()_ calls _begin()_ on the selected bus with no arguments, as earlier versions did on _Wire_. That keeps pins set beforehand with _setPins()_ (ESP32) or _setSDA()/setSCL()_ (RP2040). If your board needs pins or a clock passed to _begin()_ itself, call _begin(...)_ on the bus yourself before _init()_; on ESP32 a bus that is already started is left as it is. The existing address-only constructor, `Si5351 si5351(0x61);`, still selects _Wire_.
+_init()_ calls _begin()_ on the selected bus with no arguments, as earlier versions did on _Wire_. That keeps pins set beforehand with _setPins()_ (ESP32) or _setSDA()/setSCL()_ (RP2040). If your board needs pins passed to _begin()_ itself, call _begin(...)_ on the bus yourself before _init()_. On ESP32 a bus that is already started is left as it is. On most other cores (AVR, SAMD, RP2040, STM32 and others) _begin()_ runs again inside _init()_ and may reset a bus speed chosen earlier with _setClock()_, so call _setClock()_ after _init()_. A null bus pointer selects _Wire_. The existing address-only constructor, `Si5351 si5351(0x61);`, still selects _Wire_.
 
 Startup Conditions
 ------------------
@@ -733,7 +736,7 @@ Changelog
 
 * Unreleased
 
-    * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = 0x60)` so the Si5351 can be on Wire1 or any other TwoWire bus (#103, #106). `Si5351()` and `Si5351(addr)` behave as before
+    * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR)` so the Si5351 can be on Wire1 or any other TwoWire bus (#103, #106). `Si5351()` and `Si5351(addr)` (any integer type, including a literal 0 or NULL) behave as before. No C++11 features are required
 
 * v2.3.0
 

@@ -280,9 +280,19 @@ class Si5351
 {
 public:
   // Select the I2C bus (TwoWire instance) and address, e.g. Si5351 si5351(&Wire1);
+  // A null bus pointer falls back to Wire.
   Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR);
-  // Address only, on the default Wire bus (kept for existing sketches)
-  Si5351(uint8_t i2c_addr);
+  // Address only, on the default Wire bus (kept for existing sketches).
+  // One overload per integer type so that any integer argument, including a
+  // literal 0 or NULL, selects the address path exactly as before instead of
+  // being ambiguous with the TwoWire * constructor.
+  Si5351(uint8_t i2c_addr) { setup_obj(&Wire, i2c_addr); }
+  Si5351(int i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
+  Si5351(unsigned int i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
+  Si5351(long i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
+  Si5351(unsigned long i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
+  Si5351(long long i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
+  Si5351(unsigned long long i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
 	bool init(uint8_t, uint32_t, int32_t);
 	void reset(void);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
@@ -321,6 +331,7 @@ public:
   enum si5351_pll_input pllb_ref_osc;
 	uint32_t xtal_freq[2];
 private:
+	void setup_obj(TwoWire *, uint8_t);
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
