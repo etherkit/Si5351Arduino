@@ -734,9 +734,10 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
-* Unreleased
+* v2.4.0
 
-    * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR)` so the Si5351 can be on Wire1 or any other TwoWire bus (#103, #106). `Si5351()` and `Si5351(addr)` (any integer type, including a literal 0 or NULL) behave as before. No C++11 features are required
+    * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR)` so the Si5351 can be on Wire1 or any other TwoWire bus (closes #103, #106). `Si5351()` and `Si5351(addr)` (any integer type, including a literal 0 or NULL) behave as before. No new C++11 features are required
+    * Fix compile error in the si5351_vcxo example (`get_correction()` now called with `SI5351_PLL_INPUT_XO`)
 
 * v2.3.0
 
