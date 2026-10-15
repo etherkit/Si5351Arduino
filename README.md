@@ -737,6 +737,8 @@ Changelog
 * v2.4.0
 
     * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR)` so the Si5351 can be on Wire1 or any other TwoWire bus (closes #103, #106). `Si5351()` and `Si5351(addr)` (any integer type, including a literal 0 or NULL) behave as before. No new C++11 features are required
+    * Passing `nullptr` or `(TwoWire *)0` to the bus constructor selects `Wire`; `NULL` or `0` still mean I2C address 0
+    * Cost on the Uno basic example: +138 B flash, +2 B RAM
     * Fix compile error in the si5351_vcxo example (`get_correction()` now called with `SI5351_PLL_INPUT_XO`)
 
 * v2.3.0
