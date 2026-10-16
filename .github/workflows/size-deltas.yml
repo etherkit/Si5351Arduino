@@ -1,0 +1,27 @@
+name: Report size deltas
+
+# Runs on a schedule (per arduino/report-size-deltas docs) so it gets a
+# write token and can comment on pull requests from forks. It scans recent
+# workflow artifacts named sketches-report-* uploaded by the CI workflow.
+# Note: scheduled workflows only run from the default branch, so this takes
+# effect once merged to master.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: report size deltas
+    if: github.repository == 'etherkit/Si5351Arduino'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: arduino/report-size-deltas@v1
+        with:
+          sketches-reports-source: ^sketches-report-.+

@@ -1,9 +1,17 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,6 +20,7 @@ jobs:
           library-manager: update
 
   compile-sketches:
+    name: compile (${{ matrix.board.fqbn }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -54,24 +63,9 @@ jobs:
           sketches-report-path: sketches-reports
       - uses: actions/upload-artifact@v4
         with:
+          # Artifact names must match the regex in size-deltas.yml.
           name: sketches-report-${{ strategy.job-index }}
           path: sketches-reports
-
-  report-size-deltas:
-    if: github.event_name == 'pull_request'
-    needs: compile-sketches
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: sketches-report-*
-          merge-multiple: true
-          path: sketches-reports
-      - uses: arduino/report-size-deltas@v1
-        with:
-          sketches-reports-source: sketches-reports
 
   # Host tests: placeholder. Test design and harnesses are owned by Test Lab;
   # a host-test job will be added in a separate change once Test Lab supplies it.
