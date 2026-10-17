@@ -49,7 +49,7 @@ void loop()
   // Read the Status Register and print it every 10 seconds
   si5351.update_status();
   Serial.print("corr: ");
-  Serial.print(si5351.get_correction());
+  Serial.print(si5351.get_correction(SI5351_PLL_INPUT_XO));
   Serial.print("  SYS_INIT: ");
   Serial.print(si5351.dev_status.SYS_INIT);
   Serial.print("  LOL_A: ");

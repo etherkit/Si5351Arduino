@@ -248,6 +248,29 @@ The standard I2C bus address for the Si5351 is 0x60, however there are other ICs
 
     Si5351 si5351(0x61);
 
+Selecting an I2C Bus
+--------------------
+By default the library uses the standard _Wire_ bus. On boards with more than one I2C peripheral (ESP32, RP2040, SAMD, Teensy, STM32 and others), pass a pointer to the _TwoWire_ instance the Si5351 is connected to, optionally followed by the bus address:
+
+    #include "Wire.h"
+    #include "si5351.h"
+
+    Si5351 si5351(&Wire1);          // second I2C bus, address 0x60
+    // Si5351 si5351(&Wire1, 0x61); // second I2C bus, alternate address
+
+    void setup()
+    {
+    #if defined(ARDUINO_ARCH_ESP32)
+      Wire1.setPins(13, 15);        // ESP32 only: choose SDA/SCL before init()
+    #endif
+      si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+      // Wire1.setClock(400000);    // optional: set the bus speed after init()
+    }
+
+A _TwoWire_ object you create yourself (for example `TwoWire wire1(1);` on ESP32) works the same way: `Si5351 si5351(&wire1);`.
+
+_init()_ calls _begin()_ on the selected bus with no arguments, as earlier versions did on _Wire_. That keeps pins set beforehand with _setPins()_ (ESP32) or _setSDA()/setSCL()_ (RP2040). If your board needs pins passed to _begin()_ itself, call _begin(...)_ on the bus yourself before _init()_. On ESP32 a bus that is already started is left as it is; the core logs the warning "Bus already started in Master Mode", which is harmless and the same as with earlier versions of this library. On most other cores (AVR, SAMD, RP2040, STM32 and others) _begin()_ runs again inside _init()_ and may reset a bus speed chosen earlier with _setClock()_, so call _setClock()_ after _init()_. To get the default _Wire_ bus through the bus constructor, pass `nullptr` or `(TwoWire *)0`; a plain `NULL` or `0` is treated as I2C address 0, as in earlier versions. The existing address-only constructor, `Si5351 si5351(0x61);`, still selects _Wire_.
+
 Startup Conditions
 ------------------
 This library initializes the Si5351 parameters to the following values upon startup and on reset:
@@ -710,6 +733,13 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+
+* v2.4.0
+
+    * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR)` so the Si5351 can be on Wire1 or any other TwoWire bus (closes #103, #106). `Si5351()` and `Si5351(addr)` (any integer type, including a literal 0 or NULL) behave as before. No new C++11 features are required
+    * Passing `nullptr` or `(TwoWire *)0` to the bus constructor selects `Wire`; `NULL` or `0` still mean I2C address 0
+    * Cost on the Uno basic example: +138 B flash, +2 B RAM
+    * Fix compile error in the si5351_vcxo example (`get_correction()` now called with `SI5351_PLL_INPUT_XO`)
 
 * v2.3.0
 
