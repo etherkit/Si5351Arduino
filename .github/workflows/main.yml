@@ -48,9 +48,6 @@ jobs:
           platforms: ${{ matrix.board.platforms }}
           libraries: |
             - source-path: ./
-          # examples/si5351_vcxo is excluded: on master it calls get_correction()
-          # without the required argument and fails to compile. PR #107 fixes it;
-          # add "- examples/si5351_vcxo" back here once #107 is merged.
           sketch-paths: |
             - examples/si5351_calibration
             - examples/si5351_clk67_example
@@ -59,6 +56,7 @@ jobs:
             - examples/si5351_outputs
             - examples/si5351_phase
             - examples/si5351_sweeper
+            - examples/si5351_vcxo
           enable-deltas-report: true
           sketches-report-path: sketches-reports
       - uses: actions/upload-artifact@v4
