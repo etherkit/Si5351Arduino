@@ -336,8 +336,29 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 			}
 		}
 
+		// A >100 MHz request needs a PLL of its own. If another output holds
+		// this one above 100 MHz, move this output to the other PLL when no
+		// other active output uses it (#39); otherwise it is refused below.
+		if(pll_held && freq > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
+		{
+			enum si5351_pll other = (pll_assignment[clk] == SI5351_PLLA) ? SI5351_PLLB : SI5351_PLLA;
+			uint8_t other_used = 0;
+			for(i = 0; i < 8; i++)
+			{
+				if(i != (uint8_t)clk && clk_freq[i] != 0 && pll_assignment[i] == other)
+				{
+					other_used = 1;
+				}
+			}
+			if(!other_used)
+			{
+				set_ms_source(clk, other);
+				pll_held = 0;
+			}
+		}
+
 		// Enable the output on first set_freq only
-		// (a >100 MHz request is refused below if the PLL is held)
+		// (a >100 MHz request is refused below if the PLL is still held)
 		if(!(pll_held && freq > (SI5351_MULTISYNTH_SHARE_MAX * SI5351_FREQ_MULT))
 			&& clk_first_set[(uint8_t)clk] == false)
 		{
@@ -352,7 +373,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		{
 			if(pll_held)
 			{
-				return 1; // won't set if any other clks already >100 MHz
+				return 1; // both PLLs in use and this one is held >100 MHz
 			}
 
 			// Set the freq in memory
