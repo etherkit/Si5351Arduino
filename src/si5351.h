@@ -147,6 +147,7 @@
 #define SI5351_OUTPUT_CLK_DIVBY4       (3<<2)
 
 #define SI5351_SSC_PARAM0               149
+#define SI5351_SSC_EN                   (1<<7)
 #define SI5351_SSC_PARAM1               150
 #define SI5351_SSC_PARAM2               151
 #define SI5351_SSC_PARAM3               152

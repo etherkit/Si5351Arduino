@@ -263,6 +263,12 @@ void Si5351::reset(void)
 		set_ms_source((enum si5351_clock)i, SI5351_PLLB);
 	}
 
+	// Turn off spread spectrum (SSC_EN, reg 149 bit 7). Some chips power up
+	// or are factory-programmed with it enabled, which spreads/shifts the
+	// output frequency (issues #82, #86).
+	uint8_t ssc = si5351_read(SI5351_SSC_PARAM0);
+	si5351_write(SI5351_SSC_PARAM0, ssc & ~SI5351_SSC_EN);
+
 	// Reset the VCXO param
 	si5351_write(SI5351_VXCO_PARAMETERS_LOW, 0);
 	si5351_write(SI5351_VXCO_PARAMETERS_MID, 0);
