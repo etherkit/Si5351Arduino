@@ -731,7 +731,7 @@ Raw Commands
 ------------
 If you need to read and write raw data to the Si5351, there is public access to the library's _read()_, _write()_, and _write_bulk()_ methods.
 
-_write()_ and _write_bulk()_ return the Wire _endTransmission()_ code (0 = OK). _read()_ returns 0 on a failed transfer. Call _get_i2c_error()_ to get (and clear) the last I2C error recorded by any of them, for example after _set_freq()_ or _update_status()_, to detect a missing or failing device.
+_write()_ and _write_bulk()_ return the Wire _endTransmission()_ code (0 = OK). _read()_ returns 0 on a failed transfer. Call _get_i2c_error()_ to get (and clear) the last I2C error recorded by any of them, for example after _set_freq()_ or _update_status()_, to detect a missing or failing device. Nonzero codes are the Wire _endTransmission()_ codes (1-5, core-dependent), or _SI5351_I2C_ERR_NO_DATA_ (0xFF) when a read returned no data. A failed _init()_ (no device ACK) also records its code, so _get_i2c_error()_ is nonzero afterwards.
 
 Unsupported Features
 --------------------

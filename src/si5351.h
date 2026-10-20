@@ -77,6 +77,9 @@
 #define SI5351_STATUS_SYS_INIT          (1<<7)
 #define SI5351_STATUS_LOL_B             (1<<6)
 #define SI5351_STATUS_LOL_A             (1<<5)
+// get_i2c_error() code for a read that returned no data. Distinct from the
+// Wire endTransmission() codes (1-5).
+#define SI5351_I2C_ERR_NO_DATA          0xFF
 #define SI5351_STATUS_LOS               (1<<3) // LOS_XTAL, matches Si5351Status.LOS
 #define SI5351_STATUS_LOS_CLKIN         (1<<4)
 #define SI5351_STATUS_LOS_XTAL          (1<<3)

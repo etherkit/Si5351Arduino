@@ -217,6 +217,7 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 	}
 	else
 	{
+		i2c_error = reg_val; // device not ACKing: make get_i2c_error() report it
 		return false;
 	}
 }
@@ -1486,7 +1487,7 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 
 	if(_wire->requestFrom(i2c_bus_addr, (uint8_t)1) == 0)
 	{
-		i2c_error = 4; // no data returned
+		i2c_error = SI5351_I2C_ERR_NO_DATA; // no data returned
 		return 0;
 	}
 
@@ -1504,7 +1505,8 @@ uint8_t Si5351::si5351_read(uint8_t addr)
  * Returns the most recent I2C error seen by si5351_read(), si5351_write()
  * or si5351_write_bulk() since the last call, and clears it. 0 means no
  * error. Nonzero values are the Wire endTransmission() codes (1-5,
- * core-dependent), or 4 when a read returned no data. Use it after
+ * core-dependent; also recorded when init() finds no device), or
+ * SI5351_I2C_ERR_NO_DATA (0xFF) when a read returned no data. Use it after
  * set_freq(), update_status() etc. to detect a missing or failing
  * device (issue #74); those calls keep their existing return values.
  */
