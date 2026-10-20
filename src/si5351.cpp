@@ -911,11 +911,19 @@ void Si5351::update_status(void)
  *
  * The frequency calibration is done as a one-time procedure.
  * Any desired test frequency within the normal range of the
- * Si5351 should be set, then the actual output frequency
- * should be measured as accurately as possible. The
- * difference between the measured and specified frequencies
- * should be calculated in Hertz, then multiplied by 10 in
- * order to get the parts-per-billion value.
+ * Si5351 should be set (with corr = 0), then the actual output
+ * frequency should be measured as accurately as possible. Then:
+ *
+ *   corr (ppb) = (f_measured - f_set) / f_set * 1e9
+ *
+ * with both frequencies in Hz. The Hz error scales with the test
+ * frequency: 1 Hz of error is 10 ppb at 100 MHz but 100 ppb at
+ * 10 MHz.
+ *
+ * Sign convention: a positive corr means the output (and so the
+ * reference) runs high. The library then treats the reference as
+ * ref * (1 + corr / 1e9) when computing the PLL, which lowers the
+ * output back to the set frequency; a negative corr raises it.
  *
  * Since the Si5351 itself has an intrinsic 0 PPM error, this
  * correction factor is good across the entire tuning range of
