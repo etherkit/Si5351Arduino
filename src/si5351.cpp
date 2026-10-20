@@ -137,6 +137,7 @@ Si5351::Si5351(TwoWire *wire, uint8_t i2c_addr)
 void Si5351::setup_obj(TwoWire *wire, uint8_t i2c_addr)
 {
 	i2c_bus_addr = i2c_addr;
+	i2c_error = 0;
 	_wire = wire ? wire : &Wire;
 	xtal_freq[0] = SI5351_XTAL_FREQ;
 
@@ -1421,7 +1422,9 @@ uint8_t Si5351::si5351_write_bulk(uint8_t addr, uint8_t bytes, uint8_t *data)
 	{
 		_wire->write(data[i]);
 	}
-	return _wire->endTransmission();
+	uint8_t err = _wire->endTransmission();
+	if(err) i2c_error = err;
+	return err;
 
 }
 
@@ -1430,7 +1433,9 @@ uint8_t Si5351::si5351_write(uint8_t addr, uint8_t data)
 	_wire->beginTransmission(i2c_bus_addr);
 	_wire->write(addr);
 	_wire->write(data);
-	return _wire->endTransmission();
+	uint8_t err = _wire->endTransmission();
+	if(err) i2c_error = err;
+	return err;
 }
 
 uint8_t Si5351::si5351_read(uint8_t addr)
@@ -1439,9 +1444,19 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 
 	_wire->beginTransmission(i2c_bus_addr);
 	_wire->write(addr);
-	_wire->endTransmission();
+	uint8_t err = _wire->endTransmission();
+	if(err)
+	{
+		// Address/register write not ACKed: don't read, return 0
+		i2c_error = err;
+		return 0;
+	}
 
-	_wire->requestFrom(i2c_bus_addr, (uint8_t)1);
+	if(_wire->requestFrom(i2c_bus_addr, (uint8_t)1) == 0)
+	{
+		i2c_error = 4; // no data returned
+		return 0;
+	}
 
 	while(_wire->available())
 	{
@@ -1449,6 +1464,23 @@ uint8_t Si5351::si5351_read(uint8_t addr)
 	}
 
 	return reg_val;
+}
+
+/*
+ * get_i2c_error(void)
+ *
+ * Returns the most recent I2C error seen by si5351_read(), si5351_write()
+ * or si5351_write_bulk() since the last call, and clears it. 0 means no
+ * error. Nonzero values are the Wire endTransmission() codes (1-5,
+ * core-dependent), or 4 when a read returned no data. Use it after
+ * set_freq(), update_status() etc. to detect a missing or failing
+ * device (issue #74); those calls keep their existing return values.
+ */
+uint8_t Si5351::get_i2c_error(void)
+{
+	uint8_t err = i2c_error;
+	i2c_error = 0;
+	return err;
 }
 
 /*********************/

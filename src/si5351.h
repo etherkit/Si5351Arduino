@@ -326,6 +326,7 @@ public:
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
+	uint8_t get_i2c_error(void);
 	struct Si5351Status dev_status = {.SYS_INIT = 0, .LOL_B = 0, .LOL_A = 0,
     .LOS = 0, .REVID = 0, .LOS_CLKIN = 0, .LOS_XTAL = 0};
 	struct Si5351IntStatus dev_int_status = {.SYS_INIT_STKY = 0, .LOL_B_STKY = 0,
@@ -351,6 +352,7 @@ private:
 	int32_t ref_correction[2];
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
+  uint8_t i2c_error;
   TwoWire *_wire;
   bool clk_first_set[8];
   uint8_t vcxo_pull;
