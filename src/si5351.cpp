@@ -1730,7 +1730,11 @@ void Si5351::update_sys_status(struct Si5351Status *status)
   status->SYS_INIT = (reg_val >> 7) & 0x01;
   status->LOL_B = (reg_val >> 6) & 0x01;
   status->LOL_A = (reg_val >> 5) & 0x01;
-  status->LOS = (reg_val >> 4) & 0x01;
+  // Bit 4 is LOS_CLKIN and bit 3 is LOS_XTAL (AN619 reg 0). LOS used to
+  // report LOS_CLKIN, which is always 1 on a crystal-only board (#85).
+  status->LOS_CLKIN = (reg_val >> 4) & 0x01;
+  status->LOS_XTAL = (reg_val >> 3) & 0x01;
+  status->LOS = status->LOS_XTAL;
   status->REVID = reg_val & 0x03;
 }
 
@@ -1744,7 +1748,9 @@ void Si5351::update_int_status(struct Si5351IntStatus *int_status)
   int_status->SYS_INIT_STKY = (reg_val >> 7) & 0x01;
   int_status->LOL_B_STKY = (reg_val >> 6) & 0x01;
   int_status->LOL_A_STKY = (reg_val >> 5) & 0x01;
-  int_status->LOS_STKY = (reg_val >> 4) & 0x01;
+  int_status->LOS_CLKIN_STKY = (reg_val >> 4) & 0x01;
+  int_status->LOS_XTAL_STKY = (reg_val >> 3) & 0x01;
+  int_status->LOS_STKY = int_status->LOS_XTAL_STKY;
 }
 
 void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)

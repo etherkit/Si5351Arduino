@@ -709,8 +709,10 @@ Status register:
       uint8_t SYS_INIT;
       uint8_t LOL_B;
       uint8_t LOL_A;
-      uint8_t LOS;
+      uint8_t LOS;       // crystal loss of signal (LOS_XTAL)
       uint8_t REVID;
+      uint8_t LOS_CLKIN; // CLKIN loss of signal (Si5351C)
+      uint8_t LOS_XTAL;  // same as LOS
     };
 
 Interrupt register:
@@ -720,7 +722,9 @@ Interrupt register:
       uint8_t SYS_INIT_STKY;
       uint8_t LOL_B_STKY;
       uint8_t LOL_A_STKY;
-      uint8_t LOS_STKY;
+      uint8_t LOS_STKY;       // sticky LOS_XTAL
+      uint8_t LOS_CLKIN_STKY;
+      uint8_t LOS_XTAL_STKY;  // same as LOS_STKY
     };
 
 Raw Commands

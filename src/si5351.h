@@ -77,7 +77,9 @@
 #define SI5351_STATUS_SYS_INIT          (1<<7)
 #define SI5351_STATUS_LOL_B             (1<<6)
 #define SI5351_STATUS_LOL_A             (1<<5)
-#define SI5351_STATUS_LOS               (1<<4)
+#define SI5351_STATUS_LOS               (1<<4) // LOS_CLKIN (kept for compatibility)
+#define SI5351_STATUS_LOS_CLKIN         (1<<4)
+#define SI5351_STATUS_LOS_XTAL          (1<<3)
 #define SI5351_OUTPUT_ENABLE_CTRL       3
 #define SI5351_OEB_PIN_ENABLE_CTRL      9
 #define SI5351_PLL_INPUT_SOURCE         15
@@ -265,8 +267,10 @@ struct Si5351Status
 	uint8_t SYS_INIT;
 	uint8_t LOL_B;
 	uint8_t LOL_A;
-	uint8_t LOS;
+	uint8_t LOS;       // Loss of signal on the crystal (LOS_XTAL, bit 3)
 	uint8_t REVID;
+	uint8_t LOS_CLKIN; // Loss of signal on CLKIN (bit 4, Si5351C only)
+	uint8_t LOS_XTAL;  // Same as LOS
 };
 
 struct Si5351IntStatus
@@ -274,7 +278,9 @@ struct Si5351IntStatus
 	uint8_t SYS_INIT_STKY;
 	uint8_t LOL_B_STKY;
 	uint8_t LOL_A_STKY;
-	uint8_t LOS_STKY;
+	uint8_t LOS_STKY;       // Sticky LOS_XTAL (bit 3)
+	uint8_t LOS_CLKIN_STKY; // Sticky LOS_CLKIN (bit 4)
+	uint8_t LOS_XTAL_STKY;  // Same as LOS_STKY
 };
 
 class Si5351
@@ -321,9 +327,10 @@ public:
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
 	struct Si5351Status dev_status = {.SYS_INIT = 0, .LOL_B = 0, .LOL_A = 0,
-    .LOS = 0, .REVID = 0};
+    .LOS = 0, .REVID = 0, .LOS_CLKIN = 0, .LOS_XTAL = 0};
 	struct Si5351IntStatus dev_int_status = {.SYS_INIT_STKY = 0, .LOL_B_STKY = 0,
-    .LOL_A_STKY = 0, .LOS_STKY = 0};
+    .LOL_A_STKY = 0, .LOS_STKY = 0, .LOS_CLKIN_STKY = 0,
+    .LOS_XTAL_STKY = 0};
 	enum si5351_pll pll_assignment[8];
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
