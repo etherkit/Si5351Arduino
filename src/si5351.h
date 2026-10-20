@@ -77,7 +77,7 @@
 #define SI5351_STATUS_SYS_INIT          (1<<7)
 #define SI5351_STATUS_LOL_B             (1<<6)
 #define SI5351_STATUS_LOL_A             (1<<5)
-#define SI5351_STATUS_LOS               (1<<4) // LOS_CLKIN (kept for compatibility)
+#define SI5351_STATUS_LOS               (1<<3) // LOS_XTAL, matches Si5351Status.LOS
 #define SI5351_STATUS_LOS_CLKIN         (1<<4)
 #define SI5351_STATUS_LOS_XTAL          (1<<3)
 #define SI5351_OUTPUT_ENABLE_CTRL       3

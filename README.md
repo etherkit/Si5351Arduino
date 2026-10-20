@@ -709,7 +709,7 @@ Status register:
       uint8_t SYS_INIT;
       uint8_t LOL_B;
       uint8_t LOL_A;
-      uint8_t LOS;       // crystal loss of signal (LOS_XTAL)
+      uint8_t LOS;       // crystal loss of signal (LOS_XTAL, bit 3; SI5351_STATUS_LOS)
       uint8_t REVID;
       uint8_t LOS_CLKIN; // CLKIN loss of signal (Si5351C)
       uint8_t LOS_XTAL;  // same as LOS
