@@ -1190,7 +1190,7 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
 {
 	uint8_t reg_val, reg;
 
-	if (clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
+	if (clk <= SI5351_CLK3)
 	{
 		reg = SI5351_CLK3_0_DISABLE_STATE;
 	}
@@ -1202,7 +1202,7 @@ void Si5351::set_clock_disable(enum si5351_clock clk, enum si5351_clock_disable 
 
 	reg_val = si5351_read(reg);
 
-	if (clk >= SI5351_CLK0 && clk <= SI5351_CLK3)
+	if (clk <= SI5351_CLK3)
 	{
 		reg_val &= ~(0b11 << (clk * 2));
 		reg_val |= dis_state << (clk * 2);
