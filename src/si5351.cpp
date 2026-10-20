@@ -291,9 +291,11 @@ void Si5351::reset(void)
  * set_freq(uint64_t freq, enum si5351_clock clk)
  *
  * Sets the clock frequency of the specified CLK output.
- * Frequency range of 8 kHz to 150 MHz
+ * Frequency range of 4 kHz to 200 MHz on CLK0-CLK5 (out-of-range
+ * requests are clamped). CLK6/CLK7 are limited to just under 150 MHz.
  *
- * freq - Output frequency in Hz
+ * freq - Output frequency in units of 0.01 Hz (Hz * SI5351_FREQ_MULT),
+ *   e.g. 1400000000ULL = 14 MHz
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
@@ -557,8 +559,9 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
  * It is important to note that if you use this method, you will have to
  * track that all settings are sane yourself.
  *
- * freq - Output frequency in Hz
- * pll_freq - Frequency of the PLL driving the Multisynth in Hz * 100
+ * freq - Output frequency in units of 0.01 Hz (Hz * SI5351_FREQ_MULT)
+ * pll_freq - Frequency of the PLL driving the Multisynth in units of
+ *   0.01 Hz (Hz * 100)
  * clk - Clock output
  *   (use the si5351_clock enum)
  */
