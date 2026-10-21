@@ -740,6 +740,25 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.4.1
+
+    * Fix VCXO setup being lost when PLLB is reprogrammed
+    * Clamp CLK0-CLK5 output frequency to the 200 MHz spec maximum (the `*_MAX_FREQ` macros still say 225 MHz)
+    * `set_freq_manual()` now validates the Multisynth ratio; an invalid ratio returns 1 and writes nothing
+    * Recalculate the Multisynth dividers of every output on a PLL whenever that PLL's frequency changes
+    * Fix CLK6/CLK7 register truncation (keep MS6/MS7 in the valid even-integer range) and enable CLK6/CLK7 on their first `set_freq()`, like CLK0-CLK5; `set_phase()` and `set_int()` are no-ops for CLK6/CLK7
+    * Write MS ratio 6, not 5, when a low ratio is clamped; don't program a PLL from a reference with no valid feedback ratio; replace the CLKIN_DIV field in `set_pll_input()` instead of ORing it
+    * Clear spread spectrum enable (SSC_EN) in `reset()`, which `init()` calls (#82, #86)
+    * Behavior change: `dev_status.LOS` now reports crystal loss of signal (LOS_XTAL, register 0 bit 3). New `LOS_CLKIN` and `LOS_XTAL` fields plus matching sticky fields, and `SI5351_STATUS_LOS` is now bit 3 (#85)
+    * Add `get_i2c_error()`, which records I2C errors from register reads and writes and from a failed `init()`. A read that returns no data reports `SI5351_I2C_ERR_NO_DATA` (0xFF) (#74)
+    * A second output above 100 MHz now moves to the free PLL instead of being refused (#39)
+    * Docs: `set_freq()`/`set_freq_manual()` take 0.01 Hz units, and the range comment is fixed (#97, #60)
+    * Fix SAMD always-true comparison warnings in `set_clock_disable()` (#109)
+    * Docs: correct the `set_correction()` ppb formula and sign convention
+    * Note: `SI5351_CRYSTAL_LOAD_0PF` now gives the 10 pF chip default, because the 0 pF XTAL_CL value is reserved per AN619
+    * Note: library state such as the PLL and correction bookkeeping is static and shared across all `Si5351` objects
+    * Note: flash use grows somewhat because of the 64-bit math in the new frequency checks
+
 * v2.4.0
 
     * Add I2C bus selection: `Si5351(TwoWire *wire = &Wire, uint8_t i2c_addr = SI5351_BUS_BASE_ADDR)` so the Si5351 can be on Wire1 or any other TwoWire bus (closes #103, #106). `Si5351()` and `Si5351(addr)` (any integer type, including a literal 0 or NULL) behave as before. No new C++11 features are required
