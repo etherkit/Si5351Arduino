@@ -77,7 +77,12 @@
 #define SI5351_STATUS_SYS_INIT          (1<<7)
 #define SI5351_STATUS_LOL_B             (1<<6)
 #define SI5351_STATUS_LOL_A             (1<<5)
-#define SI5351_STATUS_LOS               (1<<4)
+// get_i2c_error() code for a read that returned no data. Distinct from the
+// Wire endTransmission() codes (1-5).
+#define SI5351_I2C_ERR_NO_DATA          0xFF
+#define SI5351_STATUS_LOS               (1<<3) // LOS_XTAL, matches Si5351Status.LOS
+#define SI5351_STATUS_LOS_CLKIN         (1<<4)
+#define SI5351_STATUS_LOS_XTAL          (1<<3)
 #define SI5351_OUTPUT_ENABLE_CTRL       3
 #define SI5351_OEB_PIN_ENABLE_CTRL      9
 #define SI5351_PLL_INPUT_SOURCE         15
@@ -147,6 +152,7 @@
 #define SI5351_OUTPUT_CLK_DIVBY4       (3<<2)
 
 #define SI5351_SSC_PARAM0               149
+#define SI5351_SSC_EN                   (1<<7)
 #define SI5351_SSC_PARAM1               150
 #define SI5351_SSC_PARAM2               151
 #define SI5351_SSC_PARAM3               152
@@ -177,7 +183,7 @@
 
 #define SI5351_CRYSTAL_LOAD             183
 #define SI5351_CRYSTAL_LOAD_MASK        (3<<6)
-#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)
+#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)   /* reserved in AN619, unsupported: init() keeps 10 pF */
 #define SI5351_CRYSTAL_LOAD_6PF         (1<<6)
 #define SI5351_CRYSTAL_LOAD_8PF         (2<<6)
 #define SI5351_CRYSTAL_LOAD_10PF        (3<<6)
@@ -264,8 +270,10 @@ struct Si5351Status
 	uint8_t SYS_INIT;
 	uint8_t LOL_B;
 	uint8_t LOL_A;
-	uint8_t LOS;
+	uint8_t LOS;       // Loss of signal on the crystal (LOS_XTAL, bit 3)
 	uint8_t REVID;
+	uint8_t LOS_CLKIN; // Loss of signal on CLKIN (bit 4, Si5351C only)
+	uint8_t LOS_XTAL;  // Same as LOS
 };
 
 struct Si5351IntStatus
@@ -273,7 +281,9 @@ struct Si5351IntStatus
 	uint8_t SYS_INIT_STKY;
 	uint8_t LOL_B_STKY;
 	uint8_t LOL_A_STKY;
-	uint8_t LOS_STKY;
+	uint8_t LOS_STKY;       // Sticky LOS_XTAL (bit 3)
+	uint8_t LOS_CLKIN_STKY; // Sticky LOS_CLKIN (bit 4)
+	uint8_t LOS_XTAL_STKY;  // Same as LOS_STKY
 };
 
 class Si5351
@@ -319,10 +329,12 @@ public:
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
 	uint8_t si5351_read(uint8_t);
+	uint8_t get_i2c_error(void);
 	struct Si5351Status dev_status = {.SYS_INIT = 0, .LOL_B = 0, .LOL_A = 0,
-    .LOS = 0, .REVID = 0};
+    .LOS = 0, .REVID = 0, .LOS_CLKIN = 0, .LOS_XTAL = 0};
 	struct Si5351IntStatus dev_int_status = {.SYS_INIT_STKY = 0, .LOL_B_STKY = 0,
-    .LOL_A_STKY = 0, .LOS_STKY = 0};
+    .LOL_A_STKY = 0, .LOS_STKY = 0, .LOS_CLKIN_STKY = 0,
+    .LOS_XTAL_STKY = 0};
 	enum si5351_pll pll_assignment[8];
 	uint64_t clk_freq[8];
 	uint64_t plla_freq;
@@ -332,6 +344,7 @@ public:
 	uint32_t xtal_freq[2];
 private:
 	void setup_obj(TwoWire *, uint8_t);
+  void pll_update(enum si5351_pll, uint64_t);
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
@@ -342,8 +355,10 @@ private:
 	int32_t ref_correction[2];
   uint8_t clkin_div;
   uint8_t i2c_bus_addr;
+  uint8_t i2c_error;
   TwoWire *_wire;
   bool clk_first_set[8];
+  uint8_t vcxo_pull;
 };
 
 #endif /* SI5351_H_ */

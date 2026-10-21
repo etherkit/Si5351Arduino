@@ -58,8 +58,8 @@ void loop()
   Serial.print(si5351.dev_status.LOL_A);
   Serial.print("  LOL_B: ");
   Serial.print(si5351.dev_status.LOL_B);
-  Serial.print("  LOS: ");
-  Serial.print(si5351.dev_status.LOS);
+  Serial.print("  LOS_CLKIN: ");
+  Serial.print(si5351.dev_status.LOS_CLKIN);
   Serial.print("  REVID: ");
   Serial.println(si5351.dev_status.REVID);
 
