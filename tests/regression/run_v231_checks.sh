@@ -198,7 +198,8 @@ if [[ -n $CORES ]]; then
     $AC core list --additional-urls "$URLS" > "$LOGS/core_list_before.log" 2>&1 || true
     SK="$OUT/sketches"; rm -rf "$SK"; mkdir -p "$SK"
     cp -r "$LIB/examples/si5351_example" "$LIB/examples/si5351_vcxo" "$SK/" 2>/dev/null || true
-    [[ $HAS_TWOWIRE == 1 ]] && cp -r "$CI_DIR/sketches/Ctor106" "$SK/"
+    # Ctor106 is stored as .ino.txt so arduino-lint does not flag a sketch outside examples/
+    [[ $HAS_TWOWIRE == 1 ]] && { mkdir -p "$SK/Ctor106"; cp "$CI_DIR/sketches/Ctor106/Ctor106.ino.txt" "$SK/Ctor106/Ctor106.ino"; }
     while IFS='|' read -r key fqbn core; do
       [[ -z $key || $key == \#* || $key == url ]] && continue
       [[ $CORES != all && ",$CORES," != *",$key,"* ]] && continue
