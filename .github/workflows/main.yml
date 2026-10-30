@@ -12,7 +12,7 @@ permissions:
 jobs:
   lint:
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/arduino-lint-action@v2
@@ -21,7 +21,7 @@ jobs:
 
   compile-sketches:
     name: compile (${{ matrix.board.fqbn }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
