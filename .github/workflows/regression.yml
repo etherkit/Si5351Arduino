@@ -1,0 +1,40 @@
+# Report-only regression tests (not a required check; never gates merges).
+# Harness: tests/regression, from Test Lab's Si5351 regression suite.
+name: Regression tests (report-only)
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Run regression harness (native g++ against src/si5351.cpp)
+        working-directory: tests/regression
+        run: ./run_v231_checks.sh --src "$GITHUB_WORKSPACE" --out "$RUNNER_TEMP/regression"
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/regression/summary.md" ]; then
+            cat "$RUNNER_TEMP/regression/summary.md" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-results
+          path: |
+            ${{ runner.temp }}/regression/summary.*
+            ${{ runner.temp }}/regression/results.tsv
+            ${{ runner.temp }}/regression/logs/

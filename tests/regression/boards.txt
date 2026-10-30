@@ -1,0 +1,14 @@
+# key|fqbn|core   (url| lines = additional Boards Manager URLs)
+url|https://espressif.github.io/arduino-esp32/package_esp32_index.json
+url|https://arduino.esp8266.com/stable/package_esp8266com_index.json
+url|https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+url|https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+uno|arduino:avr:uno|arduino:avr
+mega|arduino:avr:mega|arduino:avr
+nano_every|arduino:megaavr:nona4809|arduino:megaavr
+esp32|esp32:esp32:esp32|esp32:esp32
+esp8266|esp8266:esp8266:nodemcuv2|esp8266:esp8266
+bluepill|STMicroelectronics:stm32:GenF1:pnum=BLUEPILL_F103C8|STMicroelectronics:stm32
+nano33ble|arduino:mbed_nano:nano33ble|arduino:mbed_nano
+zero|arduino:samd:arduino_zero_native|arduino:samd
+pico|rp2040:rp2040:rpipico|rp2040:rp2040
