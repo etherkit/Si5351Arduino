@@ -14,7 +14,6 @@ permissions:
 jobs:
   regression:
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
