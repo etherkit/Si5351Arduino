@@ -1,0 +1,3293 @@
+                                                                                                               AN619
+Manually Generating an Si5351 Register Map for 10-MSOP and
+20-QFN Devices
+
+
+1. Introduction
+The Si5351 is a highly flexible and configurable clock generator and VCXO. A block diagram of the Si5351
+programmable clock IC is shown in Figure 1. To support this flexibility, Skyworks Solutions has created
+ClockBuilder Pro to create register maps automatically and easily for a given configuration. Since programming
+with ClockBuilder Pro may not always be well suited for every system’s requirements, this document presents the
+procedures and equations for determining a complete register set from a frequency plan for any 10-MSOP or 20-
+QFN Si5351 device. Section 2 highlights the overall frequency plan algorithm, and sections 3 and beyond detail all
+the necessary register calculations.
+
+
+
+
+                                    Figure 1. Generalized Si5351 Block Diagram
+Figure 1 is a generalized block diagram of the Si5351. The Si5351 is available in three variants:
+  Si5351A—XTAL only device.
+  Si5351B—XTAL + VCXO.
+  Si5351C—XTAL + CLKIN.
+If spread spectrum is turned on, it is supported by PLLA.
+VCXO functionality (Si5351B devices only) is supported by PLLB.
+The Si5351 can also come in three package types: 10-MSOP, 20-QFN, and 16-QFN. This document only covers
+the programming of 10-MSOP and 20-QFN devices. For more information on programming a 16-QFN device, see
+AN1234.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+2. Conceptualizing a Frequency Plan
+The device consists of two PLLs—PLLA and PLLB. Each PLL generates an intermediate VCO frequency in the
+range of 600 to 900 MHz using a Feedback Multisynth. These VCO frequencies can then be divided down by
+individual output Multisynth dividers to generate any frequency between 500 kHz and 200 MHz. Additionally, the R
+dividers can be used to generate any output frequency down to 2.5 kHz. The relationship between the VCO and
+output frequencies is given below.
+                                                                                       fvco
+                                                 fout x = ---------------------------------------------------------------------
+                                                          Output_Multisynth x  R x
+
+
+                                                fvco = fin  Feedback_Multisynth
+
+Use the steps in the sections below to draw out a conceptual frequency plan map.
+
+2.1. PLL Selection
+If spread spectrum is not enabled, either of the two PLLs may be used as the source for any outputs of the
+Si5351A. If both XTAL and CLKIN input options are used simultaneously (Si5351C only), then one PLL must be
+reserved for use with CLKIN and one for use with the XTAL.
+Note: PLLA must be used for any spread spectrum-enabled outputs. PLLB must be used for any VCXO outputs.
+2.1.1. Selecting the Proper VCO Frequencies and Divide Ratios
+The general criteria below may be used to set the VCO frequencies. This is a general model, and individual
+applications may require some modification.
+     1. Valid Multisynth divider ratios are 4, 6, 8, and any fractional value between 8 + 1/1,048,575 and 2048. This
+        means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one of the
+        VCO frequencies.
+     2. For the frequencies where jitter is a concern make the output Multisynth divide ratio an integer. If possible,
+        make both output and feedback Multisynth ratios integers.
+     3. Once criteria 1 and 2 are satisfied, try to select as many integer output Multisynth ratios as possible.
+
+2.2. Output Clock Pin Assignment (Optional)
+Some customers may wish to have full control of output clock pin assignment. The guidelines below may be used
+to assign clocks to pins on the device.
+     1. Equal output frequencies should share a VDDO bank (e.g., CLK0&1, CLK2&3, etc.) whenever possible in
+        order to ensure minimal jitter due to PCB crosstalk.
+     2. Isolate unique output frequencies on individual VDDO bank if possible. For example, if the four outputs are
+        25 MHz, 25 MHz, 27 MHz, and 74.25 MHz, then place them on CLK0, CLK1, CLK2, and CLK4,
+        respectively.
+     3. Otherwise, use all necessary CLK channels based on the required frequency plan.
+Note: The only valid divide ratios for CLK6 and CLK7 Multisynth dividers are even integers between 6 and 254 inclusive. This
+      may limit the two VCO frequencies if all 8 output clocks are used.
+
+
+
+
+2         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+3. Configuring Input and PLL Register Parameters (Synthesis Stage 1)
+This section describes register parameters related to the input reference and the two PLLs.
+
+3.1. PLL Input Source
+The input source for each PLL must be selected. For the Si5351A and Si5351B devices, the only possible source
+is the XTAL, but for the Si5351C device, each PLL can be synchronized to either an XTAL or a CMOS clock on the
+CLKIN pin.
+3.1.1. XTAL Source
+If the source for the PLL is a crystal, PLLx_SRC must be set to 0 in register 15. XTAL_CL[1:0] must also be set to
+match the crystal load capacitance (see register 183).
+3.1.2. CMOS Clock Source
+If a PLL needs to be synchronized to a CMOS clock, PLLx_SRC must be 1. The input frequency range of the PLL
+is 10 to 40 MHz. If CLKIN is > 40 MHz, the CLKIN input divider must be used to bring the PLL input within the 10–
+40 MHz range. See CLKIN_DIV[1:0], register 15, bits [7:6].
+
+3.2. Feedback Multisynth Divider Equations
+Once the input source for each PLL and (if necessary) CLKIN_DIV are determined, the two VCO frequencies
+selected in Section 2 above can be generated using the following equations. Each feedback divider essentially
+multiplies the source frequency such that
+
+
+                                                         f VCO = f XTAL   a + b
+                                                                                 -- 
+                                                                                 c
+                            and/or
+
+                                                                   f CLKIN                            b
+                                                   f VCO = ---------------------------------   a + -- 
+                                                           CLKIN_DIV                                  c
+The fractional ratio
+                                                                          a+b
+                                                                            --
+                                                                            c
+has a valid range of 15 + 0/1,048,575 and 90 and is represented in the Si5351 register space using the equations
+below.
+                                                                                   b
+                                       MSNx_P1  17:0  = 128  a + Floor  128  --  – 512
+                                                                                   c
+
+
+                                                                                       b
+                                        MSNx_P2  19:0  = 128  b – c  Floor  128  -- 
+                                                                                      c
+
+
+
+                                                          MSNx_P3  19:0  = c
+
+
+In the equations above, x is used to represent MSNA and MSNB, the PLLA and PLLB Multisynth dividers
+respectively. The equations above must be repeated for Multisynths MSNA and MSNB. As mentioned earlier in
+Section “2.1. PLL Selection”, spread spectrum is only supported by PLLA, and the VCXO functionality is only
+supported by PLLB. When using the VCXO function, set the MSNB divide ratio a + b/c such that c = 106. This must
+be taken into consideration when configuring a frequency plan.
+3.2.1. Integer Divide Values (FBx_INT)
+If a + b/c is an even integer, integer mode may be enabled for PLLA or PLLB by setting parameter FBA_INT or
+FBB_INT respectively. In most cases setting this bit will improve jitter when using even integer divide values.
+Whenever spread spectrum is enabled, FBA_INT must be set to 0.
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             3
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+4. Configuring the Output Register Parameters
+This section covers the Multisynth and output driver settings necessary for each output. As shown in Figure 2, one
+of the two VCO frequencies is divided down by each Multisynth divider. This is followed by an output driver state.
+See “4.2. Output Driver Settings”.
+
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                   ÷R0            CLK0
+                                                      VCOA
+                                                                       Multisynth0         M0
+                                                      VCOB               ÷M0
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                   ÷R1            CLK1
+                                                                                           M0
+                                                      VCOA
+                                                                       Multisynth1         M1
+                                                      VCOB               ÷M1
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                                  CLK2
+                                                                                           M0      ÷R2
+                                                      VCOA
+                                                                       Multisynth2         M2
+                                                      VCOB               ÷M2
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                   ÷R3            CLK3
+                   XO                                                                      M0
+                                    PLLA      VCOA
+                   CLKIN             NA                                Multisynth3         M3
+                                                      VCOB               ÷M3
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                                  CLK4
+                                                                                                   ÷R4
+                                                      VCOA
+                   XO                                                  Multisynth4         M4
+                                    PLLB      VCOB                       ÷M4
+                   CLKIN             NB
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                                  CLK5
+                                                                                           M4      ÷R5
+                                                      VCOA
+                                                                       Multisynth5         M5
+                                                      VCOB               ÷M5
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                   ÷R6            CLK6
+                                                                                           M4
+                                                      VCOA
+                                                                       Multisynth6         M6
+                                                      VCOB               ÷M6*
+
+                                                                                          XO
+                                                                                          CLKIN
+                                                                                                                  CLK7
+                                                                                           M4      ÷R7
+                                                      VCOA
+                                                                       Multisynth7         M7
+                                                      VCOB               ÷M7*
+
+                  * Multisynth 6 and 7 divide ratios can only be even integers between6 and 254.
+
+
+                           Figure 2. Detailed Dividers and Output Drivers Block Diagram
+
+
+4         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+4.1. Output Multisynth Settings (Synthesis Stage 2)
+This section describes the settings related to the individual Multisynths. The Si5351 consists of six fractional
+Multisynth divides (MS0-MS5) and two even-integer dividers (MS6 and MS7).
+4.1.1. Output Multisynth Source (MSx_SRC)
+Each of these dividers can be set to use PLLA or PLLB as its reference by setting MSx_SRC to 0 or 1 respectively.
+See bit 5 description of registers 16-23.
+4.1.2. Output Multisynth Divider Equations (Fout <= 150 MHz)
+Once the PLL source for the output Multisynth is selected, the divide ratio can be set using the equations below.
+Divider represented as fractional number,
+                                                                 a+b
+                                                                   --
+                                                                   c
+between 8 + 1/1,048,575 and 2048.
+                                                                                   b
+                                        MSx_P1  17:0  = 128  a + Floor  128  --  – 512
+                                                                                   c
+
+                                                                                       b
+                                         MSx_P2  19:0  = 128  b – c  Floor  128  -- 
+                                                                                      c
+
+
+                                                        MSx_P3  19:0  = c
+In the equations above, x=0, 1, ...5. As previously noted, MS6 and MS7 are integer-only dividers. The valid range
+of values for these dividers is all even integers between 6 and 254 inclusive. For MS6 and MS7, set MSx_P1
+directly (e.g., MSx_P1=divide value).
+4.1.2.1. Integer Divide Values(MSx_INT)
+If any of the MS0-MS5 is an even integer, Multisynth integer mode may be enabled by setting MSx_INT=1 (see
+registers 16-21, bit 6). In most cases setting this bit will improve jitter when using even integer divide values.
+Multisynths 6 and 7 inherently operate in integer mode, and so there is no register to turn integer mode on or off.
+However, it's important to note that Multisynth integer mode cannot be used when adding phase offsets in NVM. In
+other words, MSx_INT needs to be set to 0 if phase offsets need to be enabled.
+4.1.3. Output Multisynth Divider Equations (150 MHz <Fout<=200 MHz)
+Output frequencies greater than 150 MHz are available on Multisynths 0-5. For this frequency range a divide value
+of 4 must be used by setting
+  MSx_P1=0,
+  MSx_P2=0,
+  MSx_P3=1,
+  MSx_INT=1, and
+  MSx_DIVBY4[1:0]=11b.
+Set the appropriate feedback Multisynth to generate fVCO=Fout*4.
+
+4.2. Output Driver Settings
+Once the Multisynth registers are assembled, the output driver settings can be modified according to the
+information in this section.
+4.2.1. Clock Source (CLKx_SRC)
+Generally, Multisynth x should be output on CLKx, however XO, CLKIN, or a divided version of either (see section
+4.2.2 on R dividers) may also be output on each of the CLKx pins. Additionally, MS0 (or a divided version of MS0)
+may be output on CLK0-CLK3, and MS4 (or a divided version of MS4) may be output on CLK4-CLK7. See
+CLKx_SRC description for details.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             5
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+4.2.2. R Dividers
+The R dividers can be used to generate frequencies below about 500 kHz. Each individual output R divider can be
+set to 1, 2, 4, 8,....128 by writing the proper setting for Rx_DIV. Set this parameter to generate frequencies down to
+8kHz.
+4.2.3. (CLKx_INV)
+In some cases, the user may need to invert the polarity (i.e., 180° phase offset) of one or more outputs with respect
+to the other outputs. This is achieved by setting CLKx_INV=1.
+4.2.4. (CLKx_DIS_STATE)
+When a clock is disabled via the OEB pin or OEB control register (reg 3), the output driver may be set to present a
+logic low, logic high, or high-impedance at the device pin. See CLKx_DIS_STATE description for details.
+4.2.5. Unused Clock Outputs
+Any unused clock outputs may be powered down to reduce IDDO current consumption. Set CLKx_PDN=1 to
+power down unused clock output drivers.
+In the case of the 3-output 10-MSOP Si5351, only CLK0, 1, and 2 are used. The remaining clock outputs should be
+powered down to conserve power. This will be done automatically for any project created in ClockBuilder Pro.
+However, this will need to be done manually when programming a blank Si5351A-B-GT completely by hand,
+without the use of ClockBuilder Pro.
+
+
+
+
+6         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                                     AN619
+5. Configuring Spread Spectrum Register Parameters
+Spread spectrum can be enabled on any Multisynth output that uses PLLA as its reference. Valid ranges for spread
+spectrum include –0.1% to –2.5% down spread and up to ± 1.5% center spread. This spread modulation rate is
+fixed at approximately 31.5 kHz.
+The following parameters must be known to properly set up spread spectrum:
+  fPFD(A) input frequency to PLLA in Hz (determined in Sec 2 above and referred to in “3.1.2. CMOS Clock
+     Source”). This is also listed in the ClockBuilder Pro generated register map file as “#PFD(MHz)=...”
+  a + b/c PLLA Multisynth ratio (determined in Sec 2 above).
+  sscAMPSpread amplitude (e.g., for down or center spread amplitude of 1%, sscAmp = 0.01).
+Use the equations below to set up the desired spread spectrum profile.
+Note: Make sure MSNA is set up in fractional mode when using the spread spectrum feature. See parameter FBA_INT in reg-
+      ister 22.
+
+5.1. Down Spread
+For down spread, four spread spectrum parameters need to be written: SSUDP[11:0], SSDN_P1[11:0],
+SSDN_P2[14:0], and SSDN_P3[14:0].
+Up/Down Parameter:
+                                                                                      f PFD
+                                                   SSUDP  11:0  = Floor  ---------------------------- 
+                                                                             4  31 500
+Intermediate Equation (no register writes):
+
+
+                                                                                      sscAmp
+                                        SSDN = 64   a + b
+                                                          --   -----------------------------------------------------------------
+                                                         c  1 + sscAmp   SSUDP
+
+Down-Spread Parameters:
+                                                     SSDN_P1  11:0  = Floor  SSDN 
+
+
+                                       SSDN_P2  14:0  = 32 767   SSDN – SSDN_P1 
+
+
+                                                SSDN_P3  14:0  = 32 767 = 0x7FFF
+Up-Spread Parameters:
+                                                                      SSUP_P1 = 0
+
+
+                                                                      SSUP_P2 = 0
+
+
+                                                                      SSUP_P3 = 1
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             7
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+5.2. Center Spread
+For center spread, seven spread spectrum parameters need to be written: SSUDP[11:0], SSDN_P1[11:0],
+SSDN_P2[14:0], SSDN_P3[14:0], SSUP_P1[11:0], SSUP_P2[14:0], and SSUP_P3[14:0].
+Up/Down Parameter:
+                                                                                       f PFD
+                                                     SSUDP  11:0  = Floor  ---------------------------- 
+                                                                             4  31 500
+
+Intermediate Equations (no register writes):
+                                                                                        sscAmp
+                                         SSUP = 128   a + b
+                                                            --   -----------------------------------------------------------------
+                                                           c  1 – sscAmp   SSUDP
+
+
+                                                                                          sscAmp
+                                         SSDN = 128   a + b
+                                                             --   -----------------------------------------------------------------
+                                                             c        1 + sscAmp   SSUDP
+Up-Spread Parameters:
+                                                       SSUP_P1  11:0  = Floor  SSUP 
+
+
+                                        SSUP_P2  14:0  = 32 767   SSUP – SSUP_P1 
+
+
+                                                  SSUP_P3  14:0  = 32 767 = 0x7FFF
+Down-Spread Parameters:
+                                                       SSDN_P1  11:0  = Floor  SSDN 
+
+
+                                        SSDN_P2  14:0  = 32 767   SSDN – SSDN_P1 
+
+
+                                                   SSDN_P3  14:0  = 32767 = 0x7FFF
+
+5.3. Spread Spectrum Enable Pin (SSEN)
+The Spread Spectrum Enable control pin is available on the Si5351A and B devices. Spread spectrum enable
+functionality is a logical OR of the SSEN pin and SSC_EN register bit, so for the SSEN pin to work properly, the
+SSC_EN register bit must be set to 0.
+
+
+
+
+8         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+6. Configuring Initial Phase Offset Register Parameters
+Outputs 0-5 of the Si5351 can be programmed with an independent initial phase offset. The phase offset only
+works when MS0-5 are set as fractional dividers (divider values greater than 8). The phase offset parameter is an
+unsigned integer where each LSB represents a phase difference of a quarter of the VCO period, TVCO/4. Use the
+equation below to determine the register value. Also, remember that any divider using the phase offset feature
+needs the MSx_INT bit set to 0.
+
+
+                                CLKx_PHOFF  4:0  = Round  DesiredOffset  sec   4  F VCO 
+
+
+7. Configuring VCXO Parameters (Si5351 B only)
+The Si5351B combines free-running clock generation and a VCXO in a single package. The VCXO architecture of
+the Si5350B eliminates the need for an external pullable crystal. The “pulling” is done at PLLB. Only a standard,
+low cost, fixed-frequency (25 or 27 MHz) AT-cut crystal is required and is used as the reference source for both
+PLLA and PLLB.
+PLLB must be used as the source for any VCXO output clock. Feedback B Multisynth divider ratio must be set
+such that the denominator, c, in the fractional divider a + b/c is fixed to 106. Set VCXO_Param register value
+according to the equation below. Note that 1.03 is a margining factor to ensure the full desired pull range is
+achieved. For a desired pull-range of +/– 30 ppm, the value APR in the equation below is 30, for +/– 60 ppm APR
+is 60, and so on.
+
+                                                                           b  APR
+                                       VCXO_Param[21:0] = 1.03  128a + --------
+                                                                               6
+                                                                        10
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             9
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+8. Si5351 Registers
+This section describes the registers and their usage in detail. These values are easily configured using
+ClockBuilder Pro.
+
+8.1. Register Map Summary
+The following is a summary of the register map used to read status, control, and configure the Si5351.
+
+Register         7                 6                5               4                 3                     2                    1                    0
+   0         SYS_INIT          LOL_B           LOL_A          LOS_CLKIN         LOS_XTAL              Reserved                         REVID[1:0]
+   1         SYS_INIT_        LOL_B_           LOL_A_         LOS_CLKIN_       LOS_XTAL_                                   Reserved
+               STKY            STKY             STKY             STKY            STKY
+   2         SYS_INIT_        LOL_B_          LOL_A _         LOS_CLKIN-       LOS_XTAL_                                   Reserved
+               MASK            MASK            MASK             MASK             MASK
+   3         CLK7_OEB        CLK6_OEB        CLK5_OEB         CLK4_OEB          CLK3_OEB             CLK2_OEB             CLK1_OEB             CLK0_OEB
+  4–8                                                                      Reserved
+   9        OEB_MASK7       OEB_MASK6       OEB_MASK5         OEB_MASK4        OEB_MASK3            OEB_MASK2            OEB_MASK1            OEB_MASK0
+ 10–14                                                                     Reserved
+  15              CLKIN_DIV[1:0]                        Reserved                PLLB_SRC             PLLA_SRC                           Reserved
+  16         CLK0_PDN         MS0_INT         MS0_SRC          CLK0_INV                   CLK0_SRC[1:0]                              CLK0_IDRV[1:0]
+  17         CLK1_PDN         MS1_INT         MS1_SRC          CLK1_INV                   CLK1_SRC[1:0]                              CLK1_IDRV[1:0]
+  18         CLK2_PDN         MS2_INT         MS2_SRC          CLK2_INV                   CLK2_SRC[1:0]                              CLK2_IDRV[1:0]
+  19         CLK3_PDN         MS3_INT         MS3_SRC          CLK3_INV                   CLK3_SRC[1:0]                              CLK3_IDRV[1:0]
+  20         CLK4_PDN         MS4_INT         MS4_SRC          CLK4_INV                   CLK4_SRC[1:0]                              CLK4_IDRV[1:0]
+  21         CLK5_PDN         MS5_INT         MS5_SRC          CLK5_INV                   CLK5_SRC[1:0]                              CLK5_IDRV[1:0]
+  22         CLK6_PDN         FBA_INT         MS6_SRC          CLK6_INV                   CLK6_SRC[1:0]                              CLK6_IDRV[1:0]
+  23         CLK7_PDN         FBB_INT         MS6_SRC          CLK7_INV                   CLK7_SRC[1:0]                              CLK7_IDRV[1:0]
+  24           CLK3_DIS_STATE[1:0]             CLK2_DIS_STATE[1:0]                    CLK1_DIS_STATE[1:0]                       CLK0_DIS_STATE[1:0]
+  25           CLK7_DIS_STATE[1:0]             CLK6_DIS_STATE[1:0]                    CLK5_DIS_STATE[1:0]                       CLK4_DIS_STATE[1:0]
+  26                                                                    MSNA_P3[15:8]
+  27                                                                    MSNA_P3[7:0]
+  28                                                     Reserved                                                                    MSNA_P1[17:16]
+
+  29                                                                    MSNA_P1[15:8]
+  30                                                                    MSNA_P1[7:0]
+  31                               MSNA_P3[19:16]                                                           MSNA_P2[19:16]
+
+  32                                                                    MSNA_P2[15:8]
+  33                                                                    MSNA_P2[7:0]
+  34                                                                    MSNB_P3[15:8]
+  35                                                                    MSNB_P3[7:0]
+
+  36                                                     Reserved                                                                    MSNB_P1[17:16]
+
+  37                                                                    MSNB_P1[15:8]
+  38                                                                    MSNB_P1[7:0]
+  39                               MSNB_P3[19:16]                                                           MSNB_P2[19:16]
+  40                                                                    MSNB_P2[15:8]
+  41                                                                    MSNB_P2[7:0]
+  42                                                                    MS0_P3[15:8]
+  43                                                                     MS0_P3[7:0]
+  44                                         R0_DIV[2:0]                                  MS0_DIVBY4[1:0]                            MS0_P1[17:16]
+  45                                                                    MS0_P1[15:8]
+  46                                                                     MS0_P1[7:0]
+  47                               MS0_P3[19:16]                                                                MS0_P2[19:16]
+  48                                                                    MS0_P2[15:8]
+  49                                                                     MS0_P2[7:0]
+
+
+
+
+10        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                                    AN619
+Register         7               6               5             4                  3                     2                   1                   0
+  50                                                                MS1_P3[15:8]
+  51                                                                MS1_P3[7:0]
+  52                                        R1_DIV[2:0]                               MS1_DIVBY4[1:0]                           MS1_P1[17:16]
+  53                                                                MS1_P1[15:8]
+  54                                                                MS1_P1[7:0]
+  55                             MS1_P3[19:16]                                                              MS1_P2[19:16]
+  56                                                                MS1_P2[15:8]
+  57                                                                MS1_P2[7:0]
+  58                                                                MS2_P3[15:8]
+  59                                                                MS2_P3[7:0]
+  60                                        R2_DIV[2:0]                               MS2_DIVBY4[1:0]                           MS2_P1[17:16]
+  61                                                                MS2_P1[15:8]
+  62                                                                MS2_P1[7:0]
+  63                             MS2_P3[19:16]                                                              MS2_P2[19:16]
+  64                                                                MS2_P2[15:8]
+  65                                                                MS2_P2[7:0]
+  66                                                                MS3_P3[15:8]
+  67                                                                MS3_P3[7:0]
+  68                                        R3_DIV[2:0]                               MS3_DIVBY4[1:0]                           MS3_P1[17:16]
+  69                                                                MS3_P1[15:8]
+  70                                                                MS3_P1[7:0]
+  71                             MS3_P3[19:16]                                                              MS3_P2[19:16]
+  72                                                                MS3_P2[15:8]
+  73                                                                MS3_P2[7:0]
+  74                                                                MS4_P3[15:8]
+  75                                                                MS4_P3[7:0]
+  76                                        R4_DIV[2:0]                               MS4_DIVBY4[1:0]                           MS4_P1[17:16]
+  77                                                                MS4_P1[15:8]
+  78                                                                MS4_P1[7:0]
+  79                             MS4_P3[19:16]                                                              MS4_P2[19:16]
+  80                                                                MS4_P2[15:8]
+  81                                                                MS4_P2[7:0]
+  82                                                                MS5_P3[15:8]
+  83                                                                MS5_P3[7:0]
+  84                                        R5_DIV[2:0]                               MS5_DIVBY4[1:0]                           MS5_P1[17:16]
+  85                                                                MS5_P1[15:8]
+  86                                                                MS5_P1[7:0]
+  87                             MS5_P3[19:16]                                                              MS5_P2[19:16]
+  88                                                                MS5_P2[15:8]
+  89                                                                MS5_P2[7:0]
+  90                                                                MS6_P1[7:0]
+  91                                                                MS7_P1[7:0]
+  92          Reserved                      R7_DIV[2:0]                     Reserved                                  R6_DIV[2:0]
+  149         SSC_EN                                                        SSDN_P2[14:8]
+
+  150                                                               SSDN_P2[7:0]
+
+  151       SSC_MODE                                                        SSDN_P3[14:8]
+  152                                                               SSDN_P3[7:0]
+
+  153                                                               SSDN_P1[7:0]
+  154                             SSUDP[11:8]                                                               SSDN_P1[11:8]
+
+  155                                                                SSUDP[7:0]
+  156                                                                       SSUP_P2[14:8]
+
+
+
+
+          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            11
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+Register         7                 6              5            4                  3                  2                   1        0
+  157                                                                SSUP_P2[7:0]
+  158                                                                        SSUP_P3[14:8]
+  159                                                                SSUP_P3[7:0]
+  160                                                                SSUP_P1[7:0]
+  161                              SS_NCLK[3:0]                                                          SSUP_P1[11:8]
+
+  162                                                              VCXO_Param[7:0]
+  163                                                              VCXO_Param[15:8]
+  164                Reserved                                                         VCXO_Param[21:16]
+  165         Reserved                                                     CLK0_PHOFF[6:0]
+  166         Reserved                                                     CLK1_PHOFF[6:0]
+
+  167         Reserved                                                     CLK2_PHOFF[6:0]
+  168         Reserved                                                     CLK3_PHOFF[6:0]
+
+  169         Reserved                                                     CLK4_PHOFF[6:0]
+
+  170         Reserved                                                     CLK5_PHOFF[6:0]
+
+
+171–176                                                                Reserved
+  177        PLLB_RST           Reserved    PLLA_RST                                              Reserved
+178–182                                                                Reserved
+  183                XTAL_CL                                                              Reserved
+184–186                                                                Reserved
+  187        CLKIN_FA-           XO_FA-      Reserved       MS_FA-                                         Reserved
+             NOUT_EN            NOUT_EN                    NOUT_EN
+188-255                                                                Reserved
+
+
+
+
+12        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+9. Register Descriptions
+
+Register 0. Device Status
+
+
+  Bit           D7             D6              D5               D4               D3              D2              D1             D0
+
+ Name      SYS_INIT          LOL_B           LOL_A        LOS_CLKIN LOS_XTAL                 Reserved              REVID[1:0]
+
+ Type           R               R               R                R                R              R                       R
+
+Reset value = 0000 0000
+
+ Bit         Name                                                            Function
+  7        SYS_INIT          System Initialization Status.
+                             During power up the device copies the content of the NVM into RAM and performs a sys-
+                             tem initialization. The device is not operational until initialization is complete. It is not rec-
+                             ommended to read or write registers in RAM through the I2C interface until initialization is
+                             complete. An interrupt will be triggered (INTR pin = 0, Si5351C only) during the system
+                             initialization period.
+                             0: System initialization is complete. Device is ready.
+                             1: Device is in system initialization mode.
+  6          LOL_B           PLLB Loss Of Lock Status.
+                             Si5351A/C only. PLLB will operate in a locked state when it has a valid reference from
+                             CLKIN or XTAL. A loss of lock will occur if the frequency of the reference clock forces the
+                             PLL to operate outside of its lock range or if the reference clock fails to meet the minimum
+                             requirements of a valid input signal as specified in the Si5351 data sheet. An interrupt will
+                             be triggered (INTR pin = 0, Si5351C) during a LOL condition.
+                             0: PLL B is locked.
+                             1: PLL B is unlocked. When the device is in this state it will trigger an interrupt causing the
+                             INTR pin to go low (Si5351C only).
+  5          LOL_A           PLL A Loss Of Lock Status.
+                             PLL A will operate in a locked state when it has a valid reference from CLKIN or XTAL. A
+                             loss of lock will occur if the frequency of the reference clock forces the PLL to operate out-
+                             side of its lock range as specified in the data sheet, or if the reference clock fails to meet
+                             the minimum requirements of a valid input signal as specified in the Si5351 data sheet. An
+                             interrupt will be triggered (INTR pin = 0, Si5351C only) during a LOL condition.
+                             0: PLL A is operating normally.
+                             1: PLL A is unlocked. When the device is in this state it will trigger an interrupt causing the
+                             INTR pin to go low (Si5351C only).
+  4       LOS_CLKIN          CLKIN Loss Of Signal (Si5351C Only).
+                             A loss of signal status indicates if the reference clock fails to meet the minimum require-
+                             ments of a valid input signal as specified in the Si5351 data sheet. An interrupt will be trig-
+                             gered (INTR pin = 0, Si5351C only) during a LOS condition.
+                             0: Valid clock signal at the CLKIN pin.
+                             1: Loss of signal detected at the CLKIN pin.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            13
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+  3        LOS_XTAL           Crystal Loss of Signal
+                              A loss of signal status indicates that the crystal failed to meet the minimum requirements
+                              of a valid input signal as specified in the Si5351 datasheet. This bit going high will trigger
+                              an interrupt (INTR pin = 0) on a Si5351C device.
+                              0: Valid crystal signal at the XA and XB Pins
+                              1: Loss of crystal signal detected
+  2         Reserved          Leave as default.
+ 1:0       REVID[1:0]         Revision number of the device.
+
+
+
+
+14        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                        AN619
+
+Register 1. Interrupt Status Sticky
+
+
+   Bit              D7                    D6                 D5                 D4                  D3             D2      D1      D0
+
+ Name       SYS_INIT_STKY LOL_B_STKY LOL_A_STKY                            LOS_-                LOS_
+                                                                         CLKIN_STKY           XTAL_STKY
+
+  Type             R/W                   R/W                R/W                R/W                 R/W            R/W     R/W     R/W
+
+Reset value = 0000 0000
+
+ Bit            Name                                                           Function
+
+  7       SYS_INIT_STKY          System Calibration Status Sticky Bit.
+                                 The SYS_INIT_STKY bit is triggered when the SYS_INIT bit (register 0, bit 7) is trig-
+                                 gered high. It remains high until cleared. Writing a 0 to this register bit will cause it to
+                                 clear.
+                                 0: No SYS_INIT interrupt has occurred since it was last cleared.
+                                 1: A SYS_INIT interrupt has occurred since it was last cleared.
+
+  6        LOL_B_STKY            PLLB Loss Of Lock Status Sticky Bit.
+                                 The LOL_B_STKY bit is triggered when the LOL_B bit (register 0, bit 6) is triggered
+                                 high. It remains high until cleared. Writing a 0 to this register bit will cause it to clear.
+                                 0: No PLL B interrupt has occurred since it was last cleared.
+                                 1: A PLL B interrupt has occurred since it was last cleared.
+
+  5        LOL_A_STKY            PLLA Loss Of Lock Status Sticky Bit.
+                                 The LOL_A_STKY bit is triggered when the LOL_A bit (register 0, bit 5) is triggered
+                                 high. It remains high until cleared. Writing a 0 to this register bit will cause it to clear.
+                                 0: No PLLA interrupt has occurred since it was last cleared.
+                                 1: A PLLA interrupt has occurred since it was last cleared.
+
+  4      LOS_CLKIN_STKY CLKIN Loss Of Signal Sticky Bit (Si5351C Only).
+                                 The LOS_CLKIN_STKY bit is triggered when the LOS_CLKIN bit (register 0, bit 4) is
+                                 triggered high. It remains high until cleared. Writing a 0 to this register bit will cause it
+                                 to clear.
+                                 0: No LOS_CLKIN interrupt has occurred since it was last cleared.
+                                 1: A LOS_CLKIN interrupt has occurred since it was last cleared.
+
+  3      LOS_XTAL_STKY Crystal Loss of Signal Sticky Bit
+                                 The LOS_XTAL_STKY bit is triggered when the LOS_XTAL bit (register 0, bit 3) is
+                                 triggered high. It remains high until cleared. Writing a 0 to this register bit will cause it
+                                 to clear.
+                                 0: No LOS_XTAL interrupt has occurred since it was last cleared.
+                                 1: A LOS_XTAL interrupt has occurred since it was last cleared.
+
+ 2:0          Reserved           Leave as default.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            15
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 2. Interrupt Status Mask
+
+
+   Bit               D7                    D6                  D5                 D4                  D3            D2      D1      D0
+
+  Name      SYS_INIT_MASK LOL_B_MASK LOL_A_MASK                               LOS_-                LOS_
+                                                                           CLKIN_MASK           XTAL_MASK
+
+  Type              R/W                   R/W                 R/W                R/W                 R/W           R/W     R/W     R/W
+
+Reset value = 0000 0000
+
+  Bit           Name                                                           Function
+
+   7     SYS_INIT_MASK System Initialization Status Mask.
+                                 Use this mask bit to prevent the INTR pin (Si5351C only) from going low when SYS-
+                                 _INIT is asserted.
+                                 0: Do not mask the SYS_INIT interrupt.
+                                 1: Mask the SYS_INIT interrupt.
+
+   6       LOL_B_MASK            PLLB Loss Of Lock Status Mask.
+                                 Use this mask bit to prevent the INTR pin (Si5351C only) from going low when LOL_B
+                                 is asserted.
+                                 0: Do not mask the LOL_B interrupt.
+                                 1: Mask the LOL_B interrupt.
+
+   5       LOL_A_MASK            PLL A Loss Of Lock Status Mask.
+                                 Use this mask bit to prevent the INTR pin (Si5351C only) from going low when LOL_A
+                                 is asserted.
+                                 0: Do not mask the LOL_A interrupt.
+                                 1: Mask the LOL_A interrupt.
+
+   4          LOS_-              CLKIN Loss Of Signal Mask (Si5351C Only).
+           CLKIN_MASK            Use this mask bit to prevent the INTR pin (Si5351C only) from going low when LOS_-
+                                 CLKIN is asserted.
+                                 0: Do not mask the LOS_CLKIN interrupt.
+                                 1: Mask the LOS_CLKIN interrupt.
+
+   3           LOS_              Crystal Loss of Signal Mask
+            XTAL_MASK            Use this mask bit to prevent the INTR pin (Si5351C only) from going low when
+                                 LOS_XTAL is asserted.
+                                 0: Do not mask the LOS_XTAL interrupt
+                                 1: Mask the LOS_XTAL interrupt
+
+  2:0         Reserved           Leave as default.
+
+
+
+
+16        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 3. Output Enable Control
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name      CLK7_OEB CLK6_OEB CLK5_OEB CLK4_OEB CLK3_OEB CLK2_OEB CLK1_OEB CLK0_OEB
+
+  Type          R/W            R/W             R/W             R/W             R/W            R/W             R/W             R/W
+
+Reset value = 0000 0000
+
+ Bit       Name                                                           Function
+
+ 7:0     CLKx_OEB Output Disable for CLKx.
+                        Where x = 0, 1, 2, 3, 4, 5, 6, 7
+                        0: Enable CLKx output.
+                        1: Disable CLKx output.
+
+
+
+Register 9. OEB Pin Enable Control Mask
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name       OEB_MAS OEB_MAS OEB_MAS OEB_MAS OEB_MAS OEB_MAS OEB_MAS OEB_MAS
+               K7      K6      K5      K4      K3      K2      K1      K0
+
+  Type          R/W            R/W             R/W             R/W             R/W            R/W             R/W             R/W
+
+Reset value = 0000 0000
+
+ Bit       Name                                                           Function
+
+ 7:0     OEB_CLKx OEB pin enable control of CLKx.
+                        Where x = 0, 1, 2, 3, 4, 5, 6, 7
+                        0: OEB pin controls enable/disable state of CLKx output.
+                        1: OEB pin does not control enable/disable state of CLKx output.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            17
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 15. PLL Input Source
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name           CLKIN_DIV[1:0]                                            PLLB_SRC PLLA_SRC
+
+   Type         R/W             R/W             R/W             R/W             R/W            R/W             R/W             R/W
+
+Reset value = 0000 0000
+
+ Bit            Name                                                            Function
+
+ 7:6      CLKIN_DIV[1:0]         ClKIN Input Divider.
+                                 Valid PLL input range is 10-40 MHz. If CLKIN is > 40 MHz, CLKIN input divider,
+                                 CLKIN_DIV, must be used to bring the PLL input within the 10-40 MHz range.
+                                 00b: Divide by 1.
+                                 01b: Divide by 2.
+                                 10b: Divide by 4.
+                                 11b: Divide by 8.
+
+ 5:4          Reserved           Leave as default.
+
+  3          PLLB_SRC            Input Source Select for PLLB.
+                                 0: Select the XTAL input as the reference clock for PLLB.
+                                 1: Select the CLKIN input as the reference clock for PLLB (Si5351C only).
+
+  2          PLLA_SRC            Input Source Select for PLLA.
+                                 0: Select the XTAL input as the reference clock for PLLA.
+                                 1: Select the CLKIN input as the reference clock for PLLA (Si5351C only).
+
+ 1:0          Reserved           Leave as default.
+
+
+
+
+18        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 16. CLK0 Control
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name      CLK0_PDN         MS0_INT        MS0_SRC         CLK0_INV            CLK0_SRC[1:0]                   CLK0_IDRV[1:0]
+
+  Type          R/W            R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+ Bit           Name                                                          Function
+
+  7        CLK0_PDN           Clock 0 Power Down.
+                              This bit allows powering down the CLK0 output driver to conserve power when the out-
+                              put is unused.
+                              0: CLK0 is powered up.
+                              1: CLK0 is powered down.
+
+  6          MS0_INT          MultiSynth 0 Integer Mode.
+                              This bit can be used to force MS0 into Integer mode to improve jitter performance. Note
+                              that the fractional mode is necessary when a delay offset is specified for CLK0.
+                              0: MS0 operates in fractional division mode.
+                              1: MS0 operates in integer mode.
+
+  5         MS0_SRC           MultiSynth Source Select for CLK0.
+                              0: Select PLLA as the source for MultiSynth0.
+                              1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth0.
+
+  4         CLK0_INV          Output Clock 0 Invert.
+                              0: Output Clock 0 is not inverted.
+                              1: Output Clock 0 is inverted.
+
+ 3:2     CLK0_SRC[1:0] Output Clock 0 Input Source.
+                              These bits determine the input source for CLK0.
+                              00: Select the XTAL as the clock source for CLK0. This option by-passes both synthesis
+                              stages (PLL/VCXO & MultiSynth) and connects CLK0 directly to the oscillator which
+                              generates an output frequency determined by the XTAL frequency.
+                              01: Select CLKIN as the clock source for CLK0. This by-passes both synthesis stages
+                              (PLL/VCXO & MultiSynth) and connects CLK0 directly to the CLKIN input. This essen-
+                              tially creates a buffered output of the CLKIN input.
+                              10: Reserved. Do not select this option.
+                              11: Select MultiSynth 0 as the source for CLK0. Select this option when using the
+                              Si5351 to generate free-running or synchronous clocks.
+
+ 1:0     CLK0_IDRV[1:0] CLK0 Output Rise and Fall time / Drive Strength Control.
+                              00: 2 mA
+                              01: 4 mA
+                              10: 6 mA
+                              11: 8 mA
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            19
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 17. CLK1 Control
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name      CLK1_PDN         MS1_INT        MS1_SRC         CLK1_INV            CLK1_SRC[1:0]                   CLK1_IDRV[1:0]
+
+   Type         R/W             R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit          Name                                                           Function
+
+   7        CLK1_PDN           Clock 1 Power Down.
+                               This bit allows powering down the CLK1 output driver to conserve power when the out-
+                               put is unused.
+                               0: CLK1 is powered up.
+                               1: CLK1 is powered down.
+
+   6         MS1_INT           MultiSynth 1 Integer Mode.
+                               When the MS1 divider is an even integer, this bit can be used to force MS1 into integer
+                               mode to improve jitter performance. Not valid for odd integers. Note that the fractional
+                               mode is necessary when a delay offset is specified for CLK1.
+                               0: MS1 operates in fractional division mode.
+                               1: MS1 operates in integer mode.
+
+   5         MS1_SRC           MultiSynth Source Select for CLK1.
+                               0: Select PLLA as the source for MultiSynth1.
+                               1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth1.
+
+   4         CLK1_INV          Output Clock 1 Invert.
+                               0: Output Clock 1 is not inverted.
+                               1: Output Clock 1 is inverted.
+
+  3:2     CLK1_SRC[1:0] Output Clock 1 Input Source.
+                               These bits determine the input source for CLK1.
+                               00: Select the XTAL as the clock source for CLK1. This option by-passes both synthesis
+                               stages (PLL/VCXO & MultiSynth) and connects CLK1 directly to the oscillator which
+                               generates an output frequency determined by the XTAL frequency.
+                               01: Select CLKIN as the clock source for CLK1. This by-passes both synthesis stages
+                               (PLL/VCXO & MultiSynth) and connects CLK1 directly to the CLKIN input. This essen-
+                               tially creates a buffered output of the CLKIN input.
+                               10: Select Multisynth 0 as the source for CLK1.
+                               11: Select MultiSynth 1 as the source for CLK1. Select this option when using the
+                               Si5351 to generate free-running or synchronous clocks.
+
+  1:0     CLK1_IDRV[1:0] CLK1 Output Rise and Fall time / Drive Strength Control.
+                               00: 2 mA
+                               01: 4 mA
+                               10: 6 mA
+                               11: 8 mA
+
+
+
+
+20        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 18. CLK2 Control
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name      CLK2_PDN         MS2_INT        MS2_SRC         CLK2_INV            CLK2_SRC[1:0]                   CLK2_IDRV[1:0]
+
+  Type          R/W            R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+ Bit          Name                                                           Function
+
+  7        CLK2_PDN           Clock 2 Power Down.
+                              This bit allows powering down the CLK2 output driver to conserve power when the out-
+                              put is unused.
+                              0: CLK2 is powered up.
+                              1: CLK2 is powered down.
+
+  6         MS2_INT           MultiSynth 2 Integer Mode.
+                              When the MS2 divider is an even integer, this bit can be used to force MS2 into integer
+                              mode to improve jitter performance. Not valid for odd integers. Note that the fractional
+                              mode is necessary when a delay offset is specified for CLK2.
+                              0: MS2 operates in fractional division mode.
+                              1: MS2 operates in integer mode.
+
+  5        MS2_SRC            MultiSynth Source Select for CLK2.
+                              0: Select PLLA as the source for MultiSynth2.
+                              1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth2.
+
+  4        CLK2_INV           Output Clock 2 Invert.
+                              0: Output Clock 2 is not inverted.
+                              1: Output Clock 2 is inverted.
+
+ 3:2     CLK2_SRC[1:0] Output Clock 2 Input Source.
+                              These bits determine the input source for CLK2.
+                              00: Select the XTAL as the clock source for CLK2. This option by-passes both synthesis
+                              stages (PLL/VCXO & MultiSynth) and connects CLK2 directly to the oscillator which gen-
+                              erates an output frequency determined by the XTAL frequency.
+                              01: Select CLKIN as the clock source for CLK2. This by-passes both synthesis stages
+                              (PLL/VCXO & MultiSynth) and connects CLK2 directly to the CLKIN input. This essen-
+                              tially creates a buffered output of the CLKIN input.
+                              10: Select Multisynth 0 as the source for CLK2.
+                              11: Select MultiSynth 2 as the source for CLK2. Select this option when using the Si5351
+                              to generate free-running or synchronous clocks.
+
+ 1:0     CLK2_IDRV[1:0] CLK2 Output Rise and Fall time / Drive Strength Control.
+                              00: 2 mA
+                              01: 4 mA
+                              10: 6 mA
+                              11: 8 mA
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            21
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 19. CLK3 Control
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name      CLK3_PDN         MS3_INT        MS3_SRC         CLK3_INV            CLK3_SRC[1:0]                   CLK3_IDRV[1:0]
+
+   Type         R/W             R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit           Name                                                           Function
+
+   7         CLK3_PDN           Clock 3 Power Down.
+                                This bit allows powering down the CLK3 output driver to conserve power when the out-
+                                put is unused.
+                                0: CLK3 is powered up.
+                                1: CLK3 is powered down.
+                                Write this bit to a 1 when programming a Si5351A-B-GT 10-MSOP Device.
+
+   6          MS3_INT           MultiSynth 3 Integer Mode.
+                                When the MS3 divider is an even integer, this bit can be used to force MS3 into integer
+                                mode to improve jitter performance. Not valid for odd integers. Note that the fractional
+                                mode is necessary when a delay offset is specified for CLK3.
+                                0: MS3 operates in fractional division mode.
+                                1: MS3 operates in integer mode.
+
+   5         MS3_SRC            MultiSynth Source Select for CLK3.
+                                0: Select PLLA as the source for MultiSynth3.
+                                1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth3.
+
+   4         CLK3_INV           Output Clock 3 Invert.
+                                0: Output Clock 3 is not inverted.
+                                1: Output Clock 3 is inverted.
+
+  3:2     CLK3_SRC[1:0] Output Clock 3 Input Source.
+                                These bits determine the input source for CLK3.
+                                00: Select the XTAL as the clock source for CLK3. This option by-passes both synthe-
+                                sis changes (PCL/VCXO and Multisynth) and connects CLK3 directly to the oscillator
+                                which generates an output frequency determined by the XTAL frequency.
+                                01: Select CLKIN as the clock source for CLK3. This by-passes both synthesis stages
+                                (PLL/VCXO and Multisynth) and connects CLK3 directly to the CLKIN input. This
+                                essentially creates a buffered output of the CLKIN input.
+                                10: Select Multisynth 0 as the source for CLK3.
+                                11: Select Multisynth 3 as the source for CLK3. Select this option when using the
+                                Si5351 to generate free-running or synchronous clocks.
+
+  1:0     CLK3_IDRV[1:0] CLK3 Output Rise and Fall time / Drive Strength Control.
+                                00: 2 mA
+                                01: 4 mA
+                                10: 6 mA
+                                11: 8 mA
+
+
+
+22        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 20. CLK4 Control
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name      CLK4_PDN         MS4_INT        MS4_SRC         CLK4_INV            CLK4_SRC[1:0]                   CLK4_IDRV[1:0]
+
+  Type          R/W            R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit          Name                                                           Function
+
+  7         CLK4_PDN           Clock 4 Power Down.
+                               This bit allows powering down the CLK4 output driver to conserve power when the out-
+                               put is unused.
+                               0: CLK4 is powered up.
+                               1: CLK4 is powered down.
+                               Write this bit to a 1 when programming a Si5351A-B-GT 10-MSOP Device.
+
+  6          MS4_INT           MultiSynth 4 Integer Mode.
+                               When the MS4 divider is an even integer, this bit can be used to force MS4 into integer
+                               mode to improve jitter performance. Not valid for odd integers. Note that the fractional
+                               mode is necessary when a delay offset is specified for CLK4.
+                               0: MS4 operates in fractional division mode.
+                               1: MS4 operates in integer mode.
+
+  5          MS4_SRC           MultiSynth Source Select for CLK4.
+                               0: Select PLLA as the source for MultiSynth4.
+                               1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth4.
+
+  4          CLK4_INV          Output Clock 4 Invert.
+                               0: Output Clock 4 is not inverted.
+                               1: Output Clock 4 is inverted.
+
+ 3:2     CLK4_SRC[1:0] Output Clock 4 Input Source.
+                               These bits determine the input source for CLK4.
+                               00: Select the XTAL as the clock source for CLK4. This option by-passes both synthe-
+                               sis stages (PLL/VCXO & MultiSynth) and connects CLK4 directly to the oscillator
+                               which generates an output frequency determined by the XTAL frequency.
+                               01: Select CLKIN as the clock source for CLK4. This by-passes both synthesis stages
+                               (PLL/VCXO & MultiSynth) and connects CLK4 directly to the CLKIN input. This essen-
+                               tially creates a buffered output of the CLKIN input.
+                               10: Reserved. Do not select this option.
+                               11: Select MultiSynth 4 as the source for CLK4. Select this option when using the
+                               Si5351 to generate free-running or synchronous clocks.
+
+ 1:0     CLK4_IDRV[1:0] CLK4 Output Rise and Fall time / Drive Strength Control.
+                               00: 2 mA
+                               01: 4 mA
+                               10: 6 mA
+                               11: 8 mA
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            23
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 21. CLK5 Control
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name      CLK5_PDN         MS5_INT        MS5_SRC         CLK5_INV            CLK5_SRC[1:0]                   CLK5_IDRV[1:0]
+
+   Type         R/W             R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit           Name                                                           Function
+
+   7         CLK5_PDN           Clock 5 Power Down.
+                                This bit allows powering down the CLK5 output driver to conserve power when the out-
+                                put is unused.
+                                0: CLK5 is powered up.
+                                1: CLK5 is powered down.
+                                Write this bit to a 1 when programming a Si5351A-B-GT 10-MSOP Device.
+
+   6          MS5_INT           MultiSynth 5 Integer Mode.
+                                When the MS5 divider is an even integer, this bit can be used to force MS5 into integer
+                                mode to improve jitter performance. Not valid for odd integers. Note that the fractional
+                                mode is necessary when a delay offset is specified for CLK5.
+                                0: MS5 operates in fractional division mode.
+                                1: MS5 operates in integer mode.
+
+   5          MS5_SRC           MultiSynth Source Select for CLK5.
+                                0: Select PLLA as the source for MultiSynth5.
+                                1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth5.
+
+   4          CLK5_INV          Output Clock 5 Invert.
+                                0: Output Clock 5 is not inverted.
+                                1: Output Clock 5 is inverted.
+
+  3:2     CLK5_SRC[1:0] Output Clock 5 Input Source.
+                                These bits determine the input source for CLK5.
+                                00: Select the XTAL as the clock source for CLK5. This option by-passes both synthe-
+                                sis stages (PLL/VCXO & MultiSynth) and connects CLK5 directly to the oscillator
+                                which generates an output frequency determined by the XTAL frequency.
+                                01: Select CLKIN as the clock source for CLK5. This by-passes both synthesis stages
+                                (PLL/VCXO & MultiSynth) and connects CLK5 directly to the CLKIN input. This essen-
+                                tially creates a buffered output of the CLKIN input.
+                                10: Select Multisynth 4 as the source for CLK5.
+                                11: Select MultiSynth 5 as the source for CLK5. Select this option when using the
+                                Si5351 to generate free-running or synchronous clocks.
+
+  1:0     CLK5_IDRV[1:0] CLK5 Output Rise and Fall time / Drive Strength Control.
+                                00: 2 mA
+                                01: 4 mA
+                                10: 6 mA
+                                11: 8 mA
+
+
+
+24        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 22. CLK6 Control
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name      CLK6_PDN         FBA_INT        MS6_SRC         CLK6_INV            CLK6_SRC[1:0]                   CLK6_IDRV[1:0]
+
+  Type          R/W            R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit          Name                                                           Function
+
+  7         CLK6_PDN           Clock 7 Power Down.
+                               This bit allows powering down the CLK6 output driver to conserve power when the out-
+                               put is unused.
+                               0: CLK6 is powered up.
+                               1: CLK6 is powered down.
+                               Write this bit to a 1 when programming a Si5351A-B-GT 10-MSOP Device.
+
+  6          FBA_INT           FBA MultiSynth Integer Mode.
+                               This bit can be used to force Feedback A Multisynth into Integer mode to improve jitter
+                               performance. Note that the fractional mode is necessary when spread spectrum is
+                               specified for any output clocks.
+                               0: MSNA operates in fractional division mode.
+                               1: MSNA operates in integer mode.
+
+  5          MS6_SRC           MultiSynth Source Select for CLK6.
+                               0: Select PLLA as the source for MultiSynth6.
+                               1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth6.
+
+  4          CLK6_INV          Output Clock 6 Invert.
+                               0: Output Clock 6 is not inverted.
+                               1: Output Clock 6 is inverted.
+
+ 3:2     CLK6_SRC[1:0] Output Clock 6 Input Source.
+                               These bits determine the input source for CLK6.
+                               00: Select the XTAL as the clock source for CLK6. This option by-passes both synthe-
+                               sis stages (PLL/VCXO & MultiSynth) and connects CLK6 directly to the oscillator
+                               which generates an output frequency determined by the XTAL frequency.
+                               01: Select CLKIN as the clock source for CLK6. This by-passes both synthesis stages
+                               (PLL/VCXO & MultiSynth) and connects CLK6 directly to the CLKIN input. This essen-
+                               tially creates a buffered output of the CLKIN input.
+                               10: Select Multisynth 4 as the source for CLK6.
+                               11: Select MultiSynth 6 as the source for CLK6. Select this option when using the
+                               Si5351 to generate free-running or synchronous clocks.
+
+ 1:0     CLK6_IDRV[1:0] CLK6 Output Rise and Fall time / Drive Strength Control.
+                               00: 2 mA
+                               01: 4 mA
+                               10: 6 mA
+                               11: 8 mA
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            25
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 23. CLK7 Control
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name      CLK7_PDN         FBB_INT        MS7_SRC         CLK7_INV            CLK7_SRC[1:0]                   CLK7_IDRV[1:0]
+
+   Type         R/W             R/W             R/W             R/W                     R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit           Name                                                           Function
+
+   7         CLK7_PDN           Clock 7 Power Down.
+                                This bit allows powering down the CLK7 output driver to conserve power when the out-
+                                put is unused.
+                                0: CLK7 is powered up.
+                                1: CLK7 is powered down.
+                                Write this bit to a 1 when programming a Si5351A-B-GT 10-MSOP Device.
+
+   6          FBB_INT           FBB MultiSynth Integer Mode.
+                                This bit can be used to force Feedback B into Integer mode to improve jitter perfor-
+                                mance.
+                                0: MSNB operates in fractional division mode.
+                                1: MSNB operates in integer mode.
+
+   5          MS7_SRC           MultiSynth Source Select for CLK7.
+                                0: Select PLLA as the source for MultiSynth7.
+                                1: Select PLLB (Si5351A/C only) or VCXO (Si5351B only) for MultiSynth7.
+
+   4          CLK7_INV          Output Clock 7 Invert.
+                                0: Output Clock 7 is not inverted.
+                                1: Output Clock 7 is inverted.
+
+  3:2     CLK7_SRC[1:0] Output Clock 7 Input Source.
+                                These bits determine the input source for CLK7.
+                                00: Select the XTAL as the clock source for CLK7. This option by-passes both synthe-
+                                sis stages (PLL/VCXO & MultiSynth) and connects CLK7 directly to the oscillator
+                                which generates an output frequency determined by the XTAL frequency.
+                                01: Select CLKIN as the clock source for CLK7. This by-passes both synthesis stages
+                                (PLL/VCXO & MultiSynth) and connects CLK7 directly to the CLKIN input. This essen-
+                                tially creates a buffered output of the CLKIN input.
+                                10: Select Multisynth 4 as the source for CLK7.
+                                11: Select MultiSynth 7 as the source for CLK7. Select this option when using the
+                                Si5351 to generate free-running or synchronous clocks.
+
+  1:0     CLK7_IDRV[1:0] CLK7 Output Rise and Fall time / Drive Strength Control.
+                                00: 2 mA
+                                01: 4 mA
+                                10: 6 mA
+                                11: 8 mA
+
+
+
+
+26        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 24. CLK3–0 Disable State
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name          CLK3_DIS_STATE                 CLK2_DIS_STATE                  CLK1_DIS_STATE                 CLK0_DIS_STATE
+
+  Type                 R/W                             R/W                             R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit             Name                                                          Function
+
+  7:0     CLKx_DIS_STATE             Clock x Disable State.
+                                     Where x = 0, 1, 2, 3. These 2 bits determine the state of the CLKx output when dis-
+                                     abled. Individual output clocks can be disabled using register Output Enable Con-
+                                     trol located at address 3. Outputs are also disabled using the OEB pin.
+                                     00: CLKx is set to a LOW state when disabled.
+                                     01: CLKx is set to a HIGH state when disabled.
+                                     10: CLKx is set to a HIGH IMPEDANCE state when disabled.
+                                     11: CLKx is NEVER DISABLED.
+
+
+Register 25. CLK7–4 Disable State
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+ Name          CLK7_DIS_STATE                 CLK6_DIS_STATE                  CLK5_DIS_STATE                 CLK4_DIS_STATE
+
+  Type                 R/W                             R/W                             R/W                            R/W
+
+Reset value = 0000 0000
+
+  Bit            Name                                                           Function
+
+ 7:0      CLKx_DIS_STATE             Clock x Disable State.
+                                     Where x = 4, 5, 6, 7. These 2 bits determine the state of the CLKx output when dis-
+                                     abled. Individual output clocks can be disabled using register Output Enable Con-
+                                     trol located at address 3. Outputs are also disabled using the OEB pin.
+                                     00: CLKx is set to a LOW state when disabled.
+                                     01: CLKx is set to a HIGH state when disabled.
+                                     10: CLKx is set to a HIGH IMPEDANCE state when disabled.
+                                     11: CLKx is NEVER DISABLED.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            27
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 26. Multisynth NA Parameters
+
+
+     Bit            D7             D6              D5             D4              D3              D2             D1             D0
+   Name                                                           MSNA_P3[15:8]
+
+   Type                                                                  R/W
+Reset value = xxxx xxxx
+
+   Bit          Name                                                             Function
+   7:0       MSNA_P3[15:8]          Multisynth NA Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the PLLA Feedback Multisynth Divider.
+
+
+
+Register 27. Multisynth NA Parameters
+
+
+     Bit            D7             D6              D5             D4              D3              D2             D1             D0
+
+   Name                                                            MSNA_P3[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit           Name                                                            Function
+   7:0        MSNA_P3[7:0]          Multisynth NA Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the PLLA Feedback Multisynth Divider.
+
+
+
+Register 28. Multisynth NA Parameters
+
+
+     Bit            D7             D6              D5             D4              D3              D2             D1             D0
+
+   Name                                 Unused                                         Reserved                 MSNA_P1[17:16]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:4            Unused            Unused.
+   3:2           Reserved           Reserved.
+                                    Leave as default, 0.
+   1:0      MSNA_P1[17:16]          Multisynth NA Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the PLLA
+                                    Feedback Multisynth divider.
+
+
+
+
+28        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 29. Multisynth NA Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                           MSNA_P1[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit          Name                                                             Function
+  7:0       MSNA_P1[15:8]          Multisynth NA Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the PLLA
+                                   Feedback Multisynth divider.
+
+
+
+Register 30. Multisynth NA Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MSNA_P1[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit           Name                                                            Function
+  7:0        MSNA_P1[7:0]          Multisynth NA Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the PLLA
+                                   Feedback Multisynth divider.
+
+
+
+Register 31. Multisynth NA Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                           MSNA_P3[19:16]                                                MSNA_P2[19:16]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit         Name                                                              Function
+  7:4      MSNA_P3[19:16]          Multisynth NA Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the PLLA Feedback Multisynth divider.
+  3:0      MSNA_P2[19:16]          Multisynth NA Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the PLLA Feedback Multisynth divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            29
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 32. Multisynth NA Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                           MSNA_P2[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit          Name                                                             Function
+   7:0       MSNA_P2[15:8]          Multisynth NA Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the PLLA Feedback Multisynth divider.
+
+
+
+Register 33. Multisynth NA Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MSNA_P2[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit           Name                                                            Function
+   7:0        MSNA_P2[7:0]          Multisynth NA Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the PLLA Feedback Multisynth divider.
+
+
+
+Register 34. Multisynth NB Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                           MSNB_P3[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit          Name                                                             Function
+   7:0       MSNB_P3[15:8]          Multisynth NA Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the PLLA Feedback Multisynth divider.
+
+
+
+
+30        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 35. Multisynth NB Parameters
+
+
+    Bit            D7             D6              D5             D4              D3              D2             D1             D0
+
+  Name                                                            MSNB_P3[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit           Name                                                            Function
+  7:0        MSNB_P3[7:0]          Multisynth NB Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the PLLB Feedback Multisynth divider.
+
+
+
+Register 36. Multisynth NB Parameters
+
+
+    Bit            D7             D6              D5             D4              D3              D2             D1             D0
+
+  Name                                 Unused                                         Reserved                 MSNB_P1[17:16]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:4                                                               Unused
+  3:2           Reserved           Reserved.
+                                   Leave as default, 0.
+  1:0      MSNB_P1[17:16]          Multisynth NB Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part for the frac-
+                                   tional part of the PLLB Feedback Multisynth divider.
+
+
+
+Register 37. Multisynth NB Parameters
+
+
+    Bit            D7             D6              D5             D4              D3              D2             D1             D0
+
+  Name                                                           MSNB_P1[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit          Name                                                   Function
+  7:0       MSNB_P1[15:8]          Multisynth NB Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the PLLB
+                                   Feedback Multisynth divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            31
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 38. Multisynth NB Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MSNB_P1[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit           Name                                                  Function
+   7:0        MSNB_P1[7:0]          Multisynth NB Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the PLLB
+                                    Feedback Multisynth divider.
+
+
+
+Register 39. Multisynth NB Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                           MSNB_P3[19:16]                                                MSNB_P2[19:16]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit         Name                                                              Function
+   7:4      MSNB_P3[19:16]          Multisynth NB Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the PLLB Feedback Multisynth divider.
+   3:0      MSNB_P2[19:16]          Multisynth NB Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the PLLB Feedback Multisynth divider.
+
+
+
+Register 40. Multisynth NB Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                           MSNB_P2[15:8]
+
+    Type                                                                 R/W
+
+Reset value = xxxx xxxx
+
+   Bit          Name                                                             Function
+   7:0       MSNB_P2[15:8]          Multisynth NB Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the PLLB Feedback Multisynth divider.
+
+
+
+
+32        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 41. Multisynth NB Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MSNB_P2[7:0]
+
+   Type                                                                 R/W
+
+  Bit           Name                                                   Function
+  7:0        MSNB_P2[7:0]          Multisynth NB Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the PLLB Feedback Multisynth divider.
+
+
+
+Register 42. Multisynth0 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+  Name                                                            MS0_P3[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit           Name                                                            Function
+  7:0        MS0_P3[15:8]          Multisynth0 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the MultiSynth0 Divider.
+
+
+
+Register 43. Multisynth0 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS0_P3[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit              Name                                                          Function
+  7:0          MS0_P3[7:0]           Multisynth0 Parameter 3.
+                                     This 20-bit number is an encoded representation of the denominator for the frac-
+                                     tional part of the MultiSynth0 Divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            33
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 44. Multisynth0 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+   Name                                      R0_DIV[2:0]                        MS0_DIVBY4[1:0]                  MS0_P1[17:16]
+   Type            R/W                            R/W                            R/W            R/W                    R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+    7             Unused
+   6:4         R0_DIV[2:0]          R0 Output Divider.
+                                    000b: Divide by 1
+                                    001b: Divide by 2
+                                    010b: Divide by 4
+                                    011b: Divide by 8
+                                    100b: Divide by 16
+                                    101b: Divide by 32
+                                    110b: Divide by 64
+                                    111b: Divide by 128
+   3:2     MS0_DIVBY4[1:0] MS0 Divide by 4 Enable.
+                           11: Divide by 4 enabled.
+                           00: Divide by a value other than 4.
+   1:0       MS0_P1[17:16]          Multisynth0 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    Synth0 divider.
+
+
+
+Register 45. Multisynth0 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2             D1              D0
+   Name                                                            MS0_P1[15:8]
+  Type                                                                   R/W
+Reset value = xxxx xxxx
+
+
+   Bit             Name                                                          Function
+   7:0        MS0_P1[15:8]          Multisynth0 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    Synth1 divider.
+
+
+
+
+34        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 46. Multisynth0 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS0_P1[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS0_P1[7:0]          Multisynth0 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   Synth1 divider.
+
+
+
+Register 47. Multisynth0 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                            MS0_P3[19:16]                                                 MS0_P2[19:16]
+
+   Type                                  R/W                                                           R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:4       MS0_P3[19:16]          Multisynth0 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the MultiSynth0 Divider
+  3:0       MS0_P2[19:16]          Multisynth0 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the MultiSynth1 Divider.
+
+
+
+Register 48. Multisynth0 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS0_P2[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS0_P2[15:8]          Multisynth0 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the MultiSynth1 Divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            35
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 49. Multisynth0 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS0_P2[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS0_P2[7:0]          Multisynth0 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the MultiSynth1 Divider.
+
+
+
+Register 50. Multisynth1 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS1_P3[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS1_P3[15:8]          Multisynth1 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the MultiSynth1 Divider.
+
+
+
+Register 51. Multisynth1 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS1_P3[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS1_P3[7:0]          Multisynth1 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the MultiSynth1 Divider.
+
+
+
+
+36        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 52. Multisynth1 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+  Name                                      R1_DIV[2:0]                        MS1_DIVBY4[1:0]                  MS1_P1[17:16]
+
+   Type           R/W                            R/W                            R/W            R/W                    R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+   7             Unused
+  6:4         R1_DIV[2:0]          R1 Output Divider.
+                                   000b: Divide by 1
+                                   001b: Divide by 2
+                                   010b: Divide by 4
+                                   011b: Divide by 8
+                                   100b: Divide by 16
+                                   101b: Divide by 32
+                                   110b: Divide by 64
+                                   111b: Divide by 128
+  3:2     MS1_DIVBY4[1:0] MS1 Divide by 4 Enable.
+                          11: Divide by 4 enabled.
+                          00: Divide by a value other than 4.
+  1:0       MS1_P1[17:16]          Multisynth1 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   Synth1 divider.
+
+
+
+Register 53. Multisynth1 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS1_P1[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS1_P1[15:8]          Multisynth1 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   Synth1 divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            37
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 54. Multisynth1 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS1_P1[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS1_P1[7:0]          Multisynth1 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    Synth1 divider.
+
+
+
+Register 55. Multisynth1 Parameters
+
+
+     Bit             D7             D6             D5              D4             D3             D2              D1             D0
+
+   Name                             MS1_P3[19:16]                                                MS1_P2[19:16]
+
+    Type                                   R/W                                                          R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:4       MS1_P3[19:16]          Multisynth1 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth1 Divider
+   3:0       MS1_P2[19:16]          Multisynth1 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the MultiSynth1 Divider.
+
+
+
+Register 56. Multisynth1 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS1_P2[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS1_P2[15:8]          Multisynth1 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the MultiSynth1 divider.
+
+
+
+
+38        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 57. Multisynth1 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS1_P2[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS1_P2[7:0]          Multisynth1 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the MultiSynth1 divider.
+
+
+
+Register 58. Multisynth2 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS2_P3[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS2_P3[15:8]          Multisynth2 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the MultiSynth2 divider.
+
+
+
+Register 59. Multisynth2 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS2_P3[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS2_P3[7:0]          Multisynth2 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the MultiSynth2 divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            39
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 60. Multisynth2 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2             D1              D0
+
+   Name                                      R2_DIV[2:0]                        MS2_DIVBY4[1:0]                 MS2_P1[17:16]
+
+    Type           R/W                            R/W                            R/W            R/W                    R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+    7             Unused
+   6:4         R2_DIV[2:0]          R2 Output Divider.
+                                    000b: Divide by 1
+                                    001b: Divide by 2
+                                    010b: Divide by 4
+                                    011b: Divide by 8
+                                    100b: Divide by 16
+                                    101b: Divide by 32
+                                    110b: Divide by 64
+                                    111b: Divide by 128
+   3:2     MS2_DIVBY4[1:0] MS2 Divide by 4 Enable.
+                           11: Divide by 4 enabled.
+                           00: Divide by a value other than 4.
+   1:0       MS2_P1[17:16]          Multisynth2 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    synth2 divider.
+
+
+
+Register 61. Multisynth2 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS2_P1[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS2_P1[15:8]          Multisynth2 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    synth2 divider.
+
+
+
+
+40        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 62. Multisynth2 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS2_P1[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS2_P1[7:0]          Multisynth2 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   synth2 divider.
+
+
+
+Register 63. Multisynth2 Parameters
+
+
+    Bit             D7             D6             D5              D4             D3             D2              D1             D0
+
+   Name                            MS2_P3[19:16]                                                MS2_P2[19:16]
+
+   Type                                   R/W                                                          R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:4       MS2_P3[19:16]          Multisynth2 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the Multisynth2 divider
+  3:0       MS2_P2[19:16]          Multisynth2 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the MultiSynth2 divider.
+
+
+
+Register 64. Multisynth2 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS2_P2[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS2_P2[15:8]          Multisynth2 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the Multisynth2 divider.
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            41
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 65. Multisynth2 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS2_P2[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS2_P2[7:0]          Multisynth2 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the Multisynth2 divider.
+
+
+
+Register 66. Multisynth3 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS3_P3[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS3_P3[15:8]          Multisynth3 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth3 divider.
+
+
+
+Register 67. Multisynth3 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS3_P3[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS3_P3[7:0]          Multisynth3 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth3 divider.
+
+
+
+
+42        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 68. Multisynth3 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2             D1              D0
+
+  Name                                      R3_DIV[2:0]                        MS3_DIVBY4[1:0]                 MS3_P1[17:16]
+
+   Type           R/W                            R/W                            R/W            R/W                    R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+   7             Unused
+  6:4         R3_DIV[2:0]          R3 Output Divider.
+                                   000b: Divide by 1
+                                   001b: Divide by 2
+                                   010b: Divide by 4
+                                   011b: Divide by 8
+                                   100b: Divide by 16
+                                   101b: Divide by 32
+                                   110b: Divide by 64
+                                   111b: Divide by 128
+  3:2     MS3_DIVBY4[1:0] MS3 Divide by 4 Enable.
+                          11: Divide by 4 enabled.
+                          00: Divide by a value other than 4.
+  1:0       MS3_P1[17:16]          Multisynth3 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   synth3 divider.
+
+
+
+Register 69. Multisynth3 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS3_P1[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS3_P1[15:8]          Multisynth3 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   synth3 divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            43
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 70. Multisynth3 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS3_P1[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS3_P1[7:0]          Multisynth3 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    synth3 divider.
+
+
+
+Register 71. Multisynth3 Parameters
+
+
+     Bit             D7             D6             D5              D4             D3             D2              D1             D0
+
+   Name                             MS3_P3[19:16]                                                MS3_P2[19:16]
+
+    Type                                   R/W                                                          R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:4       MS3_P3[19:16]          Multisynth3 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth3 divider
+   3:0       MS3_P2[19:16]          Multisynth3 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the MultiSynth3 divider.
+
+
+
+Register 72. Multisynth3 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS3_P2[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS3_P2[15:8]          Multisynth3 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the Multisynth3 divider.
+
+
+
+44        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 73. Multisynth3 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS3_P2[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS3_P2[7:0]          Multisynth3 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the Multisynth3 divider.
+
+
+
+Register 74. Multisynth4 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS4_P3[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS4_P3[15:8]          Multisynth4 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the Multisynth4 divider.
+
+
+
+Register 75. Multisynth4 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS4_P3[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS4_P3[7:0]          Multisynth4 Parameter 3.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the Multisynth4 divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            45
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 76. Multisynth4 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2             D1              D0
+
+   Name                                      R4_DIV[2:0]                        MS4_DIVBY4[1:0]                 MS4_P1[17:16]
+
+    Type           R/W                            R/W                            R/W            R/W                    R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+    7             Unused
+   6:4         R4_DIV[2:0]          R4 Output Divider.
+                                    000b: Divide by 1
+                                    001b: Divide by 2
+                                    010b: Divide by 4
+                                    011b: Divide by 8
+                                    100b: Divide by 16
+                                    101b: Divide by 32
+                                    110b: Divide by 64
+                                    111b: Divide by 128
+   3:2     MS4_DIVBY4[1:0] MS4 Divide by 4 Enable.
+                           11: Divide by 4 enabled.
+                           00: Divide by a value other than 4.
+   1:0       MS4_P1[17:16]          Multisynth4 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    synth4 divider.
+
+
+
+Register 77. Multisynth4 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS4_P1[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS4_P1[15:8]          Multisynth4 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    synth4 divider.
+
+
+
+
+46        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 78. Multisynth4 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS4_P1[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS4_P1[7:0]          Multisynth4 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   synth4 divider.
+
+
+
+Register 79. Multisynth4 Parameters
+
+
+    Bit             D7             D6             D5              D4             D3             D2              D1             D0
+
+   Name                            MS4_P3[19:16]                                                MS4_P2[19:16]
+
+   Type                                   R/W                                                          R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:4       MS4_P3[19:16]          Multisynth4 Parameter 3.
+                                   This 20-bit number is an encoded representation of the denominator for the frac-
+                                   tional part of the Multisynth4 divider
+  3:0       MS4_P2[19:16]          Multisynth4 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the MultiSynth4 divider.
+
+
+
+Register 80. Multisynth4 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS4_P2[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS4_P2[15:8]          Multisynth4 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the Multisynth4 Divider.
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            47
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 81. Multisynth4 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS4_P2[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS4_P2[7:0]          Multisynth4 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the Multisynth4 divider.
+
+
+
+Register 82. Multisynth5 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS5_P3[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS5_P3[15:8]          Multisynth5 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth5 divider.
+
+
+
+Register 83. Multisynth5 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS5_P3[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS5_P3[7:0]          Multisynth5 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth5 divider.
+
+
+
+
+48        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 84. Multisynth5 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2             D1              D0
+
+  Name                                      R5_DIV[2:0]                        MS5_DIVBY4[1:0]                 MS5_P1[17:16]
+
+   Type           R/W                            R/W                            R/W            R/W                    R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+   7             Unused
+  6:4         R5_DIV[2:0]          R5 Output Divider.
+                                   000b: Divide by 1
+                                   001b: Divide by 2
+                                   010b: Divide by 4
+                                   011b: Divide by 8
+                                   100b: Divide by 16
+                                   101b: Divide by 32
+                                   110b: Divide by 64
+                                   111b: Divide by 128
+  3:2     MS5_DIVBY4[1:0] MS5 Divide by 4 Enable.
+                          11: Divide by 4 enabled.
+                          00: Divide by a value other than 4.
+  1:0       MS5_P1[17:16]          Multisynth5 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   synth5 divider.
+
+
+
+Register 85. Multisynth5 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                            MS5_P1[15:8]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0        MS5_P1[15:8]          Multisynth5 Parameter 1.
+                                   This 18-bit number is an encoded representation of the integer part of the Multi-
+                                   synth5 divider.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            49
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 86. Multisynth5 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                             MS5_P1[7:0]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0         MS5_P1[7:0]          Multisynth5 Parameter 1.
+                                    This 18-bit number is an encoded representation of the integer part of the Multi-
+                                    synth5 divider.
+
+
+
+Register 87. Multisynth5 Parameters
+
+
+     Bit             D7             D6             D5              D4             D3             D2              D1             D0
+
+   Name                             MS5_P3[19:16]                                                MS5_P2[19:16]
+
+    Type                                   R/W                                                          R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:4       MS5_P3[19:16]          Multisynth5 Parameter 3.
+                                    This 20-bit number is an encoded representation of the denominator for the frac-
+                                    tional part of the Multisynth5 divider
+   3:0       MS5_P2[19:16]          Multisynth5 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the MultiSynth5 divider.
+
+
+
+Register 88. Multisynth5 Parameters
+
+
+     Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+   Name                                                            MS5_P2[15:8]
+
+    Type                                                                 R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+   7:0        MS5_P2[15:8]          Multisynth5 Parameter 2.
+                                    This 20-bit number is an encoded representation of the numerator for the fractional
+                                    part of the Multisynth5 Divider.
+
+
+
+50        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 89. Multisynth5 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS5_P2[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS5_P2[7:0]          Multisynth5 Parameter 2.
+                                   This 20-bit number is an encoded representation of the numerator for the fractional
+                                   part of the Multisynth5 Divider.
+
+
+
+Register 90. Multisynth6 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS6_P1[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS6_P1[7:0]          Multisynth6 Parameter 1.
+                                   This 8-bit number is the Multisynth6 divide ratio. Multisynth6 divide ratio can only be
+                                   even integers greater than or equal to 6. All other divide values are invalid.
+
+
+
+Register 91. Multisynth7 Parameters
+
+
+    Bit            D7             D6              D5             D4              D3             D2              D1             D0
+
+  Name                                                             MS7_P1[7:0]
+
+   Type                                                                 R/W
+Reset value = xxxx xxxx
+
+  Bit             Name                                                          Function
+  7:0         MS7_P1[7:0]          Multisynth7 Parameter 1.
+                                   This 8-bit number is the Multisynth6 divide ratio. Multisynth6 divide ratio can only be
+                                   even integers greater than or equal to 6. All other divide values are invalid.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            51
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 92. Clock 6 and 7 Output Divider
+
+
+     Bit            D7             D6              D5             D4              D3             D2             D1              D0
+
+   Name         Reserved                     R7_DIV[2:0]                     Reserved                      R6_DIV[2:0]
+
+    Type           R/W                            R/W                            R/W                            R/W
+Reset value = xxxx xxxx
+
+   Bit             Name                                                          Function
+    7            Reserved           Leave as default.
+   6:4         R7_DIV[2:0]          R7 Output Divider.
+                                    000b: Divide by 1
+                                    001b: Divide by 2
+                                    010b: Divide by 4
+                                    011b: Divide by 8
+                                    100b: Divide by 16
+                                    101b: Divide by 32
+                                    110b: Divide by 64
+                                    111b: Divide by 128
+    3            Reserved           Leave as default.
+   1:0         R6_DIV[2:0]          R6 Output Divider.
+                                    000b: Divide by 1
+                                    001b: Divide by 2
+                                    010b: Divide by 4
+                                    011b: Divide by 8
+                                    100b: Divide by 16
+                                    101b: Divide by 32
+                                    110b: Divide by 64
+                                    111b: Divide by 128
+
+
+
+
+52        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 149. Spread Spectrum Parameters
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+ Name        SSC_EN                                                     SSDN_P2[14:8]
+  Type                                                                 R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+  7           SSC_EN             Spread Spectrum Enable
+                                 1: Enable
+                                 0: Disable
+                                 Note: Spread Spectrum Enable control pin is available on the Si5351A and B devices. Spread
+                                       spectrum enable functionality is a logical OR of the SSEN pin and SSC_EN register bit,
+                                       so for the SSEN pin to work properly, this register bit must be set to 0.
+ 6:0      SSDN_P2[14:8]          PLL A Spread Spectrum Down Parameter 2.
+
+
+Register 150. Spread Spectrum Parameters
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+ Name                                                            SSDN_P2[7:0]
+  Type                                                                 R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+ 7:0       SSDN_P2[7:0]          PLL A Spread Spectrum Down Parameter 2.
+
+
+Register 151. Spread Spectrum Parameters
+
+
+  Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name     SSC_MODE                                                       SSDN_P3[14:8]
+ Type                                                                  R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+  7         SSC_MODE             Spread Spectrum Mode.
+                                 0: Down Spread
+                                 1: Center Spread
+ 6:0      SSDN_P3[14:8]          PLL A Spread Spectrum Down Parameter 3.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            53
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 152. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                             SSDN_P3[7:0]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:0        SSDN_P3[7:0]          PLL A Spread Spectrum Down Parameter 3.
+
+
+Register 153. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                             SSDN_P1[7:0]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:0        SSDN_P1[7:0]          PLL A Spread Spectrum Down Parameter 1.
+
+
+Register 154. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                              SSUDP[11:8]                                                   SSDN_P1[11:8]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:4        SSUDP[11:8]           PLL A Spread Spectrum Up/Down Parameter.
+ 3:0       SSDN_P1[11:8]          PLL A Spread Spectrum Down Parameter 1.
+
+
+Register 155. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                              SSUDP[7:0]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:0         SSUDP[7:0]           PLL A Spread Spectrum Up/Down Parameter.
+
+
+54        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 156. Spread Spectrum Parameters
+
+
+  Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name        Unused                                                      SSUP_P2[14:8]
+ Type                                                                  R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+  7            Unused            Unused.
+ 6:0      SSUP_P2[14:8]          PLL A Spread Spectrum Up Parameter 2.
+
+
+Register 157. Spread Spectrum Parameters
+
+
+  Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                            SSUP_P2[7:0]
+ Type                                                                  R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+ 7:0       SSUP_P2[7:0]          PLL A Spread Spectrum Up Parameter 2.
+
+
+Register 158. Spread Spectrum Parameters
+
+
+  Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name        Unused                                                      SSUP_P3[14:8]
+ Type                                                                  R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+  7            Unused            Unused.
+ 6:0      SSUP_P3[14:8]          PLL A Spread Spectrum Up Parameter 3.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            55
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 159. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                             SSUP_P3[7:0]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:0        SSUP_P3[7:0]          PLL A Spread Spectrum Up Parameter 3.
+
+
+Register 160. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                             SSUP_P1[7:0]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:0        SSUP_P1[7:0]          PLL A Spread Spectrum Up Parameter 1.
+
+
+Register 161. Spread Spectrum Parameters
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                             SS_NCLK[3:0]                                                   SSUP_P1[11:8]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:4        SS_NCLK[3:0]          Must write 0000b to these bits.
+ 3:0       SSUP_P1[11:8]          PLL A Spread Spectrum Up Parameter 1.
+
+
+Register 162. VCXO Parameter
+
+
+   Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                          VCXO_Param[7:0]
+  Type                                                                  R/W
+Reset value = xxxx xxxx
+
+  Bit            Name                                                           Function
+ 7:0     VCXO_Param[7:0] VCXO Parameter.
+
+
+56        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 163. VCXO Parameter
+
+
+  Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                                                        VCXO_Param[15:8]
+ Type                                                                  R/W
+Reset value = xxxx xxxx
+
+ Bit            Name                                                           Function
+ 7:0     VCXO_Param[15:8] VCXO Parameter.
+
+
+Register 164. VCXO Parameter
+
+
+  Bit            D7              D6              D5              D4              D3             D2              D1              D0
+ Name                 Reserved                                               VCXO_Param[21:16]
+  Type                                                                 R/W
+Reset value = xxxx xxxx
+
+ Bit             Name                                                           Function
+ 7:6           Reserved               Reserved. Only write 00b to these bits.
+ 5:0     VCXO_Param[21:16] VCXO Parameter.
+
+
+Register 165. CLK0 Initial Phase Offset
+
+
+   Bit           D7              D6             D5              D4              D3              D2             D1              D0
+ Name                                                                 CLK0_PHOFF[6:0]
+  Type          R/W            R/W             R/W             R/W             R/W            R/W             R/W             R/W
+Reset value = 0000 0000
+
+ Bit            Name                                                           Function
+  7           Reserved           Only write 0 to this bit.
+ 6:0     CLK0_PHOFF[6:0] Clock 0 Initial Phase Offset.
+                                 CLK0_PHOFF[6:0] is an unsigned integer with one LSB equivalent to a time delay of
+                                 Tvco/4, where Tvco is the period of the VCO/PLL associated with this output.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            57
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 166. CLK1 Initial Phase Offset
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+  Name                                                                 CLK1_PHOFF[6:0]
+   Type         R/W             R/W             R/W             R/W             R/W            R/W             R/W             R/W
+Reset value = 0000 0000
+
+  Bit            Name                                                           Function
+   7           Reserved           Only write 0 to this bit.
+ 6:0      CLK1_PHOFF[6:0] Clock 1 Initial Phase Offset.
+                                  CLK1_PHOFF[6:0] is an unsigned integer with one LSB equivalent to a time delay of
+                                  Tvco/4, where Tvco is the period of the VCO/PLL associated with this output.
+
+
+Register 167. CLK2 Initial Phase Offset
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+  Name                                                                 CLK2_PHOFF[6:0]
+   Type         R/W             R/W             R/W             R/W             R/W            R/W             R/W             R/W
+Reset value = 0000 0000
+
+  Bit            Name                                                           Function
+   7           Reserved           Only write 0 to this bit.
+ 6:0      CLK2_PHOFF[6:0] Clock 2 Initial Phase Offset.
+                                  CLK2_PHOFF[6:0] is an unsigned integer with one LSB equivalent to a time delay of
+                                  Tvco/4, where Tvco is the period of the VCO/PLL associated with this output.
+
+
+Register 168. CLK3 Initial Phase Offset
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+  Name                                                                 CLK3_PHOFF[6:0]
+   Type         R/W             R/W             R/W             R/W             R/W            R/W             R/W             R/W
+Reset value = 0000 0000
+
+  Bit            Name                                                           Function
+   7           Reserved           Only write 0 to this bit.
+  6:0     CLK3_PHOFF[6:0] Clock 3 Initial Phase Offset.
+                                  CLK3_PHOFF[6:0] is an unsigned integer with one LSB equivalent to a time delay of
+                                  Tvco/4, where Tvco is the period of the VCO/PLL associated with this output.
+
+
+
+
+58        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 169. CLK4 Initial Phase Offset
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+ Name                                                                 CLK4_PHOFF[6:0]
+  Type          R/W            R/W             R/W             R/W             R/W            R/W             R/W             R/W
+Reset value = 0000 0000
+
+ Bit            Name                                                           Function
+  7           Reserved           Only write 0 to this bit.
+ 6:0     CLK4_PHOFF[6:0] Clock 4 Initial Phase Offset.
+                                 CLK4_PHOFF[6:0] is an unsigned integer with one LSB equivalent to a time delay of
+                                 Tvco/4, where Tvco is the period of the VCO/PLL associated with this output.
+
+
+Register 170. CLK5 Initial Phase Offset
+
+
+   Bit           D7             D6              D5              D4              D3              D2             D1              D0
+ Name                                                                 CLK5_PHOFF[6:0]
+  Type          R/W            R/W             R/W             R/W             R/W            R/W             R/W             R/W
+Reset value = 0000 0000
+
+ Bit            Name                                                           Function
+  7           Reserved           Only write 0 to this bit.
+ 6:0     CLK5_PHOFF[6:0] Clock 5 Initial Phase Offset.
+                                 CLK5_PHOFF[6:0] is an unsigned integer with one LSB equivalent to a time delay of
+                                 Tvco/4, where Tvco is the period of the VCO/PLL associated with this output.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            59
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+
+Register 177. PLL Reset
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name      PLLB_RST                        PLLA_RST
+
+   Type         R/W             R/W             R/W             R/W             R/W            R/W             R/W             R/W
+
+Reset value = 0000 0000
+
+  Bit        Name                                                           Function
+
+   7      PLLB_RST PLLB_Reset.
+                          Writing a 1 to this bit will reset PLLB. This is a self clearing bit.
+
+   6       Reserved       Leave as default.
+
+   5      PLLA_RST PLLA_Reset.
+                          Writing a 1 to this bit will reset PLLA. This is a self clearing bit.
+
+  4:0      Reserved       Leave as default.
+
+
+Register 183. Crystal Internal Load Capacitance
+
+
+    Bit           D7             D6              D5              D4              D3              D2             D1              D0
+
+  Name             XTAL_CL[1:0]
+
+   Type         R/W             R/W             R/W             R/W             R/W            R/W             R/W             R/W
+
+Reset value = 11xx xxxx
+
+  Bit         Name                                                           Function
+
+  7:6     XTAL_CL[1:0] Crystal Load Capacitance Selection.
+                             These 2 bits determine the internal load capacitance value for the crystal. See the Crystal
+                             Inputs section in the Si5351 data sheet.
+                             00: Reserved. Do not select this option.
+                             01: Internal CL = 6 pF.
+                             10: Internal CL = 8 pF.
+                             11: Internal CL = 10 pF (default).
+
+  5:0       Reserved         Bits 5:0 should be written to 010010b.
+
+
+
+
+60        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+                                                                                                                       AN619
+
+Register 187. Fanout Enable
+
+
+   Bit           D7              D6             D5              D4              D3              D2              D1             D0
+
+ Name      CLKIN_FA- XO_FA-                 Reserved        MS_FA-                                   Reserved
+           NOUT_EN NOUT_EN                                 NOUT_EN
+
+  Type          R/W             R/W            R/W             R/W             R/W             R/W             R/W            R/W
+
+Reset value = xxxx xxxx
+
+  Bit        Name                                                           Function
+
+   7      CLKIN_FA-         Enable fanout of CLKIN to clock output multiplexers. Set this bit to 1b.
+          NOUT_EN
+
+   6        XO_FA-          Enable fanout of XO to clock output multiplexers. Set this bit to 1b.
+           NOUT_EN
+
+   5       Reserved         Reserved.
+
+   4        MS_FA-          Enable fanout of Multisynth0 and Multisynth4 to all output multiplexers. Set this bit to 1b.
+           NOUT_EN
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com            61
+Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+AN619
+DOCUMENT CHANGE LIST                                                     Updated Register 36 description
+                                                                      Revision 0.7 to Revision 0.8
+Revision 0.1 to Revision 0.2
+                                                                         Updated to include ClockBuilder Pro
+   Corrected Typos
+                                                                         Clarified 10-MSOP and 20-QFN package coverage
+    Feedback fractional divide value can be up to 90 (not
+      900).                                                              Added reference to AN1234 for 16-QFN
+    Corrected miscellaneous typographical errors.
+                                                                          Programming Instructions
+ Added note to “3.2. Feedback Multisynth Divider                        Updated Section "8.1. Register Map Summary" on
+  Equations” to set MSNB a + b/c divide ratio such that                   page 10.
+  c = 106 when using VCXO equations in this                              Cleaned up register descriptions
+  document.
+ Added Figure 2.
+
+Revision 0.2 to Revision 0.3
+ Updated first bullet in “Section 5. Configuring Spread
+  Spectrum Register Parameters.”
+ Updated “Section 8.1 Register Map Summary.”
+ Updated Register 183.
+
+Revision 0.3 to Revision 0.4
+ Corrected typographic error in maximum spread
+  spectrum percentage for center spread on page 8.
+ Added rounding operator for up spread depth
+  calculation on page 9.
+ Corrected register description errata on pages 11,13,
+  31, and 32.
+Revision 0.4 to Revision 0.5
+ Updated “8.1. Register Map Summary”.
+ Updated “6. Configuring Initial Phase Offset Register
+  Parameters”.
+ Corrected Register 16 description.
+
+Revision 0.5 to Revision 0.6
+   Updated “8.1. Register Map Summary”.
+   Corrected Register 161 description.
+Revision 0.6 to Revision 0.7
+   Corrected Typo in Section “3.1.2. CMOS Clock
+    Source”
+   Corrected Typo in Section “3.2. Feedback Multisynth
+    Divider Equations” Now c = 10^6
+   Removed Section 3.3. Miscellaneous PLL
+    Parameters.
+   Fixed minor typos in Section “5. Configuring Spread
+    Spectrum Register Parameters”
+   Corrected Register 36 fields in Section "“8.1.
+    Register Map Summary”.
+   Updated Register 0 description to include the
+    Revision ID.
+   Fixed Register 32 Register Name
+
+
+62        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+ Rev. 0.8 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • September 23, 2021
+     ClockBuilder Pro
+     Customize Skyworks clock generators,
+     jitter attenuators and network
+     synchronizers with a single tool. With
+     CBPro you can control evaluation
+     boards, access documentation, request
+     a custom part number, export for
+     in-system programming and more!
+
+
+     www.skyworksinc.com/CBPro
+
+
+
+
+                    Portfolio                           SW/HW                               Quality                     Support & Resources
+         www.skyworksinc.com/ia/timing        www.skyworksinc.com/CBPro           www.skyworksinc.com/quality         www.skyworksinc.com/support
+
+
+Copyright © 2021 Skyworks Solutions, Inc. All Rights Reserved.
+Information in this document is provided in connection with Skyworks Solutions, Inc. (“Skyworks”) products or services. These materials, including the
+information contained herein, are provided by Skyworks as a service to its customers and may be used for informational purposes only by the customer.
+Skyworks assumes no responsibility for errors or omissions in these materials or the information contained herein. Skyworks may change its documentation,
+products, services, speciﬁcations or product descriptions at any time, without notice. Skyworks makes no commitment to update the materials or
+information and shall have no responsibility whatsoever for conﬂicts, incompatibilities, or other diﬃculties arising from any future changes.
+
+No license, whether express, implied, by estoppel or otherwise, is granted to any intellectual property rights by this document. Skyworks assumes no liability
+for any materials, products or information provided hereunder, including the sale, distribution, reproduction or use of Skyworks products, information or
+materials, except as may be provided in Skyworks’ Terms and Conditions of Sale.
+
+THE MATERIALS, PRODUCTS AND INFORMATION ARE PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR
+OTHERWISE, INCLUDING FITNESS FOR A PARTICULAR PURPOSE OR USE, MERCHANTABILITY, PERFORMANCE, QUALITY OR NON-INFRINGEMENT OF ANY
+INTELLECTUAL PROPERTY RIGHT; ALL SUCH WARRANTIES ARE HEREBY EXPRESSLY DISCLAIMED. SKYWORKS DOES NOT WARRANT THE ACCURACY OR
+COMPLETENESS OF THE INFORMATION, TEXT, GRAPHICS OR OTHER ITEMS CONTAINED WITHIN THESE MATERIALS. SKYWORKS SHALL NOT BE LIABLE FOR
+ANY DAMAGES, INCLUDING BUT NOT LIMITED TO ANY SPECIAL, INDIRECT, INCIDENTAL, STATUTORY, OR CONSEQUENTIAL DAMAGES, INCLUDING WITHOUT
+LIMITATION, LOST REVENUES OR LOST PROFITS THAT MAY RESULT FROM THE USE OF THE MATERIALS OR INFORMATION, WHETHER OR NOT THE RECIPIENT
+OF MATERIALS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Skyworks products are not intended for use in medical, lifesaving or life-sustaining applications, or other equipment in which the failure of the Skyworks
+products could lead to personal injury, death, physical or environmental damage. Skyworks customers using or selling Skyworks products for use in such
+applications do so at their own risk and agree to fully indemnify Skyworks for any damages resulting from such improper use or sale.
+
+Customers are responsible for their products and applications using Skyworks products, which may deviate from published speciﬁcations as a result of
+design defects, errors, or operation of products outside of published parameters or design speciﬁcations. Customers should include design and operating
+safeguards to minimize these and other risks. Skyworks assumes no liability for applications assistance, customer product design, or damage to any
+equipment resulting from the use of Skyworks products outside of Skyworks’ published speciﬁcations or parameters.
+
+Skyworks, the Skyworks symbol, Sky5®, SkyOne®, SkyBlue™, Skyworks Green™, Clockbuilder®, DSPLL®, ISOmodem®, ProSLIC®, and SiPHY® are trademarks or
+registered trademarks of Skyworks Solutions, Inc. or its subsidiaries in the United States and other countries. Third-party brands and names are for
+identiﬁcation purposes only and are the property of their respective owners. Additional information, including relevant terms and conditions, posted at
+www.skyworksinc.com, are incorporated by reference.
+
+
+                          Skyworks Solutions, Inc. | Nasdaq: SWKS | sales@skyworksinc.com | www.skyworksinc.com
+                            USA: 781-376-3000 | Asia: 886-2-2735 0399 | Europe: 33 (0)1 43548540 |
+

@@ -1,0 +1,838 @@
+{
+ "library": "etherkit/Si5351Arduino master 1ddd43e (v2.3.0)",
+ "runner_output": "acc_master.jsonl",
+ "refs": {
+  "AN619": "ref/AN619.txt",
+  "datasheet": "ref/datasheet.txt"
+ },
+ "tests": [
+  {
+   "id": "A01",
+   "item": "1 DEV-03",
+   "scenario": "V231:DEV03-clk6-10kHz",
+   "calls": "init0(); sf(10000 * M, 6); ",
+   "title": "set_freq(10 kHz, CLK6): reg90 must not be 0x00, PLLB must stay in 600-900 MHz",
+   "debatable": "D1",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] every reg90 write by set_freq is an even integer 6..254",
+     "observed": "['0x00']",
+     "expected": "even 6..254 (AN619 Reg 90, AN619.txt:2696)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] stored pllb_freq within VCO 600..900 MHz",
+     "observed": "128 MHz",
+     "expected": "600..900 MHz (AN619.txt:37)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] either rejected (ret 1, nothing written) or clamped to >= CLKOUT67_MIN 18454 Hz",
+     "observed": "ret=0 clk_freq[6]=4000 Hz realized=None Hz",
+     "expected": "reject or clamp>=18454 Hz (DEBATABLE D1)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] every reg90 write by set_freq is an even integer 6..254",
+     "observed": "['0x00']",
+     "expected": "even 6..254 (AN619 Reg 90, AN619.txt:2696)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] stored pllb_freq within VCO 600..900 MHz",
+     "observed": "128 MHz",
+     "expected": "600..900 MHz (AN619.txt:37)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] either rejected (ret 1, nothing written) or clamped to >= CLKOUT67_MIN 18454 Hz",
+     "observed": "ret=0 clk_freq[6]=4000 Hz realized=None Hz",
+     "expected": "reject or clamp>=18454 Hz (DEBATABLE D1)"
+    }
+   ]
+  },
+  {
+   "id": "A02",
+   "item": "4 CLK67 clamp",
+   "scenario": "V231:CLK67MIN-clk6-15kHz-clamp",
+   "calls": "init0(); sf(15000 * M, 6); ",
+   "title": "CLK6/7 lower clamp must use CLKOUT67_MIN (15 kHz request)",
+   "debatable": "D1",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] every reg90 write by set_freq is an even integer 6..254",
+     "observed": "['0x00']",
+     "expected": "even 6..254 (AN619 Reg 90, AN619.txt:2696)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] stored pllb_freq within VCO 600..900 MHz",
+     "observed": "128 MHz",
+     "expected": "600..900 MHz (AN619.txt:37)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] either rejected (ret 1, nothing written) or clamped to >= CLKOUT67_MIN 18454 Hz",
+     "observed": "ret=0 clk_freq[6]=4000 Hz realized=None Hz",
+     "expected": "reject or clamp>=18454 Hz (DEBATABLE D1)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] every reg90 write by set_freq is an even integer 6..254",
+     "observed": "['0x00']",
+     "expected": "even 6..254 (AN619 Reg 90, AN619.txt:2696)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] stored pllb_freq within VCO 600..900 MHz",
+     "observed": "128 MHz",
+     "expected": "600..900 MHz (AN619.txt:37)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] either rejected (ret 1, nothing written) or clamped to >= CLKOUT67_MIN 18454 Hz",
+     "observed": "ret=0 clk_freq[6]=4000 Hz realized=None Hz",
+     "expected": "reject or clamp>=18454 Hz (DEBATABLE D1)"
+    }
+   ]
+  },
+  {
+   "id": "A03",
+   "item": "1 DEV-15",
+   "scenario": "V231:DEV15-manual-clk7-87p4-874",
+   "calls": "init0(); sfm(87400000 * M, 874000000 * M, 7); ",
+   "title": "set_freq_manual(87.4 MHz, 874 MHz, CLK7) -> reg91 = 0x0A",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg91 (MS7_P1)",
+     "observed": "0x00",
+     "expected": "0x0A (AN619.txt:247 'set MSx_P1 directly (= divide value)'; 874/87.4 = 10)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] realized CLK7",
+     "observed": "None MHz",
+     "expected": "87.4 MHz"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg91 (MS7_P1)",
+     "observed": "0x00",
+     "expected": "0x0A (AN619.txt:247 'set MSx_P1 directly (= divide value)'; 874/87.4 = 10)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] realized CLK7",
+     "observed": "None MHz",
+     "expected": "87.4 MHz"
+    }
+   ]
+  },
+  {
+   "id": "A04",
+   "item": "1 DEV-15",
+   "scenario": "V231:DEV15-manual-clk6-87p4-874",
+   "calls": "init0(); sfm(87400000 * M, 874000000 * M, 6); ",
+   "title": "set_freq_manual(87.4 MHz, 874 MHz, CLK6) -> reg90 = 0x0A",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg90 (MS6_P1)",
+     "observed": "0x00",
+     "expected": "0x0A (AN619.txt:247 'set MSx_P1 directly (= divide value)'; 874/87.4 = 10)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] realized CLK6",
+     "observed": "None MHz",
+     "expected": "87.4 MHz"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg90 (MS6_P1)",
+     "observed": "0x00",
+     "expected": "0x0A (AN619.txt:247 'set MSx_P1 directly (= divide value)'; 874/87.4 = 10)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] realized CLK6",
+     "observed": "None MHz",
+     "expected": "87.4 MHz"
+    }
+   ]
+  },
+  {
+   "id": "A05",
+   "item": "2 DEV-14",
+   "scenario": "V231:DEV14-clk6-23MHz-enable",
+   "calls": "init0(); sf(23000000 * M, 6); ",
+   "title": "set_freq(CLK6) enables CLK6 (reg3 bit6 = 0)",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg3 CLK6_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg3 CLK6_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    }
+   ]
+  },
+  {
+   "id": "A06",
+   "item": "2 DEV-14",
+   "scenario": "V231:DEV14-clk7-87p4-after-clk6",
+   "calls": "init0(); sf(23000000 * M, 6); sf(87400000 * M, 7); ",
+   "title": "set_freq(CLK6) then set_freq(CLK7) enables both",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg3 CLK6_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] reg3 CLK7_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg3 CLK6_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg3 CLK7_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    }
+   ]
+  },
+  {
+   "id": "A07",
+   "item": "2 DEV-14",
+   "scenario": "V231:DEV14-clk7-first-23MHz",
+   "calls": "init0(); sf(23000000 * M, 7); ",
+   "title": "set_freq(CLK7) as first 6/7 output enables CLK7",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg3 CLK7_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg3 CLK7_OEB after set_freq",
+     "observed": "1",
+     "expected": "0 = enabled (AN619 Reg 3; parity with CLK0-5 first-set enable, si5351.cpp set_freq CLK0-5 branch)"
+    }
+   ]
+  },
+  {
+   "id": "A08",
+   "item": "4 uninit",
+   "scenario": "V231:UNINIT-clk7-1MHz-peer-fail",
+   "calls": "init0(); sf(23000000 * M, 6); sf(1000000 * M, 7); ",
+   "title": "CLK7 peer accepted but multisynth67_calc fails: must return 1, no reg91 write",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] set_freq(1 MHz, CLK7) return",
+     "observed": "0",
+     "expected": "1: 874 MHz/1 MHz = 874 = 2x437, no even MS7 6..254 x R=2^k exists (AN619.txt:74, Reg 92 R7)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] no write to reg 91 (uninitialised ms_reg.p1)",
+     "observed": "['0xFE']",
+     "expected": "no write"
+    },
+    {
+     "ok": false,
+     "what": "[p0] clk_freq[7] unchanged",
+     "observed": "1000000.0",
+     "expected": "0"
+    },
+    {
+     "ok": false,
+     "what": "[p1] set_freq(1 MHz, CLK7) return",
+     "observed": "0",
+     "expected": "1: 874 MHz/1 MHz = 874 = 2x437, no even MS7 6..254 x R=2^k exists (AN619.txt:74, Reg 92 R7)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] no write to reg 91 (uninitialised ms_reg.p1)",
+     "observed": "['0xFE']",
+     "expected": "no write"
+    },
+    {
+     "ok": false,
+     "what": "[p1] clk_freq[7] unchanged",
+     "observed": "1000000.0",
+     "expected": "0"
+    }
+   ]
+  },
+  {
+   "id": "A09",
+   "item": "4 div0",
+   "scenario": "V231:DIV0-clk7-zero-with-peer",
+   "calls": "init0(); sf(23000000 * M, 6); sf(0, 7); ",
+   "title": "set_freq(0, CLK7) with CLK6 set must not divide by zero",
+   "debatable": "D2",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] set_freq(0, CLK7) with peer set does not crash",
+     "observed": "Floating point exception",
+     "expected": "no crash (no '% 0')"
+    },
+    {
+     "ok": false,
+     "what": "[p1] set_freq(0, CLK7) with peer set does not crash",
+     "observed": "Floating point exception",
+     "expected": "no crash (no '% 0')"
+    }
+   ]
+  },
+  {
+   "id": "A10",
+   "item": "4 div0",
+   "scenario": "V231:DIV0-clk6-zero-with-peer",
+   "calls": "init0(); sf(23000000 * M, 7); sf(0, 6); ",
+   "title": "set_freq(0, CLK6) with CLK7 set must not divide by zero",
+   "debatable": "D2",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] set_freq(0, CLK6) with peer set does not crash",
+     "observed": "Floating point exception",
+     "expected": "no crash (no '% 0')"
+    },
+    {
+     "ok": false,
+     "what": "[p1] set_freq(0, CLK6) with peer set does not crash",
+     "observed": "Floating point exception",
+     "expected": "no crash (no '% 0')"
+    }
+   ]
+  },
+  {
+   "id": "A11",
+   "item": "4 fmax",
+   "scenario": "V231:FMAX-clk0-210MHz",
+   "calls": "init0(); sf(210000000 * M, 0); ",
+   "title": "set_freq(210 MHz, CLK0) must not output > 200 MHz",
+   "debatable": "D3",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] realized CLK0 <= 200 MHz (or rejected: ret 1, MS0 not written)",
+     "observed": "ret=0 realized=210.0 MHz",
+     "expected": "<= 200 MHz (DS p1 / AN619.txt:38; DEBATABLE D3 reject vs clamp)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] stored clk_freq[0] <= 200 MHz",
+     "observed": "210 MHz",
+     "expected": "<= 200 MHz"
+    },
+    {
+     "ok": false,
+     "what": "[p1] realized CLK0 <= 200 MHz (or rejected: ret 1, MS0 not written)",
+     "observed": "ret=0 realized=210.0 MHz",
+     "expected": "<= 200 MHz (DS p1 / AN619.txt:38; DEBATABLE D3 reject vs clamp)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] stored clk_freq[0] <= 200 MHz",
+     "observed": "210 MHz",
+     "expected": "<= 200 MHz"
+    }
+   ]
+  },
+  {
+   "id": "A12",
+   "item": "4 fmax",
+   "scenario": "V231:FMAX-clk0-225MHz",
+   "calls": "init0(); sf(225000000 * M, 0); ",
+   "title": "set_freq(225 MHz, CLK0) must not output > 200 MHz",
+   "debatable": "D3",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] realized CLK0 <= 200 MHz (or rejected: ret 1, MS0 not written)",
+     "observed": "ret=0 realized=225.0 MHz",
+     "expected": "<= 200 MHz (DS p1 / AN619.txt:38; DEBATABLE D3 reject vs clamp)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] stored clk_freq[0] <= 200 MHz",
+     "observed": "225 MHz",
+     "expected": "<= 200 MHz"
+    },
+    {
+     "ok": false,
+     "what": "[p1] realized CLK0 <= 200 MHz (or rejected: ret 1, MS0 not written)",
+     "observed": "ret=0 realized=225.0 MHz",
+     "expected": "<= 200 MHz (DS p1 / AN619.txt:38; DEBATABLE D3 reject vs clamp)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] stored clk_freq[0] <= 200 MHz",
+     "observed": "225 MHz",
+     "expected": "<= 200 MHz"
+    }
+   ]
+  },
+  {
+   "id": "A13",
+   "item": "4 fmax",
+   "scenario": "V231:FMAX-manual-clk0-225MHz-900",
+   "calls": "init0(); sfm(225000000 * M, 900000000 * M, 0); ",
+   "title": "set_freq_manual(225 MHz, 900 MHz, CLK0) must not output > 200 MHz",
+   "debatable": "D3",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] realized CLK0 <= 200 MHz (or rejected: ret 1, MS0 not written)",
+     "observed": "ret=0 realized=225.0 MHz",
+     "expected": "<= 200 MHz (DS p1 / AN619.txt:38; DEBATABLE D3 reject vs clamp)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] stored clk_freq[0] <= 200 MHz",
+     "observed": "225 MHz",
+     "expected": "<= 200 MHz"
+    },
+    {
+     "ok": false,
+     "what": "[p1] realized CLK0 <= 200 MHz (or rejected: ret 1, MS0 not written)",
+     "observed": "ret=0 realized=225.0 MHz",
+     "expected": "<= 200 MHz (DS p1 / AN619.txt:38; DEBATABLE D3 reject vs clamp)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] stored clk_freq[0] <= 200 MHz",
+     "observed": "225 MHz",
+     "expected": "<= 200 MHz"
+    }
+   ]
+  },
+  {
+   "id": "A14",
+   "item": "4 ms ratio",
+   "scenario": "V231:MSRATIO-manual-140-700-r5",
+   "calls": "init0(); sfm(140000000 * M, 700000000 * M, 0); ",
+   "title": "set_freq_manual(140 MHz, 700 MHz): ratio 5 illegal",
+   "debatable": "D4",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] MS0 ratio valid (or call rejected without writing MS0)",
+     "observed": "ret=0 ratio=5",
+     "expected": "4, 6, 8 or 8+1/1048575..2048 (AN619.txt:58,235; DEBATABLE D4)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] MS0 ratio valid (or call rejected without writing MS0)",
+     "observed": "ret=0 ratio=5",
+     "expected": "4, 6, 8 or 8+1/1048575..2048 (AN619.txt:58,235; DEBATABLE D4)"
+    }
+   ]
+  },
+  {
+   "id": "A15",
+   "item": "4 ms ratio",
+   "scenario": "V231:MSRATIO-manual-90-600-r6p67",
+   "calls": "init0(); sfm(90000000 * M, 600000000 * M, 0); ",
+   "title": "set_freq_manual(90 MHz, 600 MHz): ratio 6.667 illegal",
+   "debatable": "D4",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] MS0 ratio valid (or call rejected without writing MS0)",
+     "observed": "ret=0 ratio=6.66667",
+     "expected": "4, 6, 8 or 8+1/1048575..2048 (AN619.txt:58,235; DEBATABLE D4)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] MS0 ratio valid (or call rejected without writing MS0)",
+     "observed": "ret=0 ratio=6.66667",
+     "expected": "4, 6, 8 or 8+1/1048575..2048 (AN619.txt:58,235; DEBATABLE D4)"
+    }
+   ]
+  },
+  {
+   "id": "A16",
+   "item": "4 ms ratio",
+   "scenario": "V231:MSRATIO-manual-100-700-r7",
+   "calls": "init0(); sfm(100000000 * M, 700000000 * M, 0); ",
+   "title": "set_freq_manual(100 MHz, 700 MHz): ratio 7 illegal",
+   "debatable": "D4",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] MS0 ratio valid (or call rejected without writing MS0)",
+     "observed": "ret=0 ratio=7",
+     "expected": "4, 6, 8 or 8+1/1048575..2048 (AN619.txt:58,235; DEBATABLE D4)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] MS0 ratio valid (or call rejected without writing MS0)",
+     "observed": "ret=0 ratio=7",
+     "expected": "4, 6, 8 or 8+1/1048575..2048 (AN619.txt:58,235; DEBATABLE D4)"
+    }
+   ]
+  },
+  {
+   "id": "A17",
+   "item": "4 phase",
+   "scenario": "V231:PHASE-clk6-reg171",
+   "calls": "init0(); phase_(6, 10); ",
+   "title": "set_phase(CLK6) must not write reserved reg 171",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] no write to reserved reg 171",
+     "observed": "[10]",
+     "expected": "none (AN619.txt:582 'Reg 171-176 Reserved')"
+    },
+    {
+     "ok": false,
+     "what": "[p1] no write to reserved reg 171",
+     "observed": "[10]",
+     "expected": "none (AN619.txt:582 'Reg 171-176 Reserved')"
+    }
+   ]
+  },
+  {
+   "id": "A18",
+   "item": "4 phase",
+   "scenario": "V231:PHASE-clk7-reg172",
+   "calls": "init0(); phase_(7, 10); ",
+   "title": "set_phase(CLK7) must not write reserved reg 172",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] no write to reserved reg 172",
+     "observed": "[10]",
+     "expected": "none (AN619.txt:582 'Reg 171-176 Reserved')"
+    },
+    {
+     "ok": false,
+     "what": "[p1] no write to reserved reg 172",
+     "observed": "[10]",
+     "expected": "none (AN619.txt:582 'Reg 171-176 Reserved')"
+    }
+   ]
+  },
+  {
+   "id": "A19",
+   "item": "4 set_int",
+   "scenario": "V231:SETINT-clk6-fba-int",
+   "calls": "init0(); corr_(100000, 0); setint_(6, 1); ",
+   "title": "set_int(CLK6) must not set FBA_INT (PLLA fractional after correction)",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg22 bit6 (FBA_INT) unchanged by set_int(CLK6)",
+     "observed": "0x6C (before 0x2C)",
+     "expected": "bit6 unchanged: FBA_INT only for even-integer feedback (AN619.txt:138, :1234); MS6/7 have no INT bit"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg22 bit6 (FBA_INT) unchanged by set_int(CLK6)",
+     "observed": "0x6C (before 0x2C)",
+     "expected": "bit6 unchanged: FBA_INT only for even-integer feedback (AN619.txt:138, :1234); MS6/7 have no INT bit"
+    }
+   ]
+  },
+  {
+   "id": "A20",
+   "item": "4 set_int",
+   "scenario": "V231:SETINT-clk7-fbb-int",
+   "calls": "init0(); corr_(100000, 0); setint_(7, 1); ",
+   "title": "set_int(CLK7) must not set FBB_INT",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg23 bit6 (FBB_INT) unchanged by set_int(CLK7)",
+     "observed": "0x6C (before 0x2C)",
+     "expected": "bit6 unchanged: FBB_INT only for even-integer feedback (AN619.txt:138, :1234); MS6/7 have no INT bit"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg23 bit6 (FBB_INT) unchanged by set_int(CLK7)",
+     "observed": "0x6C (before 0x2C)",
+     "expected": "bit6 unchanged: FBB_INT only for even-integer feedback (AN619.txt:138, :1234); MS6/7 have no INT bit"
+    }
+   ]
+  },
+  {
+   "id": "A21",
+   "item": "4 clkin div",
+   "scenario": "V231:CLKINDIV-50-then-80MHz",
+   "calls": "init0(); reff(50000000, 1); pllin(0, 1); reff(80000000, 1); pllin(0, 1); ",
+   "title": "set_pll_input after CLKIN 50->80 MHz: CLKIN_DIV = /4, not OR'd /8",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg15 CLKIN_DIV[1:0] after 80 MHz CLKIN",
+     "observed": "11b (reg15=0xC4)",
+     "expected": "10b = /4 (AN619.txt:834-840; 80 MHz needs /4 for 10-40 MHz, AN619.txt:94)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg15 CLKIN_DIV[1:0] after 80 MHz CLKIN",
+     "observed": "11b (reg15=0xD7)",
+     "expected": "10b = /4 (AN619.txt:834-840; 80 MHz needs /4 for 10-40 MHz, AN619.txt:94)"
+    }
+   ]
+  },
+  {
+   "id": "A22",
+   "item": "4 0pF",
+   "scenario": "V231:XTAL-0PF-reserved",
+   "calls": "init_(SI5351_CRYSTAL_LOAD_0PF, 0, 0); ",
+   "title": "init(CRYSTAL_LOAD_0PF) must not write XTAL_CL = 00b",
+   "debatable": "D5",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] reg183",
+     "observed": "0x12 (XTAL_CL=00b)",
+     "expected": "XTAL_CL != 00b, bits5:0 = 010010b (AN619.txt:3134-3141; DEBATABLE D5 which value)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] reg183",
+     "observed": "0x12 (XTAL_CL=00b)",
+     "expected": "XTAL_CL != 00b, bits5:0 = 010010b (AN619.txt:3134-3141; DEBATABLE D5 which value)"
+    }
+   ]
+  },
+  {
+   "id": "A23",
+   "item": "4 vcxo",
+   "scenario": "V231:VCXO-c-after-set_correction",
+   "calls": "init0(); svcxo(876000000 * M, 40); corr_(0, 0); ",
+   "title": "set_vcxo(876 MHz) then set_correction(0): MSNB c stays 1e6, VCO 876 MHz",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] MSNB c (P3)",
+     "observed": "1",
+     "expected": "1000000 (AN619.txt:418 'c ... fixed to 10^6')"
+    },
+    {
+     "ok": false,
+     "what": "[p0] PLLB VCO",
+     "observed": "800.0 MHz",
+     "expected": "876 MHz (set_vcxo value preserved)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] PLLB regs 34..41 == set_vcxo() result",
+     "observed": "[0, 1, 0, 14, 0, 0, 0, 0]",
+     "expected": "[66, 64, 0, 15, 133, 241, 212, 192]"
+    },
+    {
+     "ok": false,
+     "what": "[p1] MSNB c (P3)",
+     "observed": "1",
+     "expected": "1000000 (AN619.txt:418 'c ... fixed to 10^6')"
+    },
+    {
+     "ok": false,
+     "what": "[p1] PLLB VCO",
+     "observed": "800.0 MHz",
+     "expected": "876 MHz (set_vcxo value preserved)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] PLLB regs 34..41 == set_vcxo() result",
+     "observed": "[0, 1, 0, 14, 0, 0, 0, 0]",
+     "expected": "[66, 64, 0, 15, 133, 241, 212, 192]"
+    }
+   ]
+  },
+  {
+   "id": "A24",
+   "item": "4 vcxo",
+   "scenario": "V231:VCXO-c-after-set_pll_input",
+   "calls": "init0(); svcxo(876000000 * M, 40); pllin(0, 0); ",
+   "title": "set_vcxo(876 MHz) then set_pll_input(PLLA, XO): MSNB c stays 1e6",
+   "debatable": null,
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] MSNB c (P3)",
+     "observed": "1",
+     "expected": "1000000 (AN619.txt:418 'c ... fixed to 10^6')"
+    },
+    {
+     "ok": false,
+     "what": "[p0] PLLB VCO",
+     "observed": "800.0 MHz",
+     "expected": "876 MHz (set_vcxo value preserved)"
+    },
+    {
+     "ok": false,
+     "what": "[p0] PLLB regs 34..41 == set_vcxo() result",
+     "observed": "[0, 1, 0, 14, 0, 0, 0, 0]",
+     "expected": "[66, 64, 0, 15, 133, 241, 212, 192]"
+    },
+    {
+     "ok": false,
+     "what": "[p1] MSNB c (P3)",
+     "observed": "1",
+     "expected": "1000000 (AN619.txt:418 'c ... fixed to 10^6')"
+    },
+    {
+     "ok": false,
+     "what": "[p1] PLLB VCO",
+     "observed": "800.0 MHz",
+     "expected": "876 MHz (set_vcxo value preserved)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] PLLB regs 34..41 == set_vcxo() result",
+     "observed": "[0, 1, 0, 14, 0, 0, 0, 0]",
+     "expected": "[66, 64, 0, 15, 133, 241, 212, 192]"
+    }
+   ]
+  },
+  {
+   "id": "A25",
+   "item": "4 DEV-13",
+   "scenario": "V231:DEV13-ref-5MHz",
+   "calls": "init_(L8, 5000000, 0); ",
+   "title": "init(.., 5 MHz ref): no feedback ratio outside 15..90 (master writes 160)",
+   "debatable": "D6",
+   "pass": false,
+   "checks": [
+    {
+     "ok": false,
+     "what": "[p0] every PLLA/PLLB feedback block written has a+b/c in 15..90",
+     "observed": "[(26, 120.0), (26, 120.0), (26, 160.0), (34, 120.0), (34, 120.0), (34, 160.0)]",
+     "expected": "15..90 (AN619.txt:116; DEBATABLE D6 for the 5 MHz policy)"
+    },
+    {
+     "ok": false,
+     "what": "[p1] every PLLA/PLLB feedback block written has a+b/c in 15..90",
+     "observed": "[(26, 120.0), (26, 120.0), (26, 160.0), (34, 120.0), (34, 120.0), (34, 160.0)]",
+     "expected": "15..90 (AN619.txt:116; DEBATABLE D6 for the 5 MHz policy)"
+    }
+   ]
+  }
+ ],
+ "debatable": {
+  "D1": {
+   "topic": "set_freq(f < 18.454 kHz) on CLK6/7 (e.g. 10 kHz, 15 kHz)",
+   "facts": "Lowest CLK6/7 output = 600 MHz / 254 / 128 = 18454 Hz (MS6/7 even 6..254, R<=128, VCO>=600 MHz). 10 kHz is unreachable.",
+   "options": [
+    "(a) reject: return 1, write nothing, keep clk_freq[clk] (matches CLK7 non-integer reject)",
+    "(b) clamp to SI5351_CLKOUT67_MIN_FREQ (18454 Hz -> MS 254, R 128, VCO 600 MHz) and return 0 (matches CLK0-5 clamp style)",
+    "(c) clamp and return a distinct non-zero code"
+   ],
+   "test_accepts": "(a) or (b)/(c) as long as reg90 is even 6..254, pllb_freq in 600..900 MHz, output >= 18454 Hz"
+  },
+  "D2": {
+   "topic": "set_freq(0, CLK6/7)",
+   "facts": "freq 0 reaches pllb_freq % freq (SIGFPE). Without a peer it reaches multisynth67_calc and writes MS6_P1 = 0. CLK0-5 set_freq(0) currently clamps to 500 kHz MS and enables the output (MNB-INFO only, not locked).",
+   "options": [
+    "(a) return 1, no writes",
+    "(b) treat 0 as 'disable output' (output_enable(clk,0), clk_freq=0), return 0",
+    "(c) same as CLK0-5 current behavior"
+   ],
+   "test_accepts": "any, as long as there is no crash and no invalid reg90/91 value"
+  },
+  "D3": {
+   "topic": "CLK0-5 request > 200 MHz (210, 225 MHz)",
+   "facts": "SI5351_MULTISYNTH_MAX_FREQ = 225 MHz; datasheet/AN619 max output is 200 MHz.",
+   "options": [
+    "(a) clamp to 200 MHz (DIVBY4, PLL 800 MHz, a=32) and return 0",
+    "(b) reject with return 1 and no writes"
+   ],
+   "test_accepts": "either; asserts realized <= 200 MHz and stored clk_freq <= 200 MHz"
+  },
+  "D4": {
+   "topic": "set_freq_manual with an illegal MS ratio (5, 6.667, 7)",
+   "facts": "AN619 valid ratios: 4, 6, 8, (8+1/1048575 .. 2048]. set_freq_manual's contract is 'track settings yourself'.",
+   "options": [
+    "(a) return 1 without writing MS (keep PLL write?)",
+    "(b) round to nearest legal ratio (6 or 8) and return the realized-freq error some other way",
+    "(c) keep writing but return non-zero"
+   ],
+   "test_accepts": "(a) with no MS0 block written, or any written MS0 ratio that is legal. NOTE: master also writes the PLL before validating; whether a rejected call may still change the PLL is part of this decision"
+  },
+  "D5": {
+   "topic": "init(SI5351_CRYSTAL_LOAD_0PF)",
+   "facts": "XTAL_CL=00b is 'Reserved. Do not select this option.' (AN619 Reg 183). Reset default is 11b (10 pF).",
+   "options": [
+    "(a) map 0PF to 6 pF (01b, smallest legal, closest to the request)",
+    "(b) leave XTAL_CL at default 10 pF (11b)",
+    "(c) remove/deprecate the SI5351_CRYSTAL_LOAD_0PF constant (API change)"
+   ],
+   "test_accepts": "any XTAL_CL != 00b with bits 5:0 = 010010b"
+  },
+  "D6": {
+   "topic": "Reference below 10 MHz (5 MHz XO/CLKIN)",
+   "facts": "PLL input range 10-40 MHz (AN619.txt:94); XTAL 25/27 MHz (DS). With 5 MHz, VCO 600 MHz needs ratio 120 > 90: no legal configuration exists.",
+   "options": [
+    "(a) init() returns false / set_ref_freq rejects < 10 MHz",
+    "(b) clamp feedback a to 90 (recompute a after the clamp) -> VCO 450 MHz, still below VCO_MIN",
+    "(c) accept but never write an out-of-range feedback block"
+   ],
+   "test_accepts": "any policy where no PLLA/PLLB block with ratio outside 15..90 is written. (b) passes this test but leaves the VCO at 450 MHz (out of spec): flag if chosen"
+  }
+ }
+}

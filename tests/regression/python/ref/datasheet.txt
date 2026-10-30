@@ -1,0 +1,2530 @@
+                                                                                Si5351A/B/C-B
+I 2 C - P R O G R A M M A B L E A NY -F R E Q U E N C Y C M O S C L O C K
+G E N E R ATO R + V C X O
+
+Features
+    https://www.skyworksinc.com/Products/Timi Glitchless frequency changes
+     ng/CMOS-Clock-Generators                                                                                  10-MSOP
+                                               Separate voltage supply pins
+    Generates up to eight non-integer-                provide level translation:
+     related frequencies from 2.5 kHz to
+                                                      Core VDD: 2.5 or 3.3 V
+     200 MHz
+                                                      Output VDDO: 1.8, 2.5, or 3.3 V
+    I2C user definable configuration                 Excellent PSRR eliminates external
+    Exact frequency synthesis at each                 power supply filtering
+     output (0 ppm error)                             Very low power consumption
+    Highly linear VCXO                                                                                         16-QFN
+                                                      Adjustable output delay
+    Optional clock input (CLKIN)                     Available in three packages types:
+    Low output period jitter: < 70 ps pp,            10-MSOP: 3 outputs
+     typ
+                                                      16-QFN (3x3 mm): 4 outputs
+    Configurable spread spectrum
+                                                      20-QFN (4x4 mm): 8 outputs
+     selectable at each output
+                                                      PCIE Gen 1 compatible
+    Operates from a low-cost, fixed
+     frequency crystal: 25 or 27 MHz                  Supports HCSL compatible swing                          20-QFN
+
+    Supports static phase offset
+    Programmable rise/fall time control
+
+Applications
+ Audio/video equipment, gaming                     Residential gateways
+ Printers, scanners, projectors                    Networking/communication
+ Handheld Instrumentation                          Servers, storage                                    Ordering Information:
+ Laser range finder                                XO replacement                                          See page 34
+
+Description
+
+The Si5351 is an I2C configurable clock generator that is ideally suited for
+replacing crystals, crystal oscillators, VCXOs, phase-locked loops (PLLs), and
+fanout buffers in cost-sensitive applications.
+Based on a PLL/VCXO + high resolution MultiSynth fractional divider
+architecture, the Si5351 can generate any frequency up to 200 MHz on each of
+its outputs with 0 ppm error. Three versions of the Si5351 are available to meet a
+wide variety of applications.
+The Si5351A generates up to 8 free-running clocks using an internal oscillator
+for replacing crystals and crystal oscillators. The Si5351B adds an internal
+VCXO and provides the flexibility to replace both free-running clocks and
+synchronous clocks. It eliminates the need for higher cost, custom pullable
+crystals while providing reliable operation over a wide tuning range. The
+Si5351C offers the same flexibility but synchronizes to an external reference
+clock (CLKIN).
+
+
+
+
+           Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+    Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+Functional Block Diagrams
+
+
+
+
+                                        Si5351A (20-QFN)
+                                                                        MultiSynth                     VDDOA
+                                 XA                    PLL                            R0
+                                            OSC                              0                          CLK0
+                                                        A
+                                 XB                                     MultiSynth                      CLK1
+                                                                                      R1
+                                                                             1
+                                                        PLL             MultiSynth                     VDDOB
+                                                         B                            R2
+                                                                             2                          CLK2
+                                                                        MultiSynth                      CLK3
+                                                                                      R3
+                                                                             3
+                                  A0                                                                   VDDOC
+                                                                        MultiSynth
+                                                                                      R4
+                                SDA           I2C                            4                          CLK4
+                                                                        MultiSynth                      CLK5
+                                SCL                                                   R5
+                                                                             5
+                                                                        MultiSynth                     VDDOD
+                                OEB                                                   R6
+                                            Control                          6                          CLK6
+                               SSEN          Logic                      MultiSynth                      CLK7
+                                                                                      R7
+                                                                             7
+
+
+
+
+                                       Si5351B (20-QFN)
+                                                                         MultiSynth                     VDDOA
+                                 XA                                                   R0
+                                                                              0                          CLK0
+                                            OSC        PLL
+                                                                         MultiSynth                      CLK1
+                                 XB                                                   R1
+                                                                              1
+                                                                         MultiSynth                     VDDOB
+                                                       VCXO                           R2
+                                                                              2                          CLK2
+                                 VC
+                                                                         MultiSynth                      CLK3
+                                                                                      R3
+                                                                              3
+                                                                        MultiSynth                      VDDOC
+                               SDA                                                    R4
+                                                                             4                           CLK4
+                                              I2C
+                                SCL                                     MultiSynth                       CLK5
+                                                                                      R5
+                                                                             5
+                                                                                                        VDDOD
+                                                                        MultiSynth
+                                OEB         Control                                   R6
+                                                                             6                           CLK6
+                              SSEN           Logic
+                                                                        MultiSynth                       CLK7
+                                                                                      R7
+                                                                             7
+
+
+
+
+2          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+    Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                              Si5351A/B/C-B
+
+                               Si5351C (20-QFN)
+                                                                                                  VDDOA
+                                                                   MultiSynth
+                        XA                                                       R0
+                                                                        0                         CLK0
+                                   OSC           PLL
+                                                  A                MultiSynth                     CLK1
+                        XB                                                       R1
+                                                                        1
+                                                                   MultiSynth                     VDDOB
+                                                 PLL                             R2
+                                                                        2                         CLK2
+                     CLKIN                        B
+                                                                   MultiSynth                     CLK3
+                                                                                 R3
+                                                                        3
+                                                                                                  VDDOC
+                                                                   MultiSynth
+                       SDA                                                       R4
+                                                                        4                         CLK4
+                       SCL           I2C                           MultiSynth                     CLK5
+                                                                                 R5
+                                                                        5
+                      INTR                                                                        VDDOD
+                                                                   MultiSynth
+                                                                                 R6
+                                                                        6                         CLK6
+                       OEB         Control
+                                    Logic                          MultiSynth                     CLK7
+                                                                                 R7
+                                                                        7
+
+
+
+                                Si5351A (16-QFN)
+                          XA                                                                    VDDOA
+                                                PLL              MultiSynth
+                                                                                R0              CLK0
+                                    OSC          A                    0
+                          XB                                                                    VDDOB
+                                                                 MultiSynth
+                                                                                R1              CLK1
+                                                                      1
+                                                PLL
+                         A0                      B              MultiSynth                      VDDOC
+                                                                                R2              CLK2
+                        SDA          I 2C                            2
+                        SCL                                                                     VDDOD
+                                                                MultiSynth
+                                                                                R3              CLK3
+                                                                     3
+                        OEB         Control
+                                     Logic
+
+
+
+
+                               Si5351B (16-QFN)
+                        XA                                                                        VDDOA
+                                               PLL               MultiSynth
+                                                                                R0                CLK0
+                                   OSC          A                     0
+                        XB                                                                        VDDOB
+                                                                 MultiSynth
+                                                                                R1                CLK1
+                                                                      1
+                                               vcxo
+                        VC                                                                        VDDOC
+                                                                 MultiSynth
+                                                                                R2                CLK2
+                      SDA            2
+                                                                      2
+                                    IC                                                            VDDOD
+                      SCL                                        MultiSynth
+                                                                                R3                CLK3
+                                                                      3
+                      OEB          Control
+                                    Logic
+
+
+
+
+                               Si5351C (16-QFN)
+
+                         XA                                                                       VDDOA
+                                                  PLL              MultiSynth
+                                                                                     R0           CLK0
+                                    OSC            A                    0
+                         XB                                                                       VDDOB
+                                                                   MultiSynth
+                                                                                     R1           CLK1
+                                                                        1
+                      CLKIN                        PLL
+                                                    B              MultiSynth                     VDDOC
+                                                                                     R2           CLK2
+                        SDA              2                              2
+                                     IC                                                           VDDOD
+                        SCL                                        MultiSynth
+                                                                                     R3           CLK3
+                                    Control                             3
+                        OEB
+                                     Logic
+
+
+
+
+       Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             3
+Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+   Si5351A/B/C-B
+   1. Ordering Guide
+
+                                                Table 1. Si5350/51 Ordering Guide1,2
+
+       Part Number             I2C or Pin       Frequency Reference                    Programmed?                  Outputs        Datasheet
+
+       Si5351A-B-GT                 I2C                XTAL only                             Blank                      3       Si5351A/B/C-B
+
+   Si5351A-B-GM1                    I2C                XTAL only                             Blank                      4       Si5351A/B/C-B
+
+   Si5351B-B-GM1                    I2C          XTAL and/or Voltage                         Blank                      4       Si5351A/B/C-B
+
+   Si5351C-B-GM1                    I2C           XTAL and/or CLKIN                          Blank                      4       Si5351A/B/C-B
+
+    Si5351A-B-GM                    I2C                XTAL only                             Blank                      8       Si5351A/B/C-B
+
+    Si5351B-B-GM                    I2C          XTAL and/or Voltage                         Blank                      8       Si5351A/B/C-B
+
+    Si5351C-B-GM                    I2C           XTAL and/or CLKIN                          Blank                      8       Si5351A/B/C-B
+
+ Si5351A-Bxxxxx-GT                  I2C                XTAL only                 Factory Preprogrammed                  3       Si5351A/B/C-B
+
+Si5351A-Bxxxxx-GM1                  I2C                XTAL only                 Factory Preprogrammed                  4       Si5351A/B/C-B
+
+Si5351B-Bxxxxx-GM1                  I2C          XTAL and/or Voltage             Factory Preprogrammed                  4       Si5351A/B/C-B
+
+Si5351C-Bxxxxx-GM1                  I2C           XTAL and/or CLKIN              Factory Preprogrammed                  4       Si5351A/B/C-B
+
+ Si5351A-Bxxxxx-GM                  I2C                XTAL only                 Factory Preprogrammed                  8       Si5351A/B/C-B
+
+ Si5351B-Bxxxxx-GM                  I2C          XTAL and/or Voltage             Factory Preprogrammed                  8       Si5351A/B/C-B
+
+ Si5351C-Bxxxxx-GM                  I2C           XTAL and/or CLKIN              Factory Preprogrammed                  8       Si5351A/B/C-B
+
+ Si5350A-Bxxxxx-GT                  Pin                XTAL only                 Factory Preprogrammed                  3          Si5350A-B
+
+Si5350A-Bxxxxx-GM1                  Pin                XTAL only                 Factory Preprogrammed                  4          Si5350A-B
+
+ Si5350A-Bxxxxx-GM                  Pin                XTAL only                 Factory Preprogrammed                  8          Si5350A-B
+
+ Si5350B-Bxxxxx-GT                  Pin          XTAL and/or Voltage             Factory Preprogrammed                  3          Si5350B-B
+
+Si5350B-Bxxxxx-GM1                  Pin          XTAL and/or Voltage             Factory Preprogrammed                  4          Si5350B-B
+
+ Si5350B-Bxxxxx-GM                  Pin          XTAL and/or Voltage             Factory Preprogrammed                  8          Si5350B-B
+
+ Si5350C-Bxxxxx-GT                  Pin           XTAL and/or CLKIN              Factory Preprogrammed                  3          Si5350C-B
+
+Si5350C-Bxxxxx-GM1                  Pin           XTAL and/or CLKIN              Factory Preprogrammed                  4          Si5350C-B
+
+ Si5350C-Bxxxxx-GM                  Pin           XTAL and/or CLKIN              Factory Preprogrammed                  8          Si5350C-B
+
+Notes:
+   1. XTAL = 25/27 MHz, Voltage = 0 to VDD, CLKIN = 10 to 100 MHz. "xxxxx" = unique custom code.
+   2. Create custom, factory preprogrammed parts using ClockBuilder Pro.
+
+
+
+
+   4           Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+        Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                               Si5351A/B/C-B
+2. Technical Support Resources
+
+                                        Table 2. Technical Support Resources
+
+                   Resource                                                                URL
+
+ Si5350/51 Frequently Asked Questions                https://www.skyworksinc.com/en/Products/Timing
+
+                                                     https://www.skyworksinc.com/en/Application-Pages/Clockbuilder-
+    ClockBuilder Pro (CBPro) Software
+                                                     Pro-Software
+
+                                                     https://www.skyworksinc.com/en/Products/Timing/Evaluation-
+          Si535x Development Kits
+                                                     Kits/si535x-b20qfn-evb-evaluation-kit
+
+
+
+
+        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             5
+ Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+TA B L E O F C O N T E N T S
+
+Section                                                                                                                           Page
+1. Ordering Guide . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .4
+2. Technical Support Resources . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .5
+3. Electrical Specifications . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .8
+4. Functional Description . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+      4.1. Input Stage . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+      4.2. Synthesis Stages . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+      4.3. Output Stage . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .17
+      4.4. Spread Spectrum . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+      4.5. Control Pins (OEB, SSEN) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+      4.6. Status Pins (INTR) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+5. I2C Interface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+6. Configuring the Si5351 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+      6.1. Writing a Custom Configuration to RAM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+      6.2. Si5351 Application Examples . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+      6.3. Replacing Crystals and Crystal Oscillators . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+      6.4. Replacing Crystals, Crystal Oscillators, and VCXOs . . . . . . . . . . . . . . . . . . . . . . . .22
+      6.5. Replacing Crystals, Crystal Oscillators, and PLLs . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+      6.6. Applying a Reference Clock at XTAL Input . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+      6.7. HCSL Compatible Outputs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+7. Design Considerations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .25
+      7.1. Power Supply Decoupling/Filtering . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+      7.2. Power Supply Sequencing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+      7.3. External Crystal . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .25
+      7.4. External Crystal Load Capacitors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+      7.5. Unused Pins . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .25
+      7.6. Trace Characteristics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+8. Register Map Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+9. Register Descriptions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .26
+10. Si5351 Pin Descriptions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .27
+      10.1. Si5351A 20-pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+      10.2. Si5351B 20-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+      10.3. Si5351C 20-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+      10.4. Si5351A 16-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+      10.5. Si5351B 16-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+      10.6. Si5351C 16-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+      10.7. Si5351A 10-Pin MSOP . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+11. Ordering Information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+12. Packaging . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+      12.1. 20-pin QFN Package Outline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+      12.2. Land Pattern: 20-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+      12.3. 16-Pin QFN Package Outline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+      12.4. Land Pattern: 16-Pin QFN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39
+
+
+6          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+    Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                Si5351A/B/C-B
+     12.5. 10-Pin MSOP Package Outline . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+     12.6. Land Pattern: 10-Pin MSOP . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+13. Top Marking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .44
+     13.1. 20-Pin QFN Top Marking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44
+     13.2. Top Marking Explanation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44
+     13.3. 16-Pin QFN Top Marking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45
+     13.4. Top Marking Explanation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 45
+     13.5. 10-Pin MSOP Top Marking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+     13.6. Top Marking Explanation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+Revision History . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+Contact Information . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .48
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             7
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+3. Electrical Specifications
+
+Table 3. Recommended Operating Conditions
+
+          Parameter                 Symbol          Test Condition            Min              Typ               Max            Unit
+
+Ambient Temperature                     TA                                    –40               25               85              °C
+
+                                                                               3.0             3.3               3.60             V
+Core Supply Voltage                    VDD
+                                                                              2.25             2.5               2.75             V
+
+                                                                              1.71             1.8               1.89             V
+
+Output Buffer Voltage                 VDDOx                                   2.25             2.5               2.75             V
+
+                                                                               3.0             3.3               3.60             V
+
+Notes:All minimum and maximum specifications are guaranteed and apply across the recommended operating conditions.
+      Typical values apply at nominal supply voltages and an operating temperature of 25 °C unless otherwise noted.
+      VDD and VDDOx can be operated at independent voltages.
+      Power supply sequencing for VDD and VDDOx requires that all VDDOx be powered up either before or at the same
+      time as VDD.
+
+
+Table 4. DC Characteristics
+(VDD = 2.5 V ±10%, or 3.3 V ±10%, TA = –40 to 85 °C)
+
+              Parameter                      Symbol             Test Condition                 Min        Typ           Max      Unit
+                                                               Enabled 3 outputs                —          22           35        mA
+Core Supply Current                           IDD              Enabled 4 outputs                —          24           38        mA
+                                                               Enabled 8 outputs                —          27           45        mA
+Output Buffer Supply Current
+                                             IDDOx                  CL = 5 pF                   —          2.2          5.6       mA
+(Per Output)*
+                                                               CLKIN, SDA, SCL
+                                             ICLKIN                                             —          —            10        µA
+Input Current                                                    Vin < 3.6 V
+                                              IVC                       VC                      —          —            30        µA
+                                                           3.3 V VDDO, default high
+Output Impedance                               ZO                                               —          50           —          
+                                                                    drive
+*Note: Output clocks less than or equal to 100 MHz.
+
+
+
+
+8          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+    Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                Si5351A/B/C-B
+
+Table 5. AC Characteristics
+(VDD = 2.5 V ±10%, or 3.3 V ±10%, TA = –40 to 85 °C)
+
+            Parameter                     Symbol                  Test Condition                   Min      Typ        Max      Unit
+                                                           From VDD = VDDmin to valid
+Power-up Time                              TRDY              output clock, CL = 5 pF,               —         2         10       ms
+                                                                 fCLKn > 1 MHz
+                                                           From VDD = VDDmin to valid
+Power-up Time, PLL Bypass
+                                           TBYP              output clock, CL = 5 pF,               —        0.5        1        ms
+Mode
+                                                                 fCLKn > 1 MHz
+                                                          From OEB pulled low to valid
+Output Enable Time                          TOE              clock output, CL = 5 pF,               —        —          10       µs
+                                                                  fCLKn > 1 MHz
+Output Frequency Transition
+                                           TFREQ                   fCLKn > 1 MHz                    —        —          10       µs
+Time
+Output Phase Offset                        PSTEP                                                    —       333         —     ps/step
+                                                       Down spread. Selectable in 0.1%
+                                                                                                   –0.1      —         –2.5       %
+Spread Spectrum Frequency                                          steps.
+                                          SSDEV
+Deviation                                                 Center spread. Selectable in
+                                                                                                   ±0.1      —         ±1.5       %
+                                                                  0.1% steps.
+Spread Spectrum Modulation                SSMOD                                                     30      31.5        33      kHz
+Rate
+VCXO Specifications (Si5351B Only)
+VCXO Control Voltage Range                     Vc                                                    0     VDD/2       VDD          V
+VCXO Gain (configurable)                       Kv      Vc = 10–90% of VDD, VDD = 3.3 V              18       —         150     ppm/V
+VCXO Control Voltage Linearity              KVL                Vc = 10–90% of VDD                   –5       —         +5         %
+VCXO Pull Range
+                                               PR                  VDD = 3.3 V*                     ±30       0        ±240     ppm
+(configurable)
+VCXO Modulation Bandwidth                                                                           —        10         —       kHz
+*Note: Contact Skyworks Solutions for 2.5 V VCXO operation.
+
+Table 6. Input Clock Characteristics
+(VDD = 2.5 V ±10%, or 3.3 V ±10%, TA = –40 to 85 °C)
+
+          Parameter                   Symbol         Test Condition             Min            Typ             Max            Unit
+
+Crystal Frequency                       fXTAL                                    25             —                 27          MHz
+
+CLKIN Input Low Voltage                  VIL                                   –0.1             —          0.3 x VDD            V
+
+CLKIN Input High Voltage                 VIH                                0.7 x VDD           —              3.60             V
+
+CLKIN Frequency Range                  fCLKIN                                    10             —              100            MHz
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             9
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+
+Table 7. Output Clock Characteristics
+(VDD = 2.5 V ±10%, or 3.3 V ±10%, TA = –40 to 85 °C)
+
+             Parameter                  Symbol               Test Condition                   Min         Typ        Max          Unit
+
+ Frequency Range1                         FCLK                                              0.0025         —          200         MHz
+
+ Load Capacitance                          CL                                                  —           —          15           pF
+
+                                                      FCLK < 160 MHz, Measured
+                                                                                               45          50         55            %
+                                                               at VDD/2
+ Duty Cycle                                DC
+                                                      FCLK > 160 MHz, Measured
+                                                                                               40          50         60            %
+                                                               at VDD/2
+
+                                            tr           20%–80%, CL = 5 pF,                   —            1         1.5           ns
+ Rise/Fall Time
+                                            tf         Default high drive strength             —            1         1.5           ns
+
+ Output High Voltage                      VOH                                              VDD – 0.6       —           —            V
+                                                                 CL = 5 pF
+ Output Low Voltage                       VOL                                                  —           —          0.6           V
+
+                                                       16, 20-QFN, 4 outputs run-
+                                                                                               —           40         95       ps, pk-pk
+                                                            ning, 1 per VDDO
+ Period Jitter2,3                         JPER
+                                                          10-MSOP or 20-QFN,
+                                                                                               —           70         155      ps, pk-pk
+                                                           all outputs running
+
+                                                       16, 20-QFN, 4 outputs run-
+                                                                                               —           50         90         ps, pk
+                                                            ning, 1 per VDDO
+ Cycle-to-Cycle Jitter2,3                 JCC
+                                                          10-MSOP or 20-QFN,
+                                                                                               —           70         150        ps, pk
+                                                           all outputs running
+
+                                                       16, 20-QFN, 4 outputs run-
+                                                                                               —           50         95       ps, pk-pk
+                                                            ning, 1 per VDDO
+ Period Jitter VCXO2,3                JPER_VCXO
+                                                          10-MSOP or 20-QFN,
+                                                                                               —           70         155      ps, pk-pk
+                                                           all outputs running
+
+                                                       16, 20-QFN, 4 outputs run-
+                                                                                               —           50         90         ps, pk
+                                                            ning, 1 per VDDO
+ Cycle-to-Cycle Jitter
+                                       JCC_VCXO
+ VCXO2,3                                                  10-MSOP or 20-QFN,
+                                                                                               —           70         150        ps, pk
+                                                           all outputs running
+
+ Notes:
+    1. Only two unique frequencies above 112.5 MHz can be simultaneously output.
+    2. Measured over 10K cycles. Jitter is only specified at the default high drive strength (50  output impedance).
+    3. Jitter is highly dependent on device frequency configuration. Specifications represent a “worst case, real world”
+        frequency plan; actual performance may be substantially better. Three-output 10 MSOP package measured with clock
+        outputs of 74.25, 24.576, and 48 MHz. Eight-output 20-QFN package measured with clock outputs of 33.333, 74.25,
+        27, 24.576, 22.5792, 28.322, 125, and 48 MHz. Four-output 16-QFN package measured with clock outputs of 33.333,
+        27, 28.322, and 48 MHz.
+
+
+
+
+10          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+
+Table 8. Crystal Requirements1,2
+
+              Parameter                          Symbol                  Min               Typ              Max               Unit
+
+ Crystal Frequency                                 fXTAL                  25               —                 27               MHz
+
+ Load Capacitance                                    CL                   6                 —                12                pF
+
+ Equivalent Series Resistance                      rESR                   —                 —               150                W
+
+ Crystal Max Drive Level                             dL                  100                —                —                µW
+
+ Notes:
+    1. Crystals which require load capacitances of 6, 8, or 10 pF should use the device’s internal load capacitance for
+        optimum performance. See register 183 bits 7:6. A crystal with a 12 pF load capacitance requirement should use a
+        combination of the internal 10 pF load capacitance in addition to external 2 pF load capacitance (e.g., by using 4 pF
+        capacitors on XA and XB).
+    2. Refer to “AN551: Crystal Selection Guide” for more details.
+
+
+Table 9. I2C Specifications (SCL,SDA)1
+
+                                                                  Standard Mode                            Fast Mode
+   Parameter        Symbol         Test Condition                                                                                    Unit
+                                                                     100 kbps                               400 kbps
+                                                                 Min               Max               Min               Max
+LOW Level
+                      VILI2C                                     –0.5          0.3 x VDDI2C          –0.5         0.3 x VDDI2C2       V
+Input Voltage
+HIGH Level
+                      VIHI2C                                0.7 x VDDI2C           3.6          0.7 x VDDI2C2           3.6           V
+Input Voltage
+Hysteresis of
+Schmitt Trigger       VHYS                                        —                 —                0.1                —             V
+Inputs
+LOW Level
+Output Voltage
+(open drain or       VOLI2C2     VDDI2C2 = 2.5/3.3 V               0               0.4                0                 0.4           V
+open collector)
+at 3 mA Sink
+Current
+Input Current          III2C                                     –10                10               –10                10           µA
+Capacitance for
+                      CII2C      VIN = –0.1 to VDDI2C             —                 4                 —                  4           pF
+Each I/O Pin
+I2C Bus
+                       TTO         Timeout Enabled                25                35                25                35           ms
+Timeout
+Notes:
+   1. Refer to NXP’s UM10204 I2C-bus specification and user manual, revision 03.
+   2. Only I2C pullup voltages (VDDI2C) of 2.25 to 3.63 V are supported.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             11
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+
+Table 10. Thermal Characteristics (2-Layer Board)
+
+            Parameter                    Symbol           Test Condition             Package               Value                Unit
+
+                                                                                     10-MSOP                150                °C/W
+Thermal Resistance
+                                            JA                Still Air1             16-QFN                103                °C/W
+Junction to Ambient
+                                                                                      20-QFN                74.9               °C/W
+
+                                                                                     10-MSOP                 82                °C/W
+Thermal Resistance
+                                           ΨJB                 Still Air1             16-QFN                 37                °C/W
+Junction to Board
+                                                                                      20-QFN                9.94               °C/W
+
+                                                                                     10-MSOP                0.84               °C/W
+Thermal Resistance
+                                            ΨJT                Still Air1             16-QFN                4.26               °C/W
+Junction to Top Center
+                                                                                      20-QFN                 1.3               °C/W
+
+Notes:
+   1. Based on environment and board designed per JESD51-2A and JESD51-3.
+
+
+
+Table 11. Thermal Characteristics (4-Layer Board)
+
+            Parameter                    Symbol           Test Condition             Package               Value                Unit
+
+                                                                                     10-MSOP                126                °C/W
+Thermal Resistance                          JA                Still Air1             16-QFN                 65                °C/W
+Junction to Ambient
+                                                                                      20-QFN                 41                °C/W
+
+                                                                                     10-MSOP                 84                °C/W
+
+                                            JB          Junction to Board2           16-QFN                 48                °C/W
+
+                                                                                      20-QFN                 16                °C/W
+Thermal Resistance
+Junction to Board                                                                    10-MSOP                 83                °C/W
+
+                                           ΨJB                 Still Air1             16-QFN                 31                °C/W
+
+                                                                                      20-QFN                 8.1               °C/W
+
+                                                                                     10-MSOP                0.74               °C/W
+Thermal Resistance
+                                            ΨJT                Still Air1             16-QFN                 3.8               °C/W
+Junction to Top Center
+                                                                                      20-QFN                0.98               °C/W
+Notes:
+   1. Based on environment and board designed per JESD51-2A, JESD51-5, and JESD51-7.
+   2. Based on conditions set in JESD51-8.
+
+
+
+
+12          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+
+Table 12. Thermal Characteristics (Junction-to-Case)
+
+         Parameter                    Symbol            Test Condition            Package               Value                Unit
+
+                                                                                  10-MSOP                 36                °C/W
+Thermal Resistance
+                                         JC                 Still Air             16-QFN                 82                °C/W
+Junction to Case1
+                                                                                   20-QFN                 51                °C/W
+
+Notes:
+   1. Based on board designed per JESD51-1 (Top center of packages used).
+
+
+
+
+Table 13. Absolute Maximum Ratings1
+
+              Parameter                        Symbol              Test Condition                    Value                   Unit
+
+DC Supply Voltage                              VDD_max                                            –0.5 to 3.8                  V
+
+                                               VIN_CLKIN          CLKIN, SCL, SDA                 –0.5 to 3.8                  V
+
+Input Voltage                                   VIN_VC                     VC                –0.5 to (VDD+0.3)                 V
+
+                                               VIN_XA/B              Pins XA, XB                 –0.5 to 1.3 V                 V
+
+Junction Temperature                               TJ                                             –55 to 150                  °C
+
+Soldering Temperature
+                                                TPEAK                                                 260                     °C
+(Pb-free profile)2
+Soldering Temperature Time at
+                                                   TP                                                20–40                   Sec
+TPEAK (Pb-free profile)2
+Notes:
+   1. Permanent device damage may occur if the absolute maximum ratings are exceeded. Functional operation should be
+       restricted to the conditions as specified in the operational sections of this data sheet. Exposure to absolute maximum
+       rating conditions for extended periods may affect device reliability.
+   2. The device is compliant with JEDEC J-STD-020.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             13
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+4. Functional Description
+The Si5351 is a versatile I2C programmable clock generator that is ideally suited for replacing crystals, crystal
+oscillators, VCXOs, PLLs, and buffers. A block diagram showing the general architecture of the Si5351 is shown in
+Figure 1. The device consists of an input stage, two synthesis stages, and an output stage.
+The input stage accepts an external crystal (XTAL), a control voltage input (VC), or a clock input (CLKIN)
+depending on the version of the device (A/B/C). The first stage of synthesis multiplies the input frequencies to an
+high-frequency intermediate clock, while the second stage of synthesis uses high resolution MultiSynth fractional
+dividers to generate the desired output frequencies. Additional integer division is provided at the output stage for
+generating output frequencies as low as 2.5 kHz. Crosspoint switches at each of the synthesis stages allows total
+flexibility in routing any of the inputs to any of the outputs.
+Because of this high resolution and flexible synthesis architecture, the Si5351 is capable of generating
+synchronous or free-running non-integer related clock frequencies at each of its outputs, enabling one device to
+synthesize clocks for multiple clock domains in a design.
+
+                              Input          Synthesis              Synthesis                     Output
+                              Stage           Stage 1                Stage 2                      Stage
+
+                                                                        Multi                                    VDDOA
+                                                                        Synth                R0
+                                                                          0                                      CLK0
+                                                                        Multi                                    CLK1
+                                                                        Synth                R1
+               CLKIN           Div                                        1
+                                                  PLL A
+                                                                        Multi                                    VDDOB
+                                                  (SSC)
+                                                                        Synth                R2
+                         XA                                               2                                      CLK2
+                                                   PLL B                Multi                                    CLK3
+                                                  (VCXO)                Synth                R3
+             XTAL             OSC                                         3
+                                                                        Multi                                    VDDOC
+                         XB                                             Synth                R4
+                                                                          4                                      CLK4
+                                                                        Multi                                    CLK5
+                                                                        Synth                R5
+                                                                          5
+                    VC        VCXO                                      Multi                                    VDDOD
+                                                                        Synth                R6
+                                                                          6                                      CLK6
+                                                                        Multi                                    CLK7
+                                                                        Synth                R7
+                                                                          7
+
+
+
+
+                                                 Figure 1. Si5351 Block Diagram
+
+
+
+
+14          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                    Si5351A/B/C-B
+4.1. Input Stage
+4.1.1. Crystal Inputs (XA, XB)
+The Si5351 uses a fixed-frequency standard AT-cut crystal as a reference to the internal oscillator. The output of
+the oscillator can be used to provide a free-running reference to one or both of the PLLs for generating
+asynchronous clocks. The output frequency of the oscillator will operate at the crystal frequency, either 25 MHz or
+27 MHz. The crystal is also used as a reference to the VCXO to help maintain its frequency accuracy.
+Internal load capacitors are provided to eliminate the need for external components when connecting a crystal to
+the Si5351. The total internal XTAL load capacitance (CL) can be selected to be 0, 6, 8, or 10 pF. Crystals with
+alternate load capacitance requirements are supported using additional external load capacitance  2 pF (e.g., by
+using  4 pF capacitors on XA and XB) as shown in Figure 2. Refer to application note AN551 for crystal
+recommendations.
+
+
+                                                         XA
+
+
+
+
+                                                         XB
+
+                                       Optional additional                      Optional internal
+                                         external load                         load capacitance
+                                          capacitance                            0, 6, 8,10 pF
+                                            (< 2 pF)
+
+                             Figure 2. External XTAL with Optional Load Capacitors
+4.1.2. External Clock Input (CLKIN)
+The external clock input is used as a clock reference for the PLLs when generating synchronous clock outputs.
+CLKIN can accept any frequency from 10 to 100 MHz. A divider at the input stage limits the PLL input frequency to
+30 MHz.
+4.1.3. Voltage Control Input (VC)
+The VCXO architecture of the Si5351B eliminates the need for an external pullable crystal. Only a standard, low-
+cost, fixed-frequency (25 or 27 MHz) AT-cut crystal is required.
+The tuning range of the VCXO is configurable allowing for a wide variety of applications. Key advantages of the
+VCXO design in the Si5351 include high linearity, a wide operating range (linear from 10 to 90% of VDD), and
+reliable startup and operation. Refer to Table 5 on page 9 for VCXO specification details.
+A unique feature of the Si5351B is its ability to generate multiple output frequencies controlled by the same control
+voltage applied to the VC pin. This replaces multiple PLLs or VCXOs that would normally be locked to the same
+reference. An example is illustrated in Figure 3 on page 16.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             15
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+4.2. Synthesis Stages
+The Si5351 uses two stages of synthesis to generate its final output clocks. The first stage uses PLLs to multiply
+the lower frequency input references to a high-frequency intermediate clock. The second stage uses high-
+resolution MultiSynth fractional dividers to generate the required output frequencies. Only two unique frequencies
+above 112.5 MHz can be simultaneously output. For example, 125 MHz (CLK0), 130 MHz (CLK1), and 150 MHz
+(CLKx) is not allowed. Note that multiple copies of frequencies above 112.5 MHz can be provided, for example,
+125 MHz could be provided on four outputs (CLKS0-3) simultaneously with 130 MHz on four different outputs
+(CLKS4-7).
+A crosspoint switch at the input of the first stage allows each of the PLLs to lock to the CLKIN or the XTAL input.
+This allows each of the PLLs to lock to a different source for generating independent free-running and synchronous
+clocks. Alternatively, both PLLs could lock to the same source. The crosspoint switch at the input of the second
+stage allows any of the MultiSynth dividers to connect to PLLA or PLLB. This flexible synthesis architecture allows
+any of the outputs to generate synchronous or non-synchronous clocks, with spread spectrum or without spread
+spectrum, and with the flexibility of generating non-integer related clock frequencies at each output.
+All VCXO outputs are generated by PLLB only. The Multisynth high-resolution dividers synthesizes the VCXO
+output’s center frequency up to 112.5 MHz. The center frequency is then controlled (or pulled) by the VC input. An
+interesting feature of the Si5351 is that the VCXO output can be routed to more than one MultiSynth divider. This
+creates a VCXO with multiple output frequencies controlled from one VC input as shown in Figure 3.
+Frequencies down to 2.5 kHz can be generated by applying the R divider at the output of the Multisynth (see
+Figure 3 below).
+
+                                                                     Fixed Frequency
+                                                  XA          XB
+                                                                   Crystal (non-pullable)
+
+
+                                                                           Multi                     The clock frequency
+                                                       OSC                 Synth       R0   CLK0    generated from CLK0 is
+                                                                             0
+                                                                                                   controlled by the VC input
+
+                                     Control VC                            Multi
+                                                       VCXO                Synth       R1   CLK1
+                                     Voltage                                 1
+
+                                                                                                     Additional MultiSynths
+                                                                           Multi                     can be “linked” to the
+                                                                           Synth       R2   CLK2
+                                                                             2                        VCXO to generate
+                                                                                                       additional clock
+                                                                                                          frequencies
+
+
+
+
+                                   Figure 3. Using the Si5351 as a Multi-Output VCXO
+
+
+
+
+16          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+4.3. Output Stage
+An additional level of division (R) is available at the output stage for generating clocks as low as 2.5 kHz. All output
+drivers generate CMOS level outputs with separate output voltage supply pins (VDDOx) allowing a different voltage
+signal level (1.8, 2.5, or 3.3 V) at each of the four 2-output banks.
+4.4. Spread Spectrum
+Spread spectrum can be enabled on any of the clock outputs that use PLLA as its reference. Spread spectrum is
+useful for reducing electromagnetic interference (EMI). Enabling spread spectrum on an output clock modulates its
+frequency, which effectively reduces the overall amplitude of its radiated energy. Note that spread spectrum is not
+available on clocks synchronized to PLLB or to the VCXO.
+Spread spectrum can be set to “Always Enabled” when creating a custom part in ClockBuilder Pro. The Si5351A/B
+variants also have a SSEN control pin. See "4.5.2. Spread Spectrum Enable (SSEN)—Si5351A and Si5351B Only"
+on page 17 for more details.
+The Si5351 supports several levels of spread spectrum allowing the designer to chose an ideal compromise
+between system performance and EMI compliance.
+
+
+                                                   Reduced                                   Reduced
+                   Center
+                                                   Amplitude                                 Amplitude
+                 Frequency
+                                                    and EMI                                   and EMI
+                 Amplitude
+
+
+
+
+                             fc                                     fc                                        fc
+                         No Spread
+                                                               Center Spread                              Down Spread
+                         Spectrum
+                                     Figure 4. Available Spread Spectrum Profiles
+4.5. Control Pins (OEB, SSEN)
+The Si5351 offers control pins for enabling/disabling clock outputs and spread spectrum.
+4.5.1. Output Enable (OEB)
+The output enable pin allows enabling or disabling outputs clocks. Output clocks are enabled when the OEB pin is
+held low, and disabled when pulled high. When disabled, the output state is configurable as output high, output low,
+or high-impedance.
+The output enable control circuitry ensures glitchless operation by starting the output clock cycle on the first leading
+edge after OEB is pulled low. When OEB is pulled high, the clock is allowed to complete its full clock cycle before
+going into a disabled state.
+
+4.5.2. Spread Spectrum Enable (SSEN)—Si5351A and Si5351B Only
+This control pin allows disabling the spread spectrum feature for all outputs that were configured with spread
+spectrum enabled. Hold SSEN low to disable spread spectrum. The SSEN pin provides a convenient method of
+evaluating the effect of using spread spectrum clocks during EMI compliance testing.
+4.6. Status Pins (INTR)
+The Si5351C, in the 20-QFN package, includes an interrupt pin (INTR). This is an open drain status pin, requiring a
+4.7 k pullup resistor to Vdd. The pin will be pulled low when the Si5351C encounters an interrupt, such as crystal
+reference loss, external input clock loss, or loss-of-lock on either PLLA or PLLB.
+ClockBuilder Pro will automatically configure the interrupt mask when a frequency plan is created, so irrelevant
+interrupts are ignored. For example, if a frequency plan does not use PLLB, the LOL_B interrupt will not cause the
+INTR pin to go low. The interrupt status registers can be viewed at any time through I2C to get more details on the
+type of interrupt thrown. For more information on the status registers and the mask registers, see “AN619:
+Manually Generating an Si5351 Register Map” for 10MSOP and 20-QFN devices” or “AN1234: Manually
+Generating a Si5351 Register Map for 16-QFN Devices”.
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             17
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+
+5. I2C Interface
+Many of the functions and features of the Si5351 are controlled by reading and writing to the RAM space using the
+I2C interface. The following is a list of the common features that are controllable through the I2C interface. For a
+complete listing of available I2C registers and programming steps, see AN619 or AN1234.
+Read Status Indicators
+      Crystal Reference Loss of signal, LOS_XTAL, reg0[3]
+
+      CLKIN Loss of signal, LOS_CLKIN, reg0[4]
+
+      PLLA and/or PLLB Loss of lock, LOL_A or LOL_B, reg0[6:5]
+
+ Configuration of multiplication and divider values for the PLLs, MultiSynth dividers
+ Configuration of the Spread Spectrum profile (down or center spread, modulation percentage)
+ Control of the cross point switch selection for each of the PLLs and MultiSynth dividers
+ Set output clock options
+      Enable/disable for each clock output
+
+      Invert/non-invert for each clock output
+                                   n
+      Output divider values (2 , n=1.. 7)
+
+      Output state when disabled (stop hi, stop low, Hi-Z)
+
+      Output phase offset
+
+
+The I2C interface operates in slave mode with 7-bit addressing and can operate in Standard-Mode (100 kbps) or
+Fast-Mode (400 kbps) and supports burst data transfer with auto address increments.
+The I2C bus consists of a bidirectional serial data line (SDA) and a serial clock input (SCL) as shown in Figure 5.
+Both the SDA and SCL pins must be connected to the VDD supply via an external pull-up as recommended by the
+I2C specification.
+
+                                                                   VDD
+
+
+                                                           >1k           >1k
+                                                                                                   Si5351
+                                                                         SCL
+                                   I2C Bus
+                                                                         SDA
+
+                                                          4.7 k
+                                                                         INTR
+
+
+                                        I2C Address Select:               A0
+                                        Pull-up to VDD (A0 = 1)
+                                       Pull-down to GND (A0 = 0)
+
+
+
+
+                                                        Figure 5. I2C and Control Signals
+The 7-bit device (slave) address of the Si5351 consist of a 6-bit fixed address plus a user selectable LSB bit as
+shown in Figure 6. The LSB bit is selectable as 0 or 1 using the optional A0 pin which is useful for applications that
+require more than one Si5351 on a single I2C bus. Only the Si5351A 20-QFN and Si5351A 16-QFN have the A0
+LSB pin option. If a part does not have the A0 pin, the default address is 0x60 with the A0 bit set to 0.
+
+                                                                               6   5   4   3   2   1    0
+
+                                       Slave Address                           1   1   0   0   0   0 0/1
+
+                                                                                                            A0
+
+                                                      Figure 6. Si5351 I2C Slave Address
+
+
+
+
+18          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                            Si5351A/B/C-B
+Data is transferred MSB first in 8-bit words as specified by the I2C specification. A write command consists of a 7-
+bit device (slave) address + a write bit, an 8-bit register address, and 8 bits of data as shown in Figure 7. A write
+burst operation is also shown where every additional data word is written using to an auto-incremented address.
+
+                                     Write Operation – Single Byte
+                                      S Slv Addr [6:0] 0 A Reg Addr [7:0] A Data [7:0]     A P
+
+
+
+                                     Write Operation - Burst (Auto Address Increment)
+                                      S Slv Addr [6:0] 0 A Reg Addr [7:0] A Data [7:0] A Data [7:0] A P
+
+
+                                                                                              Reg Addr +1
+
+
+
+                                          From slave to master         1 – Read
+                                                                       0 – Write
+                                          From master to slave         A – Acknowledge (SDA LOW)
+                                                                       N – Not Acknowledge (SDA HIGH)
+                                                                       S – START condition
+                                                                       P – STOP condition
+
+                                                  Figure 7. I2C Write Operation
+A read operation is performed in two stages. A data write is used to set the register address, then a data read is
+performed to retrieve the data from the set address. A read burst operation is also supported. This is shown in
+Figure 8.
+
+                                   Read Operation – Single Byte
+                                    S Slv Addr [6:0] 0 A Reg Addr [7:0] A P
+
+                                    S Slv Addr [6:0] 1 A Data [7:0] N P
+
+
+
+
+                                   Read Operation - Burst (Auto Address Increment)
+
+                                    S Slv Addr [6:0] 0 A Reg Addr [7:0] A P
+
+                                    S Slv Addr [6:0] 1 A Data [7:0] A Data [7:0] N P
+
+                                                                           Reg Addr +1
+
+
+
+
+                                        From slave to master         1 – Read
+                                                                     0 – Write
+                                        From master to slave         A – Acknowledge (SDA LOW)
+                                                                     N – Not Acknowledge (SDA HIGH)
+                                                                     S – START condition
+                                                                     P – STOP condition
+
+                                                  Figure 8. I2C Read Operation
+AC and DC electrical specifications for the SCL and SDA pins are shown in Table 9. The timing specifications and
+timing diagram for the I2C bus is compatible with the I2C-Bus Standard. SDA timeout is supported for compatibility
+with SMBus interfaces.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             19
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+6. Configuring the Si5351
+The Si5351 is a highly flexible clock generator which is entirely configurable through its I2C interface. The device’s
+default configuration is stored in non-volatile memory (NVM) as shown in Figure 9. The NVM is a one time
+programmable memory (OTP) which can store a custom user configuration at power-up. This is a useful feature for
+applications that need a clock present at power-up (e.g., for providing a clock to a processor).
+
+                                                                  Power-Up
+
+
+                                                               NVM
+                                                              (OTP)
+                                                                           RAM
+                                                              Default
+                                                              Config
+
+
+
+                                                                            I2C
+                                           Figure 9. Si5351 Memory Configuration
+During a power cycle the contents of the NVM are copied into random access memory (RAM), which sets the
+device configuration that will be used during normal operation. Any changes to the device configuration after
+power-up are made by reading and writing to registers in the RAM space through the I2C interface.
+6.1. Writing a Custom Configuration to RAM
+To simplify device configuration, Skyworks Solutions has released the ClockBuilder Pro. The software serves two
+purposes: to configure the Si5351 with optimal configuration based on the desired frequencies and to control the
+EVB when connected to a host PC.
+The optimal configuration can be saved from the software in text files that can be used in any system, which
+configures     the    device    over     I2C.    ClockBuilder      Pro     can    be     downloaded     from
+https://www.skyworksinc.com/en/application-pages/clockbuilder-pro-software
+Once the configuration file has been saved, the device can be programmed via I2C by following the steps shown in
+Figure 10.
+
+
+
+
+20          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                               Si5351A/B/C-B
+
+
+
+                                                                        Disable Outputs
+                                                                Set CLKx_DIS high; Reg. 3 = 0xFF
+
+
+
+
+                                                                   Power-down all output drivers
+                                                                Reg. 16, 17, 18, 19, 20, 21, 22, 23 =
+                                                                               0x80
+
+
+
+                                                                         Set interrupt masks
+                                                                      (see register 2 description)
+
+
+
+
+                                      Register               Write new configuration to device using
+                                       Map                      the contents of the register map
+                                                            generated by ClockBuilder Pro. This step
+                                                               also powers up the output drivers.
+                  To download ClockBuilder Pro ,
+                  go to:                                         (Registers 15-92 and 149-170)
+                  https://www.skyworksinc.com/en
+                  /application-pages/clockbuilder-
+                  pro-software
+
+
+                                                                  Apply PLLA and PLLB soft reset
+                                                                         Reg. 177 = 0xAC
+
+
+
+
+                                                                        Enable desired outputs
+                                                                           (see Register 3)
+
+
+
+
+                                      Figure 10. I2C Programming Procedure
+
+
+
+
+       Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             21
+Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+6.2. Si5351 Application Examples
+The Si5351 is a versatile clock generator which serves a wide variety of applications. The following examples show
+how it can be used to replace crystals, crystal oscillators, VCXOs, and PLLs.
+6.3. Replacing Crystals and Crystal Oscillators
+Using an inexpensive external crystal, the Si5351A can generate up to 8 different free-running clock frequencies
+for replacing crystals and crystal oscillators. A 4-output with separate VDDO for each output and a 3-output version
+are also available in small 16-QFN and 10-MSOP packages, respectively, for applications that require fewer
+clocks. An example is shown in Figure 11.
+
+
+                               XA                                             Multi        CLK0       125 MHz                    Ethernet
+                                                                              Synth                                                PHY
+                                                                                0
+                   27 MHz                 OSC              PLL
+                                                                              Multi        CLK1
+                               XB                                                                      48 MHz                    USB
+                                                                              Synth                                            Controller
+                                                                                1
+                                                                              Multi        CLK2        28.322 MHz                 HDMI
+                                                                              Synth
+                                                                                2                                                  Port
+
+                                                                              Multi        CLK3       74.25 MHz
+                                                                              Synth
+                                                                                3
+                                                                              Multi        CLK4    74.25/1.001 MHz
+                                                                              Synth
+                                                                                4                                                    Video/Audio
+                                                                              Multi        CLK5        24.576 MHz                     Processor
+                                                                              Synth
+                                                                                5
+                                                                              Multi        CLK6       22.5792 MHz
+                                                                              Synth
+                                                                                6
+                                                                              Multi         CLK7       33.3333 MHz
+                                                                              Synth                                                CPU
+                                      Si5351A                                   7
+
+
+                                      Note: Si5351A replaces crystals, XOs, and PLLs.
+
+
+
+        Figure 11. Using the Si5351A to Replace Multiple Crystals, Crystal Oscillators, and PLLs
+6.4. Replacing Crystals, Crystal Oscillators, and VCXOs
+The Si5351B combines free-running clock generation and a VCXO in a single package for cost sensitive video
+applications. An example is shown in Figure 12.
+
+                                                                                                                Free-running
+                                                                                                                   Clocks
+                                         XA                                                          CLK0                                    Ethernet
+                                                                                        Multi                        125 MHz                   PHY
+                                                                                        Synth
+                                                                                          0
+                            27 MHz                     OSC              PLL
+                                                                                        Multi        CLK1
+                                         XB                                                                          48 MHz                    USB
+                                                                                        Synth
+                                                                                          1                                                  Controller
+
+                                                                                        Multi        CLK2            28.322 MHz
+                                                                                        Synth
+                                                                                          2                                                    HDMI
+                                                                                                                                               Port
+
+
+                                                                                        Multi        CLK3            74.25 MHz
+                                         VC                                             Synth
+                                                                                          3
+                                                                      VCXO
+                                                                                        Multi        CLK4       74.25/1.001 MHz             Video/Audio
+                                                                                        Synth
+                                                                                          4                                                  Processor
+
+                                                                                        Multi        CLK5            24.576 MHz
+                                                                                        Synth
+                                                                                          5
+                                                   Si5351B                                                        VCXO Clock
+                                                                                                                    Outputs
+
+                            Note: FBW = 10 kHz
+
+        Figure 12. Using the Si5351B to Replace Crystals, Crystal Oscillators, VCXOs, and PLLs
+
+
+
+
+22          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                       Si5351A/B/C-B
+6.5. Replacing Crystals, Crystal Oscillators, and PLLs
+The Si5351C generates synchronous clocks for applications that require a fully integrated PLL instead of a VCXO.
+Because of its dual PLL architecture, the Si5351C is capable of generating both synchronous and free-running
+clocks. An example is shown in Figure 13.
+
+                                                                                     Free-running
+                                                                                        Clocks
+
+                                   XA                                         CLK0                      Ethernet
+                                                                     Multi             125 MHz            PHY
+                                                                     Synth
+                                                                       0
+                        25 MHz              OSC        PLL
+                                                                     Multi    CLK1
+                                   XB                                                  48 MHz             USB
+                                                                     Synth
+                                                                       1                                Controller
+
+                                                                     Multi    CLK2     28.322 MHz
+                                                                     Synth
+                                                                       2                                  HDMI
+                                                                                                          Port
+
+
+                                                                     Multi    CLK3     74.25 MHz
+                                 CLKIN                               Synth
+                                                                       3
+                       54 MHz                          PLL
+                                                                     Multi    CLK4   74.25/1.001 MHz   Video/Audio
+                                                                     Synth
+                                                                       4                                Processor
+
+                                                                     Multi    CLK5     24.576 MHz
+                                                                     Synth
+                                                                       5
+                                           Si5351C
+                                                                                     Synchronous
+                                                                                       Clocks
+
+
+           Figure 13. Using the Si5351C to Replace Crystals, Crystal Oscillators, and PLLs
+6.6. Applying a Reference Clock at XTAL Input
+The Si5351 can be driven with a clock signal through the XA input pin. This is especially useful when in need of
+generating clock outputs in two synchronization domains. With the Si5351C, one reference clock can be provided
+at the CLKIN pin and at XA.
+
+
+
+                                                  VIN = 1 VPP
+                                                                                                               Multi
+                                                  25/27 MHz
+                                                                    XA                   PLLA                  Synth
+                                                                                                                 0
+                                                                0.1 µF       OSC                               Multi
+                                                                                                               Synth
+                                                                                                                 1
+                                                                    XB                   PLLB
+
+
+
+                                                                                                                 Multi
+                  Note: Float the XB input while driving                                                         Synth
+                                                                                                                   N
+                               the XA input with a clock
+
+
+
+
+                                         Figure 14. Si5351 Driven by a Clock Signal
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             23
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+6.7. HCSL Compatible Outputs
+The Si5351 can be configured to support HCSL compatible swing when the VDDO of the output pair of interest is
+set to 2.5 V (i.e., VDDOA must be 2.5 V when using CLK0/1; VDDOB must be 2.5 V for CLK2/3 and so on).
+The circuit in the figure below must be applied to each of the two clocks used, and one of the clocks in the pair
+must also be inverted to generate a differential pair. See register setting CLKx_INV. This functionality is only
+supported for Si5351 in 10-MSOP or 20-QFN packages.
+
+
+                                                                                 ZO = 50         R1
+                                                    Multi
+                                   PLLA             Synth
+                                                      0               0                        511 
+
+                      OSC                                                                         240      R2      HCSL
+                                                                                                                    CLKIN
+                                   PLLB                                          ZO = 50         R1
+                                                    Multi
+                                                    Synth
+                                                      1               0                        511 
+                                                                                                  240      R2
+
+                                                    Multi
+                                                    Synth       Note: The complementary -180 degree
+                                                      N
+                                                                out of phase output clock is generated
+                                                                using the INV function
+
+                                      Figure 15. Si5351 Output is HCSL Compatible
+
+
+
+
+24          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+7. Design Considerations
+The Si5351 is a self-contained clock generator that requires very few external components. The following general
+guidelines are recommended to ensure optimum performance. Refer to “AN554: Si5350/51 PCB Layout Guide” for
+additional layout recommendations.
+7.1. Power Supply Decoupling/Filtering
+The Si5351 has built-in power supply filtering circuitry and extensive internal Low Drop Out (LDO) voltage
+regulators to help minimize the number of external bypass components. All that is recommended is one 0.1 to
+1.0 µF decoupling capacitor per power supply pin. This capacitor should be mounted as close to the VDD and
+VDDOx pins as possible without using vias.
+7.2. Power Supply Sequencing
+The VDD and VDDOx (i.e., VDDO0, VDDO1, VDDO2, VDDO3) power supply pins have been separated to allow
+flexibility in output signal levels. Power supply sequencing for VDD and VDDOx requires that all VDDOx be
+powered up either before or at the same time as VDD. Unused VDDOx pins should be tied to VDD.
+7.3. External Crystal
+The external crystal should be mounted as close to the pins as possible using short PCB traces. The XA and XB
+traces should be kept away from other high-speed signal traces. See “AN551: Crystal Selection Guide” for more
+details.
+7.4. External Crystal Load Capacitors
+The Si5351 provides the option of using internal and external crystal load capacitors. If internal load capacitance is
+insufficient, capacitors of value < 2 pF may be used to increased equivalent load capacitance. If external load
+capacitors are used, they should be placed as close to the XA/XB pads as possible. See “AN551: Crystal Selection
+Guide” for more details.
+7.5. Unused Pins
+Unused voltage control pin should be tied to GND.
+Unused CLKIN pin should be tied to GND.
+Unused XA/XB pins should be left floating. Refer to "6.6. Applying a Reference Clock at XTAL Input" on page 23
+when using XA as a clock input pin.
+Unused output pins (CLK0–CLK7) should be left floating.
+Unused VDDOx pins should be tied to VDD.
+7.6. Trace Characteristics
+The Si5351A/B/C features various output current drive strengths. It is recommended to configure the trace
+characteristics as shown in Figure 16 when the default high drive strength is used.
+
+
+
+                                                                         ZO = 50 ohms
+
+                                                 R = 0 ohms
+                                      CLK
+                                                (Optional resistor for
+                                                EMI management)
+
+
+
+
+        Figure 16. Recommended Trace Characteristics with Default Drive Strength Setting
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             25
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+8. Register Map Summary
+For many applications, the Si5351's register values are easily configured using ClockBuilder Pro software.
+However, for customers interested in using the Si5351 in operating modes beyond the capabilities available with
+ClockBuilder Pro, see AN619 or AN1234.
+9. Register Descriptions
+Refer to either AN619 for 10MSOP and 20QFN devices or AN1234 for 16-QFN devices. These application notes
+provide detailed descriptions of the Si5351 registers and their use.
+
+
+
+
+26          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                                              Si5351A/B/C-B
+10. Si5351 Pin Descriptions
+10.1. Si5351A 20-pin QFN
+
+
+
+
+                                                                              18 VDDOC
+                                                                    19 CLK4
+
+
+
+                                                                                         17 CLK5
+
+                                                                                                   16 CLK6
+                                                           20 VDD
+                                                XA     1                                                      15 CLK7
+
+                                                 XB    2                                                      14 VDDOD
+                                                                              GND
+                                                 A0    3                      PAD                             13 CLK0
+
+                                                SCL    4                                                      12 CLK1
+
+                                               SDA 5                                                          11 VDDOA
+
+
+
+
+                                                                                                   VDDOB 10
+                                                                    7
+
+
+
+                                                                                         9
+                                                                              8
+                                                           6
+                                                           SSEN
+
+
+
+                                                                              CLK3
+                                                                    OEB
+
+
+
+                                                                                         CLK2
+                                         Figure 17. Si5351A 20-QFN Top View
+
+                                          Table 14. Si5351A Pin Descriptions
+ Pin Name       Pin Number          Pin Type1                                                                            Function
+    XA                 1                  I           Input pin for external crystal.
+    XB                 2                  I           Input pin for external crystal.
+   CLK0                13                O            Output clock 0.
+   CLK1                12                O            Output clock 1.
+   CLK2                9                 O            Output clock 2.
+   CLK3                8                 O            Output clock 3.
+   CLK4                19                O            Output clock 4.
+   CLK5                17                O            Output clock 5.
+   CLK6                16                O            Output clock 6.
+   CLK7                15                O            Output clock 7.
+    A0                 3                  I           I2C address bit.
+   SCL                 4                  I           I2C bus serial clock input. Pull-up to VDD core with 1 k
+   SDA                 5                I/O           I2C bus serial data input. Pull-up to VDD core with 1 k
+  SSEN                 6                  I           Spread spectrum enable. High = enabled, Low = disabled.
+   OEB                 7                  I           Output driver enable. Low = enabled, High = disabled.
+   VDD                 20                P            Core voltage supply pin. See 7.2.
+  VDDOA                11                P            Output voltage supply pin for CLK0 and CLK1. See 7.2.
+  VDDOB                10                P            Output voltage supply pin for CLK2 and CLK3. See 7.2.
+  VDDOC                18                P            Output voltage supply pin for CLK4 and CLK5. See 7.2.
+  VDDOD                14                P            Output voltage supply pin for CLK6 and CLK7. See 7.2.
+   GND           Center Pad              P            Ground. Use multiple vias to ensure a solid path to GND.
+  1. I = Input, O = Output, P = Power.
+  2. Input pins are not internally pulled up.
+
+
+
+
+        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             27
+ Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+10.2. Si5351B 20-Pin QFN
+
+
+
+
+                                                                                  18 VDDOC
+                                                                        19 CLK4
+
+
+
+
+                                                                                             17 CLK5
+
+                                                                                                       16 CLK6
+                                                               20 VDD
+                                                                                                                       CLK7
+                                                   XA   1                                                         15
+                                                                                                                       VDDOD
+                                                   XB   2                                                         14
+                                                                                  GND                                  CLK0
+                                                  VC    3                         PAD                             13
+                                                                                                                       CLK1
+                                                  SCL   4                                                         12
+                                                                                                                       VDDOA
+                                                  SDA   5                                                         11
+
+
+
+
+                                                                                                       VDDOB 10
+                                                                        7
+
+
+
+
+                                                                                             9
+                                                                                  8
+                                                               6
+
+
+
+
+                                                                                  CLK3
+                                                                        OEB
+
+
+
+
+                                                                                             CLK2
+                                                               SSEN
+
+                                             Figure 18. Si5351B 20-QFN Top View
+
+                                              Table 15. Si5351B Pin Descriptions
+ Pin Name           Pin Number          Pin Type1                                                                         Function
+        XA                 1                  I             Input pin for external crystal
+        XB                 2                  I             Input pin for external crystal
+       CLK0                13                O              Output clock 0
+       CLK1                12                O              Output clock 1
+       CLK2                9                 O              Output clock 2
+       CLK3                8                 O              Output clock 3
+       CLK4                19                O              Output clock 4
+       CLK5                17                O              Output clock 5
+       CLK6                16                O              Output clock 6
+       CLK7                15                O              Output clock 7
+        VC                 3                  I             VCXO control voltage input
+       SCL                 4                  I             I2C bus serial clock input. Pull-up to VDD core with 1 k
+       SDA                 5                I/O             I2C bus serial data input. Pull-up to VDD core with 1 k
+      SSEN                 6                  I             Spread spectrum enable. High = enabled, Low = disabled.
+       OEB                 7                  I             Output driver enable. Low = enabled, High = disabled.
+       VDD                 20                P              Core voltage supply pin
+     VDDOA                 11                P              Output voltage supply pin for CLK0 and CLK1. See 7.2
+     VDDOB                 10                P              Output voltage supply pin for CLK2 and CLK3. See 7.2
+     VDDOC                 18                P              Output voltage supply pin for CLK4 and CLK5. See 7.2
+     VDDOD                 14                P              Output voltage supply pin for CLK6 and CLK7. See 7.2
+       GND           Center Pad              P              Ground
+      1. I = Input, O = Output, P = Power
+      2. Input pins are not internally pulled up.
+
+
+
+
+28          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                                             Si5351A/B/C-B
+10.3. Si5351C 20-Pin QFN
+
+
+
+
+                                                                            18 VDDOC
+                                                                  19 CLK4
+
+
+
+
+                                                                                       17 CLK5
+
+                                                                                                 16 CLK6
+                                                         20 VDD
+                                               XA    1                                                      15   CLK7
+
+                                               XB    2                                                      14   VDDOD
+                                                                            GND
+                                              INTR   3                      PAD                             13   CLK0
+
+                                              SCL    4                                                      12   CLK1
+
+                                              SDA    5                                                      11   VDDOA
+
+
+
+
+                                                                                                 VDDOB 10
+                                                                  7
+
+
+
+
+                                                                                       9
+                                                                            8
+                                                         6
+                                                         CLKIN
+
+
+
+
+                                                                            CLK3
+                                                                  OEB
+
+
+
+
+                                                                                       CLK2
+                                         Figure 19. Si5351C 20-QFN Top View
+
+                                          Table 16. Si5351C Pin Descriptions
+                Pin Number
+ Pin Name                           Pin Type1                                                                           Function
+                   20-QFN
+     XA                1                  I          Input pin for external crystal.
+     XB                2                  I          Input pin for external crystal.
+   CLK0                13                O           Output clock 0.
+   CLK1                12                O           Output clock 1.
+   CLK2                9                 O           Output clock 2.
+   CLK3                8                 O           Output clock 3.
+   CLK4                19                O           Output clock 4.
+   CLK5                17                O           Output clock 5.
+   CLK6                16                O           Output clock 6.
+   CLK7                15                O           Output clock 7.
+    INTR               3                 O           Interrupt pin. Open drain active low output, requires a pull-up resistor
+                                                     greater than 4.7 k
+    SCL                4                  I          I2C bus serial clock input. Pull-up to VDD core with 1 k
+    SDA                5                I/O          I2C bus serial data input. Pull-up to VDD core with 1 k
+   CLKIN               6                  I          PLL clock input.
+    OEB                7                  I          Output driver enable. Low = enabled, High = disabled.
+    VDD                20                P           Core voltage supply pin
+  VDDOA                11                P           Output voltage supply pin for CLK0 and CLK1. See 7.2
+  VDDOB                10                P           Output voltage supply pin for CLK2 and CLK3. See 7.2
+  VDDOC                18                P           Output voltage supply pin for CLK4 and CLK5. See 7.2
+  VDDOD                14                P           Output voltage supply pin for CLK6 and CLK7. See 7.2
+    GND          Center Pad              P           Ground.
+Notes:
+   1. I = Input, O = Output, P = Power.
+   2. Input pins are not internally pulled up.
+
+
+
+        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             29
+ Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+10.4. Si5351A 16-Pin QFN
+
+
+
+
+                                                                              14 VDDOC
+
+                                                                                         13 CLK2
+                                                                     15 GND
+                                                            16 VDD
+                                                  XA    1                                          12 CLK3
+
+                                                   XB   2                                          11 VDDOD
+                                                                          GND
+                                                                          PAD
+                                                  A0    3                                          10 CLK0
+
+                                                  SCL   4                                          9 VDDOA
+
+
+
+
+                                                            5
+
+                                                                     6
+
+                                                                                7
+
+                                                                                         8
+                                                                     OEB
+
+
+
+
+                                                                                         VDDOB
+                                                            SDA
+
+
+
+
+                                                                              CLK1
+                                             Figure 20. Si5351A 16-QFN Top View
+
+                                              Table 17. Si5351A Pin Descriptions
+
+ Pin Name            Pin Number          Pin Type1                                                           Function
+
+       XA                  1                  I         Input pin for external crystal.
+       XB                  2                  I         Input pin for external crystal.
+      CLK0                 10                O          Output Clock 0.
+      CLK1                 7                 O          Output Clock 1.
+      CLK2                 13                O          Output Clock 2.
+      CLK3                 12                O          Output Clock 3.
+       A0                   3                 I         I2C address bit.
+      SCL                   4                 I         I2C bus serial clock input. Pull-up to VDD core with 1 kΩ.
+      SDA                  5                 I/O        I2C bus serial data input. Pull-up to VDD core with 1 kΩ.
+      OEB                   6                 I         Output driver enable. Low = Enabled; High = Disabled.
+      VDD                  16                 P         Core voltage supply pin. See “7.2. Power Supply Sequencing”
+     VDDOA                 9                  P         Output voltage supply pin for CLK0. See “7.2. Power Supply Sequencing” .
+     VDDOB                 8                  P         Output voltage supply pin for CLK1. See “7.2. Power Supply Sequencing” .
+     VDDOC                 14                 P         Output voltage supply pin for CLK2. See “7.2. Power Supply Sequencing” .
+     VDDOD                 11                 P         Output voltage supply pin for CLK3. See “7.2. Power Supply Sequencing” .
+      GND                  15               GND         Ground.
+ GND PAD              Center Pad            GND         Ground pad. Use multiple vias to ensure a solid path to Ground.
+
+Notes:
+   1. I = Input, O = Output, P= Power, GND = Ground Input pins are not internally pulled up.
+
+
+
+
+30          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                             Si5351A/B/C-B
+10.5. Si5351B 16-Pin QFN
+
+
+
+
+                                                                             14 VDDOC
+
+                                                                                        13 CLK2
+                                                                    15 GND
+                                                           16 VDD
+                                               XA   1                                             12 CLK3
+
+                                               XB   2                                             11 VDDOD
+                                                                         GND
+                                                                         PAD
+                                               VC   3                                             10 CLK0
+
+                                            SCL     4                                             9 VDDOA
+
+
+                                                           5
+
+                                                                    6
+
+                                                                               7
+
+                                                                                        8
+                                                                    OEB
+
+
+
+
+                                                                                        VDDOB
+                                                                             CLK1
+                                                           SDA
+
+
+
+                                         Figure 21. Si5351B 16-QFN Top View*
+
+                                           Table 18. Si5351B Pin Descriptions
+
+ Pin Name         Pin Number          Pin Type1                                                         Function
+
+    XA                  1                  I            Input pin for external crystal.
+    XB                  2                  I            Input pin for external crystal.
+   CLK0                 10                O             Output Clock 0.
+   CLK1                  7                O             Output Clock 1.
+   CLK2                 13                O             Output Clock 2.
+   CLK3                 12                O             Output Clock 3.
+    VC                   3                 I            VCXO control voltage input
+    SCL                  4                 I            I2C bus serial clock input. Pull-up to VDD core with 1 kΩ.
+    SDA                  5                I/O           I2C bus serial data input. Pull-up to VDD core with 1 kΩ.
+    OEB                  6                 I            Output driver enable. Low = Enabled; High = Disabled.
+    VDD                 16                 P            Core voltage supply pin. See “7.2. Power Supply Sequencing”
+  VDDOA                  9                 P            Output voltage supply pin for CLK0. See “7.2. Power Supply Sequencing” .
+  VDDOB                  8                 P            Output voltage supply pin for CLK1. See “7.2. Power Supply Sequencing” .
+  VDDOC                 14                 P            Output voltage supply pin for CLK2. See “7.2. Power Supply Sequencing” .
+  VDDOD                 11                 P            Output voltage supply pin for CLK3. See “7.2. Power Supply Sequencing” .
+   GND                  15               GND            Ground.
+ GND PAD           Center Pad            GND            Ground pad. Use multiple vias to ensure a solid path to Ground
+
+Notes:
+   1. I = Input, O = Output, P= Power, GND = Ground Input pins are not internally pulled up.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             31
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+10.6. Si5351C 16-Pin QFN
+
+
+
+
+                                                                            14 VDDOC
+
+                                                                                       13 CLK2
+                                                                   15 GND
+                                                          16 VDD
+                                             XA    1                                             12 CLK3
+
+                                             XB    2                                             11 VDDOD
+                                                                        GND
+                                                                        PAD
+                                            OEB     3                                            10 CLK0
+
+                                            SCL     4                                            9 VDDOA
+
+                                                          5
+
+                                                                   6
+
+                                                                              7
+
+                                                                                       8
+                                                                   CLKIN
+
+
+
+
+                                                                                       VDDOB
+                                                                            CLK1
+                                                          SDA
+
+
+
+
+                                             Figure 22. Si5351C 16-QFN Top View
+
+                                              Table 19. Si5351C Pin Descriptions
+
+ Pin Name            Pin Number          Pin Type1                                                   Function
+
+       XA                  1                  I         Input pin for external crystal.
+       XB                  2                  I         Input pin for external crystal.
+      CLK0                 10                O          Output Clock 0.
+      CLK1                 7                 O          Output Clock 1.
+      CLK2                 13                O          Output Clock 2.
+      CLK3                 12                O          Output Clock 3.
+     CLKIN                 6                  I         PLL clock input
+      SCL                   4                 I         I2C bus serial clock input. Pull-up to VDD core with 1 kΩ.
+      SDA                  5                 I/O        I2C bus serial data input. Pull-up to VDD core with 1 kΩ.
+      OEB                   3                 I         Output driver enable. Low = Enabled; High = Disabled.
+      VDD                  16                 P         Core voltage supply pin. See “7.2. Power Supply Sequencing”
+     VDDOA                 9                  P         Output voltage supply pin for CLK0. See “7.2. Power Supply Sequencing”
+     VDDOB                 8                  P         Output voltage supply pin for CLK1. See “7.2. Power Supply Sequencing”
+     VDDOC                 14                 P         Output voltage supply pin for CLK2. See “7.2. Power Supply Sequencing”
+     VDDOD                 11                 P         Output voltage supply pin for CLK3. See “7.2. Power Supply Sequencing”
+      GND                  15               GND         Ground.
+ GND PAD              Center Pad            GND         Ground pad. Use multiple vias to ensure a solid path to Ground.
+
+Notes:
+   1. I = Input, O = Output, P= Power, GND = Ground Input pins are not internally pulled up.
+
+
+
+32          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                Si5351A/B/C-B
+10.7. Si5351A 10-Pin MSOP
+
+
+                                          VDD            1               10            CLK0
+
+                                           XA            2                9            CLK1
+
+                                           XB            3                8            GND
+
+                                          SCL            4                7            VDDO
+
+                                          SDA            5                6           CLK2
+
+
+
+                                         Figure 23. Si5351A 10-MSOP Top View
+
+                                   Table 20. Si5351A 10-MSOP Pin Descriptions
+
+                  Pin
+Pin Name        Number         Pin Type*                                             Function
+               10-MSOP
+
+    XA              2               I        Input pin for external crystal.
+
+    XB              3               I        Input pin for external crystal.
+
+  CLK0             10               O        Output clock 0.
+
+  CLK1              9               O        Output clock 1.
+
+  CLK2              6               O        Output clock 2.
+
+   SCL              4               I        Serial clock input for the I2C bus. This pin must be pulled-up using a pull-
+                                             up resistor of at least 1 k.
+   SDA              5              I/O       Serial data input for the I2C bus. This pin must be pulled-up using a pull-up
+                                             resistor of at least 1 k.
+   VDD              1               P        Core voltage supply pin.
+
+  VDDO              7               P        Output voltage supply pin for CLK0, CLK1, and CLK2. See "7.2. Power
+                                             Supply Sequencing" on page 25.
+   GND              8               P        Ground.
+
+*Note: I = Input, O = Output, P = Power
+
+
+
+
+        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             33
+ Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+11. Ordering Information
+Factory pre-programmed Si5351 devices (e.g., with bootup frequencies) can be requested using the ClockBuilder
+Pro available at:https://www.skyworksinc.com/en/application-pages/clockbuilder-pro-software.
+A unique part number is assigned to each custom configuration as indicated in Figure 24. Blank, un-programmed
+Si5351 devices (with no boot-up frequency) do not contain a custom code.
+The Si5351x-B20QFN-EVB evaluation kit, along with ClockBuilder Pro, enables easy testing of any Si5351A/B/C
+frequency plan. ClockBuilder Pro makes it simple to emulate all three Si5351 packages, including the 10-MSOP,
+20-QFN, and 16-QFN, on the same evaluation board.
+
+
+              Si5351                        X           B           XXXXX                     XXX
+
+                                                                                                                Blank = Coil Tape
+                                                                                                                R = Tape and Reel
+
+                                                                                                                GT = 10-MSOP*
+                                                                                                                GM = 20-QFN
+                                                                                                                GM1 = 16-QFN
+
+                                                                                  Blank = For blank devices (no boot-up frequency)
+                                                                                  XXXXX = Unique Custom Code. A five-character
+                                                                                  code will be assigned for each unique custom
+                                                                                  configuration.
+
+
+                                                                                  B = Product Revision B
+        *Note: The 10-MSOP is only
+        available in the Si5351A variant.
+                                                                                  A = Crystal In
+                                                                                  B = Crystal In + VCXO
+                                                                                  C = Crystal In + CLKIN
+
+
+
+
+                         Evaluation Boards
+
+                  Si535x-B20QFN-EVB                       For evaluation of:
+                                                          Si5351A-B-GM (20-QFN)
+                                                          Si5351B-B-GM (20-QFN)
+                                                          Si5351C-B-GM (20-QFN)
+                                                Figure 24. Device Part Numbers
+
+
+
+
+34          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                       Si5351A/B/C-B
+12. Packaging
+12.1. 20-pin QFN Package Outline
+Figure 25 shows the package details for the Si5351 in a 20-QFN package. Table 21 lists the values for the
+dimensions shown in the illustration.
+
+
+
+
+                                                                        Seating Plane
+                                                                   C
+                                                                                                       D2
+                   B                  D                             A
+                                                                                                            D2/2
+                                                                   A1
+
+                                                                                          L
+
+
+
+
+               E                                                                                                              E2
+
+                                                                                                                       E2/2
+
+
+
+
+               A                                                                                                   b
+                                                                                                   e
+
+
+
+                                          Figure 25. 20-Pin QFN Package Drawing
+
+                                              Table 21. Package Dimensions
+                       Dimension                    Min                                  Nom                  Max
+                           A                        0.80                                 0.85                 0.90
+                            A1                      0.00                                   —                  0.05
+                             b                      0.20                                   0.25               0.30
+                            D                                                           4.00 BSC
+                            D2                      2.65                                   2.70               2.75
+                             e                                                          0.50 BSC
+                            E                                                           4.00 BSC
+                            E2                      2.65                                   2.70               2.75
+                             L                      0.35                                   0.40               0.45
+                           aaa                       —                                     —                  0.10
+                           bbb                       —                                     —                  0.10
+                           ccc                       —                                     —                  0.08
+                           ddd                       —                                     —                  0.10
+                   Notes:
+                      1. All dimensions shown are in millimeters (mm) unless otherwise noted.
+                      2. Dimensioning and Tolerancing per ANSI Y14.5M-1994.
+                      3. This drawing conforms to JEDEC Outline MO-220, variation VGGD-5.
+                      4. Recommended card reflow profile is per the JEDEC/IPC J-STD-020 specification for
+                          Small Body Components.
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             35
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+12.2. Land Pattern: 20-Pin QFN
+Figure 26 shows the recommended land pattern details for the Si5351 in a 20-Pin QFN package. Table 22 lists the
+values for the dimensions shown in the illustration.
+
+
+
+
+                                              Figure 26. 20-Pin QFN Land Pattern
+
+                                          Table 22. PCB Land Pattern Dimensions
+                                          Symbol                                        Millimeters
+                                             C1                                              4.0
+                                             C2                                              4.0
+                                              E                                          0.50 BSC
+                                             X1                                              0.30
+                                             X2                                              2.70
+                                             Y1                                              0.80
+                                             Y2                                              2.70
+                       Notes:
+                       General
+                          1. All dimensions shown are in millimeters (mm) unless otherwise noted.
+                          2. This land pattern design is based on IPC-7351 guidelines.
+                       Solder Mask Design
+                          3. All metal pads are to be non-solder mask defined (NSMD). Clearance between
+                              the solder mask and the metal pad is to be 60 µm minimum, all the way around
+                              the pad.
+                       Stencil Design
+                          4. A stainless steel, laser-cut and electro-polished stencil with trapezoidal walls
+                              should be used to assure good solder paste release.
+                          5. The stencil thickness should be 0.125 mm (5 mils).
+                          6. The ratio of stencil aperture to land pad size should be 1:1 for all perimeter pads.
+                          7. A 2x2 array of 1.10 x 1.10 mm openings on 1.30 mm pitch should be used for the
+                              center ground pad.
+                       Card Assembly
+                          8. A No-Clean, Type-3 solder paste is recommended.
+                          9. The recommended card reflow profile is per the JEDEC/IPC J-STD-020
+                              specification for Small Body components.
+
+
+
+
+36          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+12.3. 16-Pin QFN Package Outline
+Figure 27 shows the package details for the Si5351 in a 16-QFN package. Table 23 lists the values for the
+dimensions shown in the illustration.
+
+
+
+
+                                       Figure 27. 16-Pin QFN Package Drawing
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             37
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+
+                                                 Table 23. Package Dimensions
+
+                             Dimension                    Min                    Nom                    Max
+                                    A                     0.80                   0.85                   0.90
+
+                                   A1                     0.00                   0.02                   0.05
+
+                                   A3                                         0.20 REF.
+
+                                    b                     0.18                   0.25                   0.30
+
+                                   D                                           3.0 BSC
+
+                                   D2                     1.70                   1.80                   1.90
+
+                                    e                                         0.50 BSC
+
+                                    E                                          3.0 BSC
+
+                                   E2                     1.70                   1.80                   1.90
+
+                                    L                     0.25                   0.35                   0.45
+
+                                    K                     0.20                     —                      —
+
+                                   R                      0.09                     —                    0.14
+
+                                  aaa                                            0.15
+
+                                  bbb                                            0.10
+
+                                  ccc                                            0.10
+
+                                  ddd                                            0.05
+
+                                  eee                                            0.08
+
+                                   fff                                           0.10
+
+                        Notes:
+                           1. All dimensions shown are in millimeters (mm) unless otherwise noted.
+                           2. Dimensioning and Tolerancing per ANSI Y14.5M-1994.
+                           3. Recommended card reflow profile is per the JEDEC/IPC J-STD-020
+                               specification for Small Body Components.
+
+
+
+
+38          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+12.4. Land Pattern: 16-Pin QFN
+Figure 28 shows the recommended land pattern details for the Si5351 in a 16-Pin QFN package. Table 24 lists the
+values for the dimensions shown in the illustration.
+
+
+
+
+                                           Figure 28. 16-Pin QFN Land Pattern
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             39
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+
+                                          Table 24. PCB Land Pattern Dimensions
+                                      Symbol                                                Millimeters
+                                         C1                                                     3.00
+                                         C2                                                     3.00
+                                          E                                                     0.50
+                                         X1                                                     0.30
+                                         Y1                                                     0.75
+                                         X2                                                     1.80
+                                         Y2                                                     1.80
+                Notes:
+                General
+                   1. All dimensions shown are in millimeters (mm).
+                   2. This land pattern design is based on IPC-7351 guidelines.
+                   3. All dimensions shown are at Maximum Material Condition (MMC). Least Material
+                      Condition (LMC) is calculated based on a Fabrication Allowance of 0.05 mm.
+                Solder Mask Design
+                   4. All metal pads are to be non-solder mask defined (NSMD). Clearance between the
+                      solder mask and the metal pad is to be 60 µm minimum, all the way around the pad.
+                Stencil Design
+                   5. A stainless steel, laser-cut and electro-polished stencil with trapezoidal walls should
+                      be used to assure good solder paste release.
+                   6. The stencil thickness should be 0.125 mm (5 mils).
+                   7. The ratio of stencil aperture to land pad size should be 1:1 for all perimeter pads.
+                   8. A 2x2 array of 0.65 mm square openings on a 0.90 mm pitch should be used for the
+                      center ground pad.
+                Card Assembly
+                   9. A No-Clean, Type-3 solder paste is recommended.
+                   10. The recommended card reflow profile is per the JEDEC/IPC J-STD-020
+                      specification for Small Body components.
+                   11. The above notes and stencil design are shared as recommendations only. A
+                      customer or user may find it necessary to use different parameters and fine-tune
+                      their SMT process as required for their application and tooling.
+
+
+
+
+40          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+12.5. 10-Pin MSOP Package Outline
+Figure 29 illustrates the package details for the Si5351 in a 10-pin MSOP package. Table 25 lists the values for the
+dimensions shown in the illustration.
+
+
+
+
+                                      Figure 29. 10-pin MSOP Package Drawing
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             41
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+
+                                          Table 25. 10-MSOP Package Dimensions
+                   Dimension                         Min                          Nom                            Max
+                       A                              —                             —                            1.10
+                      A1                             0.00                           —                            0.15
+                      A2                             0.75                          0.85                          0.95
+                       b                             0.17                           —                            0.33
+                       c                             0.08                           —                            0.23
+                       D                                                        3.00 BSC
+                       E                                                        4.90 BSC
+                      E1                                                        3.00 BSC
+                       e                                                        0.50 BSC
+                       L                             0.40                          0.60                          0.80
+                      L2                                                        0.25 BSC
+                       q                               0                            —                             8
+                      aaa                              —                            —                            0.20
+                      bbb                              —                            —                            0.25
+                      ccc                              —                            —                            0.10
+                      ddd                              —                            —                            0.08
+            Notes:
+               1. All dimensions shown are in millimeters (mm) unless otherwise noted.
+               2. Dimensioning and Tolerancing per ANSI Y14.5M-1994.
+               3. This drawing conforms to the JEDEC Solid State Outline MO-137, Variation C
+               4. Recommended card reflow profile is per the JEDEC/IPC J-STD-020 specification for Small Body
+                   Components.
+
+
+
+
+42          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                 Si5351A/B/C-B
+12.6. Land Pattern: 10-Pin MSOP
+Figure 30 shows the recommended land pattern details for the Si5351 in a 10-Pin MSOP package. Table 26 lists
+the values for the dimensions shown in the illustration.
+
+
+
+
+                                          Figure 30. 10-Pin MSOP Land Pattern
+
+                                       Table 26. PCB Land Pattern Dimensions
+                                  Symbol                                    Millimeters
+                                                                  Min                          Max
+                                     C1                                      4.40 REF
+                                      E                                      0.50 BSC
+                                     G1                          3.00                           —
+                                     X1                            —                           0.30
+                                     Y1                                      1.40 REF
+                                     Z1                            —                           5.80
+                         Notes:
+                         General
+                            1. All dimensions shown are in millimeters (mm) unless otherwise noted.
+                            2. Dimensioning and Tolerancing per ASME Y14.5M-1994.
+                            3. This Land Pattern Design is based on the IPC-7351 guidelines.
+                            4. All dimensions shown are at Maximum Material Condition (MMC). Least
+                                Material Condition (LMC) is calculated based on a Fabrication
+                                Allowance of 0.05mm.
+                         Solder Mask Design
+                            5. All metal pads are to be non-solder mask defined (NSMD). Clearance
+                                between the solder mask and the metal pad is to be 60 µm minimum, all
+                                the way around the pad.
+                         Stencil Design
+                            6. A stainless steel, laser-cut and electro-polished stencil with trapezoidal
+                                walls should be used to assure good solder paste release.
+                            7. The stencil thickness should be 0.125 mm (5 mils).
+                            8. The ratio of stencil aperture to land pad size should be 1:1.
+                         Card Assembly
+                            9. A No-Clean, Type-3 solder paste is recommended.
+                            10. The recommended card reflow profile is per the JEDEC/IPC J-STD-
+                                020C specification for Small Body components.
+
+
+
+
+         Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             43
+  Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+13. Top Marking
+13.1. 20-Pin QFN Top Marking
+
+
+
+
+                                              Figure 31. 20-Pin QFN Top Marking
+13.2. Top Marking Explanation
+
+Mark Method:                     Laser
+Pin 1 Mark:                      Filled Circle = 0.50 mm Diameter
+                                 (Bottom-Left Corner)
+Font Size:                       0.60 mm (24 mils)
+Line 1 Mark Format               Device Part Number                           Si5351
+Line 2 Mark Format:              TTTTTT = Mfg Code*                           Manufacturing Code from the Assembly Purchase
+                                                                              Order Form.
+Line 3 Mark Format:              YY = Year                                    Assigned by the Assembly House. Corresponds to
+                                 WW = Work Week                               the year and work week of the assembly date.
+*Note: The code shown in the “TTTTTT” line does not correspond to the orderable part number or frequency plan. It is used
+      for package assembly quality tracking purposes only.
+
+
+
+
+44          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                Si5351A/B/C-B
+13.3. 16-Pin QFN Top Marking
+
+
+
+
+                                          Figure 32. 16-Pin QFN Top Marking
+13.4. Top Marking Explanation
+
+Mark Method:                 Laser
+Pin 1 Mark:                  Circle (Bottom-Left Corner)
+Font Size:                   0.60 mm (24 mils)
+Line 1 Mark Format           Device Part Number                           5351
+Line 2 Mark Format:          TTTT = Mfg Code*                             Manufacturing Code from the Assembly Purchase
+                                                                          Order Form.
+Line 3 Mark Format:          YWW = Date Code                              Assigned by the Assembly House.
+                                                                          Y = Last digit of the current year.
+                                                                          WW = Work week of the assembly date.
+*Note: The code shown in the “TTTT” line does not correspond to the orderable part number or frequency plan. It is used for
+      package assembly quality tracking purposes only.
+
+
+
+
+        Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             45
+ Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+Si5351A/B/C-B
+13.5. 10-Pin MSOP Top Marking
+
+
+
+
+                                             Figure 33. 10-Pin MSOP Top Marking
+13.6. Top Marking Explanation
+
+Mark Method:                     Laser
+Pin 1 Mark:                      Mold Dimple (Bottom-Left Corner)
+Font Size:                       0.60 mm (24 mils)
+Line 1 Mark Format               Device Part Number                           5351
+Line 2 Mark Format:              TTTT = Mfg Code*                             Line 2 from the “Markings” section of the Assembly
+                                                                              Purchase Order form.
+Line 3 Mark Format:              YWW = Date Code                              Assigned by the Assembly House.
+                                                                              Y = Last Digit of Current Year (Ex: 2013 = 3)
+                                                                              WW = Work Week of Assembly Date.
+*Note: The code shown in the “TTTT” line does not correspond to the orderable part number or frequency plan. It is used for
+      package assembly quality tracking purposes only.
+
+
+
+
+46          Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com
+     Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+                                                                                                   Si5351A/B/C-B
+REVISION HISTORY
+Revision 1.3
+March, 2020
+    Updated " Functional Block Diagrams" on page 2 with Si5351A 20-QFN and 16-QFN block diagrams.
+    Updated "1. Ordering Guide" on page 4.
+    Updated Table 4, “DC Characteristics,” on page 8 to include 16-QFN data.
+    Updated thermal characteristics tables to include Table 10 (2-Layer Board), Table 11 (4-Layer Board), and
+     Table 12 (Junction-to-Case).
+    Updated "4.4. Spread Spectrum" on page 17.
+    Added "4.6. Status Pins (INTR)" on page 17.
+    Updated "5. I2C Interface" on page 18 with LSB pin option clarification.
+    Updated "6. Configuring the Si5351" on page 20 with ClockBuilder Pro.
+    Updated "6.3. Replacing Crystals and Crystal Oscillators" on page 22.
+    Updated "6.7. HCSL Compatible Outputs" on page 24.
+    Updated "8. Register Map Summary" on page 26.
+    Updated "9. Register Descriptions" on page 26.
+    Updated "10. Si5351 Pin Descriptions" on page 27 with 16-QFN pin descriptions and Ground Pad description.
+    Updated "10.3. Si5351C 20-Pin QFN" on page 29.
+    Updated Figure 24, “Device Part Numbers,” on page 34.
+    Updated "11. Ordering Information" on page 34.
+    Updated "12. Packaging" on page 35 with 16-QFN package information.
+    Updated "13. Top Marking" on page 44 with 16-QFN top mark.
+Revision 1.1
+August, 2018
+    Updated "11. Ordering Information" on page 34.
+     Changed “Blank = Bulk” to “Blank = Coil Tape” in Figure 24.
+
+
+Revision 1.0
+April, 2015
+    Extended frequency range from 8 kHz-160 MHz to 2.5 kHz-200 MHz.
+    Updated block diagrams for clarity.
+    Added complete Si5350/1 family table, Table 1.
+    Added top mark information.
+    Added land pattern drawings.
+    Added PowerUp Time, PLL Bypass mode, Table 4.
+    Clarified Down Spread step sizes in Table 4.
+    Updated max jitter specs (typ unchanged) in Table 6.
+    Clarified power supply sequencing requirement, Section 6.2.
+Revision 0.75
+October, 2012
+    Initial release.
+
+
+
+
+           Skyworks Solutions, Inc. • Phone [781] 376-3000 • Fax [781] 376-3100 • sales@skyworksinc.com • www.skyworksinc.com             47
+    Rev. 1.3 • Skyworks Proprietary Information • Products and Product Information are Subject to Change Without Notice • August 27, 2021
+     ClockBuilder Pro
+     Customize Skyworks clock generators,
+     jitter attenuators and network
+     synchronizers with a single tool. With
+     CBPro you can control evaluation
+     boards, access documentation, request
+     a custom part number, export for
+     in-system programming and more!
+
+
+     www.skyworksinc.com/CBPro
+
+
+
+
+                    Portfolio                           SW/HW                               Quality                     Support & Resources
+         www.skyworksinc.com/ia/timing        www.skyworksinc.com/CBPro           www.skyworksinc.com/quality         www.skyworksinc.com/support
+
+
+Copyright © 2021 Skyworks Solutions, Inc. All Rights Reserved.
+Information in this document is provided in connection with Skyworks Solutions, Inc. (“Skyworks”) products or services. These materials, including the
+information contained herein, are provided by Skyworks as a service to its customers and may be used for informational purposes only by the customer.
+Skyworks assumes no responsibility for errors or omissions in these materials or the information contained herein. Skyworks may change its documentation,
+products, services, speciﬁcations or product descriptions at any time, without notice. Skyworks makes no commitment to update the materials or
+information and shall have no responsibility whatsoever for conﬂicts, incompatibilities, or other diﬃculties arising from any future changes.
+
+No license, whether express, implied, by estoppel or otherwise, is granted to any intellectual property rights by this document. Skyworks assumes no liability
+for any materials, products or information provided hereunder, including the sale, distribution, reproduction or use of Skyworks products, information or
+materials, except as may be provided in Skyworks’ Terms and Conditions of Sale.
+
+THE MATERIALS, PRODUCTS AND INFORMATION ARE PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR
+OTHERWISE, INCLUDING FITNESS FOR A PARTICULAR PURPOSE OR USE, MERCHANTABILITY, PERFORMANCE, QUALITY OR NON-INFRINGEMENT OF ANY
+INTELLECTUAL PROPERTY RIGHT; ALL SUCH WARRANTIES ARE HEREBY EXPRESSLY DISCLAIMED. SKYWORKS DOES NOT WARRANT THE ACCURACY OR
+COMPLETENESS OF THE INFORMATION, TEXT, GRAPHICS OR OTHER ITEMS CONTAINED WITHIN THESE MATERIALS. SKYWORKS SHALL NOT BE LIABLE FOR
+ANY DAMAGES, INCLUDING BUT NOT LIMITED TO ANY SPECIAL, INDIRECT, INCIDENTAL, STATUTORY, OR CONSEQUENTIAL DAMAGES, INCLUDING WITHOUT
+LIMITATION, LOST REVENUES OR LOST PROFITS THAT MAY RESULT FROM THE USE OF THE MATERIALS OR INFORMATION, WHETHER OR NOT THE RECIPIENT
+OF MATERIALS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Skyworks products are not intended for use in medical, lifesaving or life-sustaining applications, or other equipment in which the failure of the Skyworks
+products could lead to personal injury, death, physical or environmental damage. Skyworks customers using or selling Skyworks products for use in such
+applications do so at their own risk and agree to fully indemnify Skyworks for any damages resulting from such improper use or sale.
+
+Customers are responsible for their products and applications using Skyworks products, which may deviate from published speciﬁcations as a result of
+design defects, errors, or operation of products outside of published parameters or design speciﬁcations. Customers should include design and operating
+safeguards to minimize these and other risks. Skyworks assumes no liability for applications assistance, customer product design, or damage to any
+equipment resulting from the use of Skyworks products outside of Skyworks’ published speciﬁcations or parameters.
+
+Skyworks, the Skyworks symbol, Sky5®, SkyOne®, SkyBlue™, Skyworks Green™, Clockbuilder®, DSPLL®, ISOmodem®, ProSLIC®, and SiPHY® are trademarks or
+registered trademarks of Skyworks Solutions, Inc. or its subsidiaries in the United States and other countries. Third-party brands and names are for
+identiﬁcation purposes only and are the property of their respective owners. Additional information, including relevant terms and conditions, posted at
+www.skyworksinc.com, are incorporated by reference.
+
+
+                          Skyworks Solutions, Inc. | Nasdaq: SWKS | sales@skyworksinc.com | www.skyworksinc.com
+                            USA: 781-376-3000 | Asia: 886-2-2735 0399 | Europe: 33 (0)1 43548540 |
+
