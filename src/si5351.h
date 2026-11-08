@@ -332,7 +332,8 @@ public:
 	void set_clock_disable(enum si5351_clock, enum si5351_clock_disable);
 	void set_clock_fanout(enum si5351_clock_fanout, uint8_t);
 	void set_pll_input(enum si5351_pll, enum si5351_pll_input);
-	void set_vcxo(uint64_t, uint8_t);
+	/* 0 = PLL and VCXO registers written, 1 = nothing written. */
+	uint8_t set_vcxo(uint64_t, uint8_t);
   void set_ref_freq(uint32_t, enum si5351_pll_input);
 	uint8_t si5351_write_bulk(uint8_t, uint8_t, uint8_t *);
 	uint8_t si5351_write(uint8_t, uint8_t);
@@ -360,6 +361,9 @@ private:
 	uint8_t set_freq67(uint64_t, enum si5351_clock);
 	static uint8_t ms67_div(uint64_t, uint64_t, uint8_t *);
 	void set_ms67(enum si5351_clock, uint8_t, uint8_t);
+	// VCXO code. See SI5351_NO_VCXO at the end of this file.
+	uint8_t vcxo_active(enum si5351_pll);
+	void write_vcxo(uint64_t);
 	void update_sys_status(struct Si5351Status *);
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
@@ -387,6 +391,22 @@ private:
 uint8_t Si5351::set_freq67(uint64_t, enum si5351_clock) { return 1; }
 uint8_t Si5351::ms67_div(uint64_t, uint64_t, uint8_t *) { return 0; }
 void Si5351::set_ms67(enum si5351_clock, uint8_t, uint8_t) {}
+#endif
+
+/* Leaving out the VCXO code. Put this at the top of the sketch, in one
+ * file only (the .ino), on its own or with SI5351_NO_CLK67:
+ *   #define SI5351_NO_VCXO
+ *   #include <si5351.h>
+ * or pass -DSI5351_NO_VCXO to the compiler. set_vcxo() then returns 1 and
+ * writes nothing. Later PLL updates take the non-VCXO path. reset() still
+ * clears the VCXO parameter registers.
+ * The library's VCXO functions are weak; the stubs below replace them,
+ * and the linker drops the originals. */
+#define SI5351_VCXO_WEAK __attribute__((weak))
+#if defined(SI5351_NO_VCXO) && !defined(SI5351_LIBRARY_SOURCE)
+uint8_t Si5351::set_vcxo(uint64_t, uint8_t) { return 1; }
+uint8_t Si5351::vcxo_active(enum si5351_pll) { return 0; }
+void Si5351::write_vcxo(uint64_t) {}
 #endif
 
 #endif /* SI5351_H_ */

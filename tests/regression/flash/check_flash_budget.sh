@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fail-closed Uno flash budget for the minimal sketches, including the
-# SI5351_NO_CLK67 build of the runtime-clock sketch.
+# SI5351_NO_CLK67 and SI5351_NO_VCXO builds of the runtime-clock sketch.
 # Missing CLI, core, compiler, map, or a "Sketch uses" line is a failure.
 # This measures program bytes. It is not a timing benchmark.
 set -euo pipefail
@@ -112,6 +112,8 @@ build_one min_runtime
 build_one min_runtime_no_clk67 "compiler.cpp.extra_flags=-DSI5351_NO_CLK67"
 # Sketch-side opt-out: the #define is in the .ino, no compiler flag.
 build_one min_runtime_sketch_no_clk67
+build_one min_runtime_sketch_no_vcxo
+build_one min_runtime_sketch_no_clk67_no_vcxo
 
 # Negative control: the same parser must reject an over-budget line and a
 # real log scored against a 1-byte ceiling. Success of this script requires

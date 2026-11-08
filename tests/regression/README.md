@@ -53,6 +53,6 @@ Exit code: 0 = every check PASS/XFAIL/SKIP/INFO; 1 = at least one unexpected FAI
 ## Layout
 `v231/` acceptance runner, scenarios, oracle, locks, and reports · `stubs/` Arduino/Wire host stubs · `issue106/` t106 and its multi-bus stubs · `reset_freq/` `reset_freq()` regression ·
 `equiv/` harness, goldens snapshot, compare.py · `reference/v242_f885fca/` pinned v2.4.2 source (the hard gate) · `reference/master_1ddd43e/` historical source, not the gate ·
-`ctrl/` `plan/` branch locks · `flash/check_flash_budget.sh` Uno byte ceilings, including the `SI5351_NO_CLK67` compiler-flag and sketch-#define builds (separate CI workflow) · `python/` golden/spec suites and refs ·
+`ctrl/` `plan/` branch locks · `flash/check_flash_budget.sh` Uno byte ceilings, including the `SI5351_NO_CLK67` compiler-flag and sketch-#define builds and the `SI5351_NO_VCXO` sketch-#define build (separate CI workflow) · `python/` golden/spec suites and refs ·
 `sketches/` Ctor106 · `boards.txt` board set and Boards Manager URLs · `tools/summarize.py`.
 `v231/Makefile` is the original manual build, kept for reference only; the script does not use it.
