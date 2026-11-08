@@ -2,6 +2,7 @@ Si5351	KEYWORD1
 
 init	KEYWORD2
 reset	KEYWORD2
+reset_freq	KEYWORD2
 set_freq	KEYWORD2
 set_freq_manual	KEYWORD2
 set_pll	KEYWORD2

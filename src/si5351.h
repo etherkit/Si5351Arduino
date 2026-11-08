@@ -305,6 +305,7 @@ public:
   Si5351(unsigned long long i2c_addr) { setup_obj(&Wire, (uint8_t)i2c_addr); }
 	bool init(uint8_t, uint32_t, int32_t);
 	void reset(void);
+	void reset_freq(enum si5351_clock);
 	uint8_t set_freq(uint64_t, enum si5351_clock);
 	uint8_t set_freq_manual(uint64_t, uint64_t, enum si5351_clock);
 	void set_pll(uint64_t, enum si5351_pll);
