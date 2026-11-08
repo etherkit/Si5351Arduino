@@ -296,12 +296,30 @@ Constraints
 
 Leaving out CLK6 and CLK7
 -------------------------
-CLK6 and CLK7 use a separate even-integer planner (`multisynth67_calc`, `ms67_div`, and the CLK6/CLK7 branches in `set_freq()`, `set_freq_manual()`, `set_ms()`, `pll_update()`, and `ms_div()`). Define `SI5351_NO_CLK67` when the library is compiled to leave that code out. The public methods and the `si5351_clock` enumerators stay. With the macro defined, `set_freq()` and `set_freq_manual()` return 1 for CLK6 and CLK7 and do not write those multisynths. `reset()` still initializes all eight clock-control registers. Without the macro, behavior is unchanged.
+If your sketch never uses CLK6 or CLK7, you can leave their code out and save about 1 KB of flash on an AVR board. In the Arduino IDE, put the define above the include in your sketch's .ino file:
 
-A `#define` in a sketch is not visible to `si5351.cpp`. Pass the macro as a compiler definition so every translation unit that builds the library sees it:
+```cpp
+#define SI5351_NO_CLK67
+#include <si5351.h>
+```
+
+Put it in the .ino file only. If more than one file in the sketch defines it before including `si5351.h`, the link fails with a duplicate definition. The define has to come before the `#include`.
+
+With the opt-out, `set_freq()` and `set_freq_manual()` return 1 for CLK6 and CLK7 and write nothing, and `set_ms()` writes nothing for CLK6 and CLK7. The public methods and the `si5351_clock` enumerators stay, and `reset()` still initializes all eight clock-control registers. Without the define, behavior is unchanged.
+
+How it works: the CLK6/CLK7 functions in `si5351.cpp` are weak symbols. The sketch define makes `si5351.h` add small stubs that replace them, and the linker drops the originals. This needs a GCC or Clang toolchain, which every common Arduino core uses.
+
+You can also pass the macro as a compiler definition. This leaves the code out when `si5351.cpp` is compiled:
 
 * Arduino CLI: `--build-property compiler.cpp.extra_flags=-DSI5351_NO_CLK67`
 * PlatformIO: `build_flags = -DSI5351_NO_CLK67`
+
+Measured flash on an Arduino Uno (arduino-cli 1.5.1, arduino:avr 1.8.6), in bytes:
+
+| Sketch | Default | Sketch `#define` | Compiler flag |
+|---|---|---|---|
+| `init()` + one `set_freq()`, runtime clock index | 10,868 | 9,870 | 9,836 |
+| `init()` + one `set_freq()` on CLK0 | 10,140 | 9,778 | 9,740 |
 
 Frequency Limits
 ----------------

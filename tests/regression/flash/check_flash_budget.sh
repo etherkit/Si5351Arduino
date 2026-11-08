@@ -110,6 +110,8 @@ build_one() {
 build_one min_const
 build_one min_runtime
 build_one min_runtime_no_clk67 "compiler.cpp.extra_flags=-DSI5351_NO_CLK67"
+# Sketch-side opt-out: the #define is in the .ino, no compiler flag.
+build_one min_runtime_sketch_no_clk67
 
 # Negative control: the same parser must reject an over-budget line and a
 # real log scored against a 1-byte ceiling. Success of this script requires

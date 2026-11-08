@@ -19,6 +19,9 @@
 # min_runtime_no_clk67 is that program compiled with -DSI5351_NO_CLK67.
 # Ceilings below are the sizes after the PLL and init/reset merge, so a
 # later edit cannot grow back to the v2.4.2 baseline.
-min_const 10202
-min_runtime 10930
+min_const 10140
+min_runtime 10868
 min_runtime_no_clk67 9836
+# min_runtime_sketch_no_clk67: same program with #define SI5351_NO_CLK67 in the
+# sketch (no compiler flag). A library that ignores the define builds 10930.
+min_runtime_sketch_no_clk67 9870

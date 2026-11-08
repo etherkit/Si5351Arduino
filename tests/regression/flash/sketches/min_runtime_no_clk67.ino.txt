@@ -5,8 +5,8 @@ Si5351 si5351;
 
 /* Same program as min_runtime.ino.txt. The flash budget checker compiles
  * this sketch with -DSI5351_NO_CLK67 so multisynth67_calc and the CLK6/CLK7
- * branches are left out of si5351.cpp. A #define in this file would not
- * reach the library translation unit, so the flag is a build property.
+ * branches are left out of si5351.cpp. This covers the compiler-flag
+ * opt-out; min_runtime_sketch_no_clk67 covers the #define-in-sketch one.
  */
 volatile uint8_t clk_index = 0;
 
