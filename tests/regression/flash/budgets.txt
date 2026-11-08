@@ -20,5 +20,9 @@
 # fixture's measurement.
 # min_runtime is a new fixture: global volatile uint8_t clock index, constant
 # 14 MHz. Its own baseline on this pin is 11558.
+# min_runtime_no_clk67 is that same program compiled with -DSI5351_NO_CLK67
+# (compiler.cpp.extra_flags). Measured 10442 on this pin. min_const and
+# min_runtime stay at the ungated sizes: the macro is opt-in.
 min_const 10830
 min_runtime 11558
+min_runtime_no_clk67 10442

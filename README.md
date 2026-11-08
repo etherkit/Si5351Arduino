@@ -294,6 +294,15 @@ Constraints
 * The frequency range of Multisynth 6 and 7 is ~18.45 kHz to 150 MHz. The library assigns PLLB to these two multisynths, so if you choose to use both, then both frequencies must be an even divisor of the PLL frequency (between 6 and 254), so plan accordingly. You can see the current PLLB frequency by accessing the _pllb_freq_ public member.
 * VCXO pull range can be &plusmn;30 to &plusmn;240 ppm
 
+Leaving out CLK6 and CLK7
+-------------------------
+CLK6 and CLK7 use a separate even-integer planner (`multisynth67_calc`, `ms67_div`, and the CLK6/CLK7 branches in `set_freq()`, `set_freq_manual()`, `set_ms()`, `pll_update()`, and `ms_div()`). Define `SI5351_NO_CLK67` when the library is compiled to leave that code out. The public methods and the `si5351_clock` enumerators stay. With the macro defined, `set_freq()` and `set_freq_manual()` return 1 for CLK6 and CLK7 and do not write those multisynths. `reset()` still initializes all eight clock-control registers. Without the macro, behavior is unchanged.
+
+A `#define` in a sketch is not visible to `si5351.cpp`. Pass the macro as a compiler definition so every translation unit that builds the library sees it:
+
+* Arduino CLI: `--build-property compiler.cpp.extra_flags=-DSI5351_NO_CLK67`
+* PlatformIO: `build_flags = -DSI5351_NO_CLK67`
+
 Frequency Limits
 ----------------
 Numbers below are what v2.4.1 programs, checked against `src/si5351.cpp`, `src/si5351.h`, AN619 rev. 0.8, and the Si5351A/B/C-B datasheet rev. 1.3. Frequencies passed to `set_freq()` are in units of 0.01 Hz.

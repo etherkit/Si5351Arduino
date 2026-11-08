@@ -1,0 +1,19 @@
+#include "si5351.h"
+#include "Wire.h"
+
+Si5351 si5351;
+
+/* Same program as min_runtime.ino.txt. The flash budget checker compiles
+ * this sketch with -DSI5351_NO_CLK67 so multisynth67_calc and the CLK6/CLK7
+ * branches are left out of si5351.cpp. A #define in this file would not
+ * reach the library translation unit, so the flag is a build property.
+ */
+volatile uint8_t clk_index = 0;
+
+void setup()
+{
+  si5351.init(SI5351_CRYSTAL_LOAD_8PF, 0, 0);
+  si5351.set_freq(1400000000ULL, (si5351_clock)clk_index);
+}
+
+void loop() {}

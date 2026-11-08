@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Fail-closed Uno flash budget for the two minimal v2.4.2 sketches.
+# Fail-closed Uno flash budget for the minimal sketches, including the
+# SI5351_NO_CLK67 build of the runtime-clock sketch.
 # Missing CLI, core, compiler, map, or a "Sketch uses" line is a failure.
 # This measures program bytes. It is not a timing benchmark.
 set -euo pipefail
@@ -66,6 +67,7 @@ gate_log() {
 
 build_one() {
   local name="$1"
+  local extra="${2:-}"
   local src="$CI_DIR/flash/sketches/${name}.ino.txt"
   [[ -f "$src" ]] || fail "missing sketch $src"
   [[ -n "${BUDGET[$name]:-}" ]] || fail "no budget for $name (refusing to skip)"
@@ -73,10 +75,15 @@ build_one() {
   mkdir -p "$sk" "$OUT/build/$name"
   cp "$src" "$sk/${name}.ino"
   local log="$OUT/logs/${name}.log"
-  if ! "$CLI" compile --fqbn "$FQBN" --library "$ROOT" \
-      --build-path "$OUT/build/$name" \
-      --build-property "compiler.c.elf.extra_flags=-Wl,-Map,$OUT/build/$name/flash.map" \
-      "$sk" > "$log" 2>&1; then
+  local -a cmd=("$CLI" compile --fqbn "$FQBN" --library "$ROOT"
+      --build-path "$OUT/build/$name"
+      --build-property "compiler.c.elf.extra_flags=-Wl,-Map,$OUT/build/$name/flash.map")
+  # Optional second property, used to pass -DSI5351_NO_CLK67 into si5351.cpp.
+  # A #define in the .ino does not reach the library translation unit.
+  if [[ -n "$extra" ]]; then
+    cmd+=(--build-property "$extra")
+  fi
+  if ! "${cmd[@]}" "$sk" > "$log" 2>&1; then
     fail "$name did not compile (see $log)"
   fi
   local elf="$OUT/build/$name/${name}.ino.elf"
@@ -100,9 +107,9 @@ build_one() {
   echo "$name $sketch_bytes ${BUDGET[$name]} $text $data $bss" >> "$OUT/measured.tsv"
 }
 
-for name in min_const min_runtime; do
-  build_one "$name"
-done
+build_one min_const
+build_one min_runtime
+build_one min_runtime_no_clk67 "compiler.cpp.extra_flags=-DSI5351_NO_CLK67"
 
 # Negative control: the same parser must reject an over-budget line and a
 # real log scored against a 1-byte ceiling. Success of this script requires

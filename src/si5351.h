@@ -355,7 +355,12 @@ private:
   void pll_update(enum si5351_pll, uint64_t);
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
+	/* Omitted when SI5351_NO_CLK67 is defined. See the README. The macro has
+	 * to be a compiler definition; a #define in a sketch does not reach
+	 * si5351.cpp. Without it, this declaration is always present. */
+#ifndef SI5351_NO_CLK67
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
+#endif
 	void update_sys_status(struct Si5351Status *);
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);

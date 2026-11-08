@@ -61,6 +61,8 @@ static uint8_t recalc_force;
 // Even-integer MS6/7 ratio (6..254) of pll_freq for an output freq, using the
 // smallest R divider that brings the ratio down to 254. Returns the ratio and
 // sets *r_div, or returns 0 if no valid ratio/R pair exists.
+// Left out of the build when SI5351_NO_CLK67 is defined (see the README).
+#ifndef SI5351_NO_CLK67
 static uint8_t ms67_div(uint64_t pll_freq, uint64_t freq, uint8_t *r_div)
 {
 	uint64_t n;
@@ -92,6 +94,7 @@ static uint8_t ms67_div(uint64_t pll_freq, uint64_t freq, uint8_t *r_div)
 
 	return 0;
 }
+#endif
 
 // AN619: feedback ratio 15..90 and VCO 600..900 MHz. A reference outside
 // 6.67..60 MHz (e.g. 5 MHz) has no valid setting; such PLLs are not written.
@@ -488,6 +491,7 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 	}
 	else
 	{
+#ifndef SI5351_NO_CLK67
 		// MS6 and MS7 logic
 		// -----------------
 		uint8_t peer = (clk == SI5351_CLK6) ? (uint8_t)SI5351_CLK7 : (uint8_t)SI5351_CLK6;
@@ -572,6 +576,10 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 		}
 
 		return 0;
+#else
+		// CLK6/CLK7 planner is compiled out. Do not write.
+		return 1;
+#endif
 	}
 }
 
@@ -615,6 +623,7 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 	// R divider, or refuse before writing anything if there is none
 	if((uint8_t)clk >= (uint8_t)SI5351_CLK6)
 	{
+#ifndef SI5351_NO_CLK67
 		ms_reg.p1 = ms67_div(pll_freq, freq, &r_div);
 		if(ms_reg.p1 == 0)
 		{
@@ -622,6 +631,9 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 		}
 		ms_reg.p2 = 0;
 		ms_reg.p3 = 0;
+#else
+		return 1;
+#endif
 	}
 
 	else if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
@@ -759,6 +771,7 @@ void Si5351::pll_update(enum si5351_pll pll, uint64_t pll_freq)
 		r_div = 0;
 		if(i >= 6)
 		{
+#ifndef SI5351_NO_CLK67
 			reg.p1 = ms67_div(pll_freq, f, &r_div);
 			if(reg.p1 == 0)
 			{
@@ -767,6 +780,9 @@ void Si5351::pll_update(enum si5351_pll pll, uint64_t pll_freq)
 			reg.p2 = 0;
 			reg.p3 = 0;
 			div_by_4 = 0;
+#else
+			continue;
+#endif
 		}
 		else
 		{
@@ -831,6 +847,7 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 			pll_reset(pll_assignment[clk]);
 		}
 	}
+#ifndef SI5351_NO_CLK67
 	else if((uint8_t)clk <= (uint8_t)SI5351_CLK7)
 	{
 		// MS6 and MS7 only use one register (90 / 91).
@@ -840,6 +857,7 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 			(uint8_t)ms_reg.p1);
 		ms_div(clk, r_div, div_by_4);
 	}
+#endif
 }
 
 /*
@@ -1722,6 +1740,7 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 	}
 }
 
+#ifndef SI5351_NO_CLK67
 uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
 {
 	//uint8_t p1;
@@ -1810,6 +1829,7 @@ uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si53
 		}
 	}
 }
+#endif
 
 void Si5351::update_sys_status(struct Si5351Status *status)
 {
@@ -1856,7 +1876,11 @@ void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 	}
 	else
 	{
+#ifndef SI5351_NO_CLK67
 		reg_addr = SI5351_CLK6_7_OUTPUT_DIVIDER;
+#else
+		return;
+#endif
 	}
 
 	reg_val = si5351_read(reg_addr);
@@ -1877,6 +1901,7 @@ void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 
 		reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
 	}
+#ifndef SI5351_NO_CLK67
 	else if(clk == SI5351_CLK6)
 	{
 		// Clear the relevant bits
@@ -1891,6 +1916,7 @@ void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 
 		reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
 	}
+#endif
 
 	si5351_write(reg_addr, reg_val);
 }

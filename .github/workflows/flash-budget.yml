@@ -1,8 +1,10 @@
-# Uno flash ceilings for the two minimal sketches. A missing tool, a failed
-# compile, an unparsed size line, or a sketch over its budget fails the job.
-# The numbers are the measured text+data sizes of the fixtures in
-# tests/regression/flash/sketches. Each fixture is its own baseline.
-# min_runtime is a new sketch; the audit runtime sketch was not saved.
+# Uno flash ceilings for the minimal sketches, including min_runtime compiled
+# with -DSI5351_NO_CLK67. A missing tool, a failed compile, an unparsed size
+# line, or a sketch over its budget fails the job. The numbers are the
+# measured text+data sizes of the fixtures in tests/regression/flash/sketches.
+# Each fixture is its own baseline. min_runtime is a new sketch; the audit
+# runtime sketch was not saved. The gated build is this same job, not a
+# separate workflow.
 name: Uno flash budget
 
 on:
