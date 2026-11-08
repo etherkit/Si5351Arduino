@@ -355,7 +355,11 @@ private:
   void pll_update(enum si5351_pll, uint64_t);
 	uint64_t pll_calc(enum si5351_pll, uint64_t, struct Si5351RegSet *, int32_t, uint8_t);
 	uint64_t multisynth_calc(uint64_t, uint64_t, struct Si5351RegSet *);
+	// CLK6/CLK7 code. See SI5351_NO_CLK67 at the end of this file.
 	uint64_t multisynth67_calc(uint64_t, uint64_t, struct Si5351RegSet *);
+	uint8_t set_freq67(uint64_t, enum si5351_clock);
+	static uint8_t ms67_div(uint64_t, uint64_t, uint8_t *);
+	void set_ms67(enum si5351_clock, uint8_t, uint8_t);
 	void update_sys_status(struct Si5351Status *);
 	void update_int_status(struct Si5351IntStatus *);
 	void ms_div(enum si5351_clock, uint8_t, uint8_t);
@@ -368,5 +372,21 @@ private:
   bool clk_first_set[8];
   uint8_t vcxo_pull;
 };
+
+/* Leaving out the CLK6/CLK7 code (about 1 KB of flash on an Uno).
+ * Put this at the top of the sketch, in one file only (the .ino):
+ *   #define SI5351_NO_CLK67
+ *   #include <si5351.h>
+ * or pass -DSI5351_NO_CLK67 to the compiler. set_freq() and
+ * set_freq_manual() on CLK6/CLK7 then return 1 and write nothing, and
+ * set_ms() on CLK6/CLK7 writes nothing.
+ * The library's CLK6/CLK7 functions are weak; the stubs below replace
+ * them, and the linker drops the originals. */
+#define SI5351_CLK67_WEAK __attribute__((weak))
+#if defined(SI5351_NO_CLK67) && !defined(SI5351_LIBRARY_SOURCE)
+uint8_t Si5351::set_freq67(uint64_t, enum si5351_clock) { return 1; }
+uint8_t Si5351::ms67_div(uint64_t, uint64_t, uint8_t *) { return 0; }
+void Si5351::set_ms67(enum si5351_clock, uint8_t, uint8_t) {}
+#endif
 
 #endif /* SI5351_H_ */

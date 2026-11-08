@@ -12,13 +12,16 @@
 # Size method: arduino-cli "Sketch uses N bytes", which is avr-size text+data.
 # The checker also requires avr-size text+data == N. A parse miss is a FAIL.
 #
-# Both numbers below are baselines of the fixtures in sketches/. The audit
-# runtime-clock sketch was not saved (REPORT only, no .ino), so its reported
-# 12604 bytes cannot be compared with min_runtime and is not a target.
-# min_const measures 10830 on this pin. The audit reported 10830 for a sketch
-# described the same way; that .ino was not saved either, so 10830 is this
-# fixture's measurement.
-# min_runtime is a new fixture: global volatile uint8_t clock index, constant
-# 14 MHz. Its own baseline on this pin is 11558.
-min_const 10830
-min_runtime 11558
+# v2.4.2 baselines on this pin: min_const 10830, min_runtime 11558.
+# The audit runtime-clock sketch was not saved (REPORT only, no .ino), so its
+# reported 12604 bytes cannot be compared with min_runtime and is not a target.
+# min_runtime is a global volatile uint8_t clock index and a constant 14 MHz.
+# min_runtime_no_clk67 is that program compiled with -DSI5351_NO_CLK67.
+# Ceilings below are the sizes after the PLL and init/reset merge, so a
+# later edit cannot grow back to the v2.4.2 baseline.
+min_const 10140
+min_runtime 10868
+min_runtime_no_clk67 9836
+# min_runtime_sketch_no_clk67: same program with #define SI5351_NO_CLK67 in the
+# sketch (no compiler flag). A library that ignores the define builds 10930.
+min_runtime_sketch_no_clk67 9870

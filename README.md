@@ -294,6 +294,33 @@ Constraints
 * The frequency range of Multisynth 6 and 7 is ~18.45 kHz to 150 MHz. The library assigns PLLB to these two multisynths, so if you choose to use both, then both frequencies must be an even divisor of the PLL frequency (between 6 and 254), so plan accordingly. You can see the current PLLB frequency by accessing the _pllb_freq_ public member.
 * VCXO pull range can be &plusmn;30 to &plusmn;240 ppm
 
+Leaving out CLK6 and CLK7
+-------------------------
+If your sketch never uses CLK6 or CLK7, you can leave their code out and save about 1 KB of flash on an AVR board. In the Arduino IDE, put the define above the include in your sketch's .ino file:
+
+```cpp
+#define SI5351_NO_CLK67
+#include <si5351.h>
+```
+
+Put it in the .ino file only. If more than one file in the sketch defines it before including `si5351.h`, the link fails with a duplicate definition. The define has to come before the `#include`.
+
+With the opt-out, `set_freq()` and `set_freq_manual()` return 1 for CLK6 and CLK7 and write nothing, and `set_ms()` writes nothing for CLK6 and CLK7. The public methods and the `si5351_clock` enumerators stay, and `reset()` still initializes all eight clock-control registers. Without the define, behavior is unchanged.
+
+How it works: the CLK6/CLK7 functions in `si5351.cpp` are weak symbols. The sketch define makes `si5351.h` add small stubs that replace them, and the linker drops the originals. This needs a GCC or Clang toolchain, which every common Arduino core uses.
+
+You can also pass the macro as a compiler definition. This leaves the code out when `si5351.cpp` is compiled:
+
+* Arduino CLI: `--build-property compiler.cpp.extra_flags=-DSI5351_NO_CLK67`
+* PlatformIO: `build_flags = -DSI5351_NO_CLK67`
+
+Measured flash on an Arduino Uno (arduino-cli 1.5.1, arduino:avr 1.8.6), in bytes:
+
+| Sketch | Default | Sketch `#define` | Compiler flag |
+|---|---|---|---|
+| `init()` + one `set_freq()`, runtime clock index | 10,868 | 9,870 | 9,836 |
+| `init()` + one `set_freq()` on CLK0 | 10,140 | 9,778 | 9,740 |
+
 Frequency Limits
 ----------------
 Numbers below are what v2.4.1 programs, checked against `src/si5351.cpp`, `src/si5351.h`, AN619 rev. 0.8, and the Si5351A/B/C-B datasheet rev. 1.3. Frequencies passed to `set_freq()` are in units of 0.01 Hz.

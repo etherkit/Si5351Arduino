@@ -26,6 +26,7 @@
 
 #include "Arduino.h"
 #include "Wire.h"
+#define SI5351_LIBRARY_SOURCE
 #include "si5351.h"
 
 
@@ -61,7 +62,9 @@ static uint8_t recalc_force;
 // Even-integer MS6/7 ratio (6..254) of pll_freq for an output freq, using the
 // smallest R divider that brings the ratio down to 254. Returns the ratio and
 // sets *r_div, or returns 0 if no valid ratio/R pair exists.
-static uint8_t ms67_div(uint64_t pll_freq, uint64_t freq, uint8_t *r_div)
+// Left out of the build when SI5351_NO_CLK67 is defined (see the README).
+#ifndef SI5351_NO_CLK67
+SI5351_CLK67_WEAK uint8_t Si5351::ms67_div(uint64_t pll_freq, uint64_t freq, uint8_t *r_div)
 {
 	uint64_t n;
 	uint8_t r;
@@ -92,6 +95,7 @@ static uint8_t ms67_div(uint64_t pll_freq, uint64_t freq, uint8_t *r_div)
 
 	return 0;
 }
+#endif
 
 // AN619: feedback ratio 15..90 and VCO 600..900 MHz. A reference outside
 // 6.67..60 MHz (e.g. 5 MHz) has no valid setting; such PLLs are not written.
@@ -196,21 +200,20 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 		}
 		si5351_write(SI5351_CRYSTAL_LOAD, xtal_load_c | 0b00010010);
 
-		// Set up the XO and CLKIN reference frequencies
-		if (xo_freq != 0)
+		// Set up the XO and CLKIN reference frequencies, then the
+		// calibrations. Both references are stored before either
+		// correction replans a PLL. One loop so this stays a single
+		// copy when init() is inlined into main.
+		uint32_t ref = xo_freq != 0 ? xo_freq : (uint32_t)SI5351_XTAL_FREQ;
+		uint8_t r;
+		for(r = 0; r < 2; r++)
 		{
-			set_ref_freq(xo_freq, SI5351_PLL_INPUT_XO);
-            set_ref_freq(xo_freq, SI5351_PLL_INPUT_CLKIN);          //Also CLKIN
+			set_ref_freq(ref, (enum si5351_pll_input)r);
 		}
-		else
+		for(r = 0; r < 2; r++)
 		{
-			set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_XO);
-            set_ref_freq(SI5351_XTAL_FREQ, SI5351_PLL_INPUT_CLKIN); //Also CLKIN
+			set_correction(corr, (enum si5351_pll_input)r);
 		}
-
-		// Set the frequency calibrations for the XO and CLKIN
-		set_correction(corr, SI5351_PLL_INPUT_XO);
-        set_correction(corr, SI5351_PLL_INPUT_CLKIN);
 
 		reset();
 
@@ -236,34 +239,30 @@ void Si5351::reset(void)
 	// VCXO is cleared below
 	vcxo_pull = 0;
 
-	// Initialize the CLK outputs according to flowchart in datasheet
-	// First, turn them off (and forget them, so set_pll() below does not
-	// recalculate their dividers)
+	// Initialize the CLK outputs according to flowchart in datasheet.
+	// First turn them off (and forget them, so set_pll() below does not
+	// recalculate their dividers), then turn them back on.
 	for(i = 0; i < 8; i++)
 	{
 		clk_freq[i] = 0;
 		si5351_write(SI5351_CLK0_CTRL + i, 0x80);
 	}
-
-	// Turn the clocks back on...
 	for(i = 0; i < 8; i++)
 	{
 		si5351_write(SI5351_CLK0_CTRL + i, 0x0c);
 	}
 
 	// Set PLLA and PLLB to 800 MHz for automatic tuning
-	set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
-	set_pll(SI5351_PLL_FIXED, SI5351_PLLB);
-
-	// Make PLL to CLK assignments for automatic tuning
-	// set_ms_source also updates pll_assignment[]
-	for(i = 0; i < 6; i++)
+	for(i = 0; i < 2; i++)
 	{
-		set_ms_source((enum si5351_clock)i, SI5351_PLLA);
+		set_pll(SI5351_PLL_FIXED, (enum si5351_pll)i);
 	}
-	for(i = 6; i < 8; i++)
+
+	// Make PLL to CLK assignments for automatic tuning.
+	// CLK0-5 on PLLA, CLK6-7 on PLLB. set_ms_source updates pll_assignment[].
+	for(i = 0; i < 8; i++)
 	{
-		set_ms_source((enum si5351_clock)i, SI5351_PLLB);
+		set_ms_source((enum si5351_clock)i, (i < 6) ? SI5351_PLLA : SI5351_PLLB);
 	}
 
 	// Turn off spread spectrum (SSC_EN, reg 149 bit 7). Some chips power up
@@ -272,14 +271,17 @@ void Si5351::reset(void)
 	uint8_t ssc = si5351_read(SI5351_SSC_PARAM0);
 	si5351_write(SI5351_SSC_PARAM0, ssc & ~SI5351_SSC_EN);
 
-	// Reset the VCXO param
-	si5351_write(SI5351_VXCO_PARAMETERS_LOW, 0);
-	si5351_write(SI5351_VXCO_PARAMETERS_MID, 0);
-	si5351_write(SI5351_VXCO_PARAMETERS_HIGH, 0);
+	// Reset the VCXO param (registers 162..164)
+	for(i = 0; i < 3; i++)
+	{
+		si5351_write(SI5351_VXCO_PARAMETERS_LOW + i, 0);
+	}
 
 	// Then reset the PLLs
-	pll_reset(SI5351_PLLA);
-	pll_reset(SI5351_PLLB);
+	for(i = 0; i < 2; i++)
+	{
+		pll_reset((enum si5351_pll)i);
+	}
 
 	// Set initial frequencies
 	for(i = 0; i < 8; i++)
@@ -488,92 +490,107 @@ uint8_t Si5351::set_freq(uint64_t freq, enum si5351_clock clk)
 	}
 	else
 	{
-		// MS6 and MS7 logic
-		// -----------------
-		uint8_t peer = (clk == SI5351_CLK6) ? (uint8_t)SI5351_CLK7 : (uint8_t)SI5351_CLK6;
+		return set_freq67(freq, clk);
+	}
+}
 
-		// There is no valid MS6/7 setting for 0 Hz
-		if(freq == 0)
+#ifndef SI5351_NO_CLK67
+// set_freq() for CLK6/CLK7. Weak: a sketch that defines SI5351_NO_CLK67
+// before #include <si5351.h> replaces it with a stub (see si5351.h).
+SI5351_CLK67_WEAK uint8_t Si5351::set_freq67(uint64_t freq, enum si5351_clock clk)
+{
+	struct Si5351RegSet ms_reg;
+	uint64_t pll_freq;
+	uint8_t int_mode = 0;
+	uint8_t div_by_4 = 0;
+	uint8_t r_div = 0;
+
+	// MS6 and MS7 logic
+	// -----------------
+	uint8_t peer = (clk == SI5351_CLK6) ? (uint8_t)SI5351_CLK7 : (uint8_t)SI5351_CLK6;
+
+	// There is no valid MS6/7 setting for 0 Hz
+	if(freq == 0)
+	{
+		return 1;
+	}
+
+	// Lower bounds check (lowest valid MS6/7 ratio, VCO and R combination)
+	if(freq < SI5351_CLKOUT67_MIN)
+	{
+		freq = SI5351_CLKOUT67_MIN;
+	}
+
+	// Upper bounds check
+	if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
+	{
+		freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
+	}
+
+	// If one of CLK6 or CLK7 is already set when trying to set the other,
+	// we have to ensure that it will also have an even integer division
+	// ratio (6..254, using the R divider if needed) with the same PLL,
+	// otherwise do not set it.
+	if(clk_freq[peer] != 0)
+	{
+		ms_reg.p1 = ms67_div(pllb_freq, freq, &r_div);
+		if(ms_reg.p1 == 0)
 		{
 			return 1;
 		}
+		ms_reg.p2 = 0;
+		ms_reg.p3 = 0;
 
-		// Lower bounds check (lowest valid MS6/7 ratio, VCO and R combination)
-		if(freq < SI5351_CLKOUT67_MIN)
-		{
-			freq = SI5351_CLKOUT67_MIN;
-		}
-
-		// Upper bounds check
-		if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
-		{
-			freq = SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT - 1;
-		}
-
-		// If one of CLK6 or CLK7 is already set when trying to set the other,
-		// we have to ensure that it will also have an even integer division
-		// ratio (6..254, using the R divider if needed) with the same PLL,
-		// otherwise do not set it.
-		if(clk_freq[peer] != 0)
-		{
-			ms_reg.p1 = ms67_div(pllb_freq, freq, &r_div);
-			if(ms_reg.p1 == 0)
-			{
-				return 1;
-			}
-			ms_reg.p2 = 0;
-			ms_reg.p3 = 0;
-
-			// Set the freq in memory
-			clk_freq[(uint8_t)clk] = freq;
-		}
-		else
-		{
-			// No previous assignment, so set PLLB based on this clock
-
-			// Set the freq in memory
-			clk_freq[(uint8_t)clk] = freq;
-
-			// Smallest R divider that keeps the MS6/7 ratio <= 254
-			while(freq < SI5351_MS67_MIN_FREQ && r_div < SI5351_OUTPUT_CLK_DIV_128)
-			{
-				freq <<= 1;
-				r_div++;
-			}
-
-			pll_freq = multisynth67_calc(freq, 0, &ms_reg);
-			// Preserve original asymmetry: CLK6 hardcodes PLLB; CLK7 uses assignment
-			recalc_skip = clk;
-			defer_pll_reset = 1;
-			set_pll(pll_freq, (clk == SI5351_CLK6) ? SI5351_PLLB : pll_assignment[clk]);
-			recalc_skip = 0xFF;
-		}
-
-		// Enable the output on first set_freq only, as for CLK0-5 (DEV-14).
-		// reset() already powers up CLK6/7 (reg 22/23 = 0x0C).
-		if(clk_first_set[(uint8_t)clk] == false)
-		{
-			output_enable(clk, 1);
-			clk_first_set[(uint8_t)clk] = true;
-		}
-
-		div_by_4 = 0;
-		int_mode = 0;
-
-		// Set multisynth registers (MS must be set before PLL)
-		set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
-
-		// One reset, after all PLL and MS writes, if the recalc owes one
-		defer_pll_reset = 0;
-		if(reset_owed)
-		{
-			reset_owed = 0;
-			pll_reset(pll_assignment[clk]);
-		}
-
-		return 0;
+		// Set the freq in memory
+		clk_freq[(uint8_t)clk] = freq;
 	}
+	else
+	{
+		// No previous assignment, so set PLLB based on this clock
+
+		// Set the freq in memory
+		clk_freq[(uint8_t)clk] = freq;
+
+		// Smallest R divider that keeps the MS6/7 ratio <= 254
+		while(freq < SI5351_MS67_MIN_FREQ && r_div < SI5351_OUTPUT_CLK_DIV_128)
+		{
+			freq <<= 1;
+			r_div++;
+		}
+
+		pll_freq = multisynth67_calc(freq, 0, &ms_reg);
+		// Preserve original asymmetry: CLK6 hardcodes PLLB; CLK7 uses assignment
+		recalc_skip = clk;
+		defer_pll_reset = 1;
+		set_pll(pll_freq, (clk == SI5351_CLK6) ? SI5351_PLLB : pll_assignment[clk]);
+		recalc_skip = 0xFF;
+	}
+
+	// Enable the output on first set_freq only, as for CLK0-5 (DEV-14).
+	// reset() already powers up CLK6/7 (reg 22/23 = 0x0C).
+	if(clk_first_set[(uint8_t)clk] == false)
+	{
+		output_enable(clk, 1);
+		clk_first_set[(uint8_t)clk] = true;
+	}
+
+	div_by_4 = 0;
+	int_mode = 0;
+
+	// Set multisynth registers (MS must be set before PLL)
+	set_ms(clk, ms_reg, int_mode, r_div, div_by_4);
+
+	// One reset, after all PLL and MS writes, if the recalc owes one
+	defer_pll_reset = 0;
+	if(reset_owed)
+	{
+		reset_owed = 0;
+		pll_reset(pll_assignment[clk]);
+	}
+
+	return 0;
 }
+#endif
 
 /*
  * set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_clock clk)
@@ -615,6 +632,7 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 	// R divider, or refuse before writing anything if there is none
 	if((uint8_t)clk >= (uint8_t)SI5351_CLK6)
 	{
+#ifndef SI5351_NO_CLK67
 		ms_reg.p1 = ms67_div(pll_freq, freq, &r_div);
 		if(ms_reg.p1 == 0)
 		{
@@ -622,6 +640,9 @@ uint8_t Si5351::set_freq_manual(uint64_t freq, uint64_t pll_freq, enum si5351_cl
 		}
 		ms_reg.p2 = 0;
 		ms_reg.p3 = 0;
+#else
+		return 1;
+#endif
 	}
 
 	else if(freq >= SI5351_MULTISYNTH_DIVBY4_FREQ * SI5351_FREQ_MULT)
@@ -692,27 +713,18 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 {
 	struct Si5351RegSet pll_reg;
 	uint8_t params[SI5351_PARAMETERS_LENGTH];
+	// PLLB keeps c = 10^6 while the VCXO is in use (AN619 sec. 3.2, 7).
+	// set_vcxo() stores the pull range and calls back here, so this path
+	// is the only copy of pll_calc / pack / write / pll_update.
+	uint8_t vcxo = (target_pll == SI5351_PLLB && vcxo_pull) ? 1 : 0;
+	enum si5351_pll_input ref = (target_pll == SI5351_PLLA) ? plla_ref_osc : pllb_ref_osc;
 
-	// While the VCXO is in use, PLLB must keep c = 10^6 (AN619 sec. 3.2, 7)
-	if(target_pll == SI5351_PLLB && vcxo_pull)
+	if(!ref_ok(xtal_freq[(uint8_t)ref]))
 	{
-		set_vcxo(pll_freq, vcxo_pull);
 		return;
 	}
 
-	if(!ref_ok(xtal_freq[(uint8_t)((target_pll == SI5351_PLLA) ? plla_ref_osc : pllb_ref_osc)]))
-	{
-		return;
-	}
-
-	if(target_pll == SI5351_PLLA)
-	{
-		pll_calc(SI5351_PLLA, pll_freq, &pll_reg, ref_correction[plla_ref_osc], 0);
-	}
-	else
-	{
-		pll_calc(SI5351_PLLB, pll_freq, &pll_reg, ref_correction[pllb_ref_osc], 0);
-	}
+	uint64_t vcxo_param = pll_calc(target_pll, pll_freq, &pll_reg, ref_correction[ref], vcxo);
 
 	// Derive the register values to write
 	pack_reg_set(&pll_reg, params, 0);
@@ -720,6 +732,22 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 	// Write the parameters
 	si5351_write_bulk((target_pll == SI5351_PLLA) ? SI5351_PLLA_PARAMETERS : SI5351_PLLB_PARAMETERS,
 		SI5351_PARAMETERS_LENGTH, params);
+
+	if(vcxo)
+	{
+		uint8_t temp;
+		uint8_t ppm = vcxo_pull;
+
+		vcxo_param = ((vcxo_param * ppm * SI5351_VCXO_MARGIN) / 100ULL) / 1000000ULL;
+
+		temp = (uint8_t)(vcxo_param & 0xFF);
+		si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
+		temp = (uint8_t)((vcxo_param >> 8) & 0xFF);
+		si5351_write(SI5351_VXCO_PARAMETERS_MID, temp);
+		temp = (uint8_t)((vcxo_param >> 16) & 0x3F);
+		si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
+	}
+
 	pll_update(target_pll, pll_freq);
 }
 
@@ -759,6 +787,7 @@ void Si5351::pll_update(enum si5351_pll pll, uint64_t pll_freq)
 		r_div = 0;
 		if(i >= 6)
 		{
+#ifndef SI5351_NO_CLK67
 			reg.p1 = ms67_div(pll_freq, f, &r_div);
 			if(reg.p1 == 0)
 			{
@@ -767,6 +796,9 @@ void Si5351::pll_update(enum si5351_pll pll, uint64_t pll_freq)
 			reg.p2 = 0;
 			reg.p3 = 0;
 			div_by_4 = 0;
+#else
+			continue;
+#endif
 		}
 		else
 		{
@@ -833,14 +865,32 @@ void Si5351::set_ms(enum si5351_clock clk, struct Si5351RegSet ms_reg, uint8_t i
 	}
 	else if((uint8_t)clk <= (uint8_t)SI5351_CLK7)
 	{
-		// MS6 and MS7 only use one register (90 / 91).
 		// Bounded to CLK7 so an out-of-range clk writes nothing, as the
 		// original switch() did (otherwise clk=8 would clobber reg 92).
-		si5351_write(SI5351_CLK6_PARAMETERS + ((uint8_t)clk - (uint8_t)SI5351_CLK6),
-			(uint8_t)ms_reg.p1);
-		ms_div(clk, r_div, div_by_4);
+		set_ms67(clk, (uint8_t)ms_reg.p1, r_div);
 	}
 }
+
+#ifndef SI5351_NO_CLK67
+// set_ms() for CLK6/CLK7. Weak, like set_freq67().
+SI5351_CLK67_WEAK void Si5351::set_ms67(enum si5351_clock clk, uint8_t p1, uint8_t r_div)
+{
+	// MS6 and MS7 only use one register (90 / 91).
+	si5351_write(SI5351_CLK6_PARAMETERS + ((uint8_t)clk - (uint8_t)SI5351_CLK6), p1);
+
+	// R6_DIV is register 92 bits 2:0, R7_DIV bits 6:4
+	uint8_t reg_val = si5351_read(SI5351_CLK6_7_OUTPUT_DIVIDER);
+	if(clk == SI5351_CLK6)
+	{
+		reg_val = (reg_val & ~(0x07)) | r_div;
+	}
+	else
+	{
+		reg_val = (reg_val & ~(0x70)) | (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
+	}
+	si5351_write(SI5351_CLK6_7_OUTPUT_DIVIDER, reg_val);
+}
+#endif
 
 /*
  * output_enable(enum si5351_clock clk, uint8_t enable)
@@ -957,13 +1007,19 @@ void Si5351::update_status(void)
  * should not have to be done again for the same Si5351 and
  * crystal.
  */
+__attribute__((noinline))
 void Si5351::set_correction(int32_t corr, enum si5351_pll_input ref_osc)
 {
+	uint8_t p;
+
 	ref_correction[(uint8_t)ref_osc] = corr;
 
-	// Recalculate and set PLL freqs based on correction value
-	set_pll(plla_freq, SI5351_PLLA);
-	set_pll(pllb_freq, SI5351_PLLB);
+	// Recalculate and set PLL freqs based on correction value.
+	// PLLA then PLLB, same order as the two direct calls.
+	for(p = 0; p < 2; p++)
+	{
+		set_pll(p ? pllb_freq : plla_freq, (enum si5351_pll)p);
+	}
 }
 
 /*
@@ -1371,9 +1427,6 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
  */
 void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 {
-	struct Si5351RegSet pll_reg;
-	uint64_t vcxo_param;
-
 	// Bounds check
 	if(ppm < SI5351_VCXO_PULL_MIN)
 	{
@@ -1390,34 +1443,10 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 		return;
 	}
 
-	// Remember the VCXO setting so later PLLB updates keep c = 10^6
+	// Remember the VCXO setting so later PLLB updates keep c = 10^6.
+	// set_pll() writes the PLL and the VCXO parameter registers.
 	vcxo_pull = ppm;
-
-	// Set PLLB params
-	vcxo_param = pll_calc(SI5351_PLLB, pll_freq, &pll_reg, ref_correction[pllb_ref_osc], 1);
-
-	// Derive the register values to write
-	uint8_t params[SI5351_PARAMETERS_LENGTH];
-	uint8_t temp;
-
-	pack_reg_set(&pll_reg, params, 0);
-
-	// Write the parameters
-	si5351_write_bulk(SI5351_PLLB_PARAMETERS, SI5351_PARAMETERS_LENGTH, params);
-
-	// Write the VCXO parameters
-	vcxo_param = ((vcxo_param * ppm * SI5351_VCXO_MARGIN) / 100ULL) / 1000000ULL;
-
-	temp = (uint8_t)(vcxo_param & 0xFF);
-	si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
-
-	temp = (uint8_t)((vcxo_param >> 8) & 0xFF);
-	si5351_write(SI5351_VXCO_PARAMETERS_MID, temp);
-
-	temp = (uint8_t)((vcxo_param >> 16) & 0x3F);
-	si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
-
-	pll_update(SI5351_PLLB, pll_freq);
+	set_pll(pll_freq, SI5351_PLLB);
 }
 
 /*
@@ -1548,15 +1577,10 @@ uint8_t Si5351::get_i2c_error(void)
 
 uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSet *reg, int32_t correction, uint8_t vcxo)
 {
-	uint64_t ref_freq;
-	if(pll == SI5351_PLLA)
-	{
-		ref_freq = xtal_freq[(uint8_t)plla_ref_osc] * SI5351_FREQ_MULT;
-	}
-	else
-	{
-		ref_freq = xtal_freq[(uint8_t)pllb_ref_osc] * SI5351_FREQ_MULT;
-	}
+	// One reference selection for both PLLs. The two arms used to each carry
+	// their own copy of the feedback math once this function was inlined.
+	enum si5351_pll_input ref_osc = (pll == SI5351_PLLA) ? plla_ref_osc : pllb_ref_osc;
+	uint64_t ref_freq = xtal_freq[(uint8_t)ref_osc] * SI5351_FREQ_MULT;
 	//ref_freq = 15974400ULL * SI5351_FREQ_MULT;
 	uint32_t a, b, c;
 	uint64_t lltmp; //, denom;
@@ -1590,26 +1614,26 @@ uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSe
 		freq = ref_freq * SI5351_PLL_A_MAX;
 	}
 
-	// Find best approximation for b/c = fVCO mod fIN
-	// denom = 1000ULL * 1000ULL;
-	// lltmp = freq % ref_freq;
-	// lltmp *= denom;
-	// do_div(lltmp, ref_freq);
-
-	//b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
+	// Find best approximation for b/c = fVCO mod fIN.
+	// RFRAC_DENOM is 1000000, the same denominator set_vcxo() needs so
+	// PLLB keeps c = 10^6 (AN619 sec. 3.2). One division serves both.
+	b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
 	if(vcxo)
 	{
-		b = (((uint64_t)(freq % ref_freq)) * 1000000ULL) / ref_freq;
-		c = 1000000ULL;
+		c = RFRAC_DENOM;
 	}
 	else
 	{
-		b = (((uint64_t)(freq % ref_freq)) * RFRAC_DENOM) / ref_freq;
 		c = b ? RFRAC_DENOM : 1;
 	}
 
 	// Calculate parameters
 	frac_to_reg(a, b, c, reg);
+
+	if(vcxo)
+	{
+		return (uint64_t)(128 * a * RFRAC_DENOM + b);
+	}
 
 	// Recalculate frequency as fIN * (a + b/c)
 	lltmp = ref_freq;
@@ -1617,15 +1641,7 @@ uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSe
 	do_div(lltmp, c);
 	freq = lltmp;
 	freq += ref_freq * a;
-
-	if(vcxo)
-	{
-		return (uint64_t)(128 * a * 1000000ULL + b);
-	}
-	else
-	{
-		return freq;
-	}
+	return freq;
 }
 
 uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
@@ -1722,6 +1738,7 @@ uint64_t Si5351::multisynth_calc(uint64_t freq, uint64_t pll_freq, struct Si5351
 	}
 }
 
+#ifndef SI5351_NO_CLK67
 uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si5351RegSet *reg)
 {
 	//uint8_t p1;
@@ -1810,6 +1827,7 @@ uint64_t Si5351::multisynth67_calc(uint64_t freq, uint64_t pll_freq, struct Si53
 		}
 	}
 }
+#endif
 
 void Si5351::update_sys_status(struct Si5351Status *status)
 {
@@ -1846,51 +1864,24 @@ void Si5351::update_int_status(struct Si5351IntStatus *int_status)
 
 void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 {
-	uint8_t reg_val = 0;
-	uint8_t reg_addr = 0;
+	// CLK0..CLK5 only (CLK6/7 are in set_ms67()): parameter byte 2 is
+	// linear with clk
+	uint8_t reg_addr = SI5351_CLK0_PARAMETERS + 2 + ((uint8_t)clk * 8);
+	uint8_t reg_val = si5351_read(reg_addr);
 
-	if((uint8_t)clk <= (uint8_t)SI5351_CLK5)
+	// Clear the relevant bits
+	reg_val &= ~(0x7c);
+
+	if(div_by_4 == 0)
 	{
-		// CLK0..CLK5: parameter byte 2 is linear with clk
-		reg_addr = SI5351_CLK0_PARAMETERS + 2 + ((uint8_t)clk * 8);
+		reg_val &= ~(SI5351_OUTPUT_CLK_DIVBY4);
 	}
 	else
 	{
-		reg_addr = SI5351_CLK6_7_OUTPUT_DIVIDER;
+		reg_val |= (SI5351_OUTPUT_CLK_DIVBY4);
 	}
 
-	reg_val = si5351_read(reg_addr);
-
-	if((uint8_t)clk <= (uint8_t)SI5351_CLK5)
-	{
-		// Clear the relevant bits
-		reg_val &= ~(0x7c);
-
-		if(div_by_4 == 0)
-		{
-			reg_val &= ~(SI5351_OUTPUT_CLK_DIVBY4);
-		}
-		else
-		{
-			reg_val |= (SI5351_OUTPUT_CLK_DIVBY4);
-		}
-
-		reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-	}
-	else if(clk == SI5351_CLK6)
-	{
-		// Clear the relevant bits
-		reg_val &= ~(0x07);
-
-		reg_val |= r_div;
-	}
-	else if(clk == SI5351_CLK7)
-	{
-		// Clear the relevant bits
-		reg_val &= ~(0x70);
-
-		reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
-	}
+	reg_val |= (r_div << SI5351_OUTPUT_CLK_DIV_SHIFT);
 
 	si5351_write(reg_addr, reg_val);
 }
