@@ -293,8 +293,9 @@ void Si5351::reset(void)
  * Sets one CLK output back to the initial frequency state: stored
  * frequency 0 Hz and the output disabled. Clears the first-set flag so
  * the next set_freq() on that output enables it automatically, the same
- * as the first call. Other outputs are not modified. An invalid clock
- * index is ignored.
+ * as the first call. Other outputs are not modified. Pass a valid
+ * si5351_clock value (SI5351_CLK0..SI5351_CLK7); out-of-range values
+ * are not supported.
  *
  * clk - Clock output
  *   (use the si5351_clock enum)
