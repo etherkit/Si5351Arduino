@@ -365,6 +365,23 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_f
  */
 void Si5351::reset(void)
 ```
+### reset_freq()
+```
+/*
+ * reset_freq(enum si5351_clock clk)
+ *
+ * Sets one CLK output back to the initial frequency state: stored
+ * frequency 0 Hz and the output disabled. Clears the first-set flag so
+ * the next set_freq() on that output enables it automatically, the same
+ * as the first call. Other outputs are not modified. Pass a valid
+ * si5351_clock value (SI5351_CLK0..SI5351_CLK7); out-of-range values
+ * are not supported.
+ *
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ */
+void Si5351::reset_freq(enum si5351_clock clk)
+```
 ### set_freq()
 ```
 /*
@@ -789,6 +806,7 @@ Changelog
     * Document `SI5351_CRYSTAL_LOAD_0PF`: AN619 Register 183 says XTAL_CL 00b is reserved, and `init()` keeps the 10 pF default
     * Document multisynth ratio limits, the 4 kHz CLK0–CLK5 floor, the 600 MHz/127 quadrature floor, and the v2.4.1 200 MHz CLK0–CLK5 cap
     * Replace the dead etherkit.com links with this GitHub repository (#102)
+    * Add `reset_freq()` to set one CLK output back to 0 Hz, disable it, and clear its first-set flag so the next `set_freq()` enables it again, the same as the first call. Pass a valid `si5351_clock` value (`SI5351_CLK0`..`SI5351_CLK7`); out-of-range values are not supported. Other outputs are left unchanged. Thanks to KT315AM (#104)
 
 * v2.4.1
 
