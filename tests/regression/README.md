@@ -33,8 +33,10 @@ Exit code: 0 = every check PASS/XFAIL/SKIP/INFO; 1 = at least one unexpected FAI
 | `t106_twowire` | issue #106 TwoWire bus-selection test (`issue106/t106.cpp`, multi-bus stub). SKIP when the source has no `TwoWire*` constructor | yes |
 | `rdiv_xtal` | CLK0-5 R-divider octaves and CLK6/7 `set_freq()` register 92 edges (`rdiv/t_rdiv.cpp`, issue #89), Register 183 XTAL_CL, and README numbers vs the header / `SI5351_FOUT_MAX` | yes |
 | `reset_freq` | `reset_freq()` host test (`reset_freq/t_reset_freq.cpp`): re-enable on the next `set_freq()`, invalid index is a no-op, other clocks untouched. SKIP when the source has no `reset_freq()` | yes |
+| `ctrl_status` | Exact register bytes and ordered I2C for every legal `drive_strength`, `set_clock_pwr` / `invert` / `source` / `disable` / `fanout` value, status-bit decode, NACK, and `requestFrom` with no payload (`ctrl/t_ctrl.cpp`) | yes |
+| `plan_branches` | CLK6/7 `set_freq_manual` rejects, `multisynth67_calc` a±2 and the uncalled pll≠0 arm, `set_ms` CLK6/7 and DIVBY4 exit, `set_vcxo` ppm/`ref_ok`, `set_pll` clamp (`plan/t_plan.cpp`). Locks current v2.4.2 behavior, including the uint8 p1 truncation | yes |
 | `goldens27_vs_lib` | C++ equivalence harness (`equiv/harness.cpp`) on the pinned source vs the 27 original golden cases | yes (INFO under `--require-fixed`) |
-| `equiv_vs_master_1ddd43e` | Full harness transcript diff against vendored master 1ddd43e (`reference/`). 0 means behaviourally identical | INFO |
+| `v242_provenance`, `equiv_vs_v242` | `sha256sum -c` of `reference/v242_f885fca/` (git show of f885fca, not a fetch of master), then a full harness transcript diff. 0 differing runs is PASS; any difference is FAIL. `reference/master_1ddd43e/` is no longer the behavior gate | yes |
 | `goldens_newer_vs_lib` | Newer `lib_*` golden register maps | INFO |
 | `py_test_golden`, `py_test_spec` | Python golden/spec suites: self-consistency of the AN619 oracle and goldens used above (library-independent) | yes |
 | `cxx98_syntax` | `-std=c++98 -pedantic -fsyntax-only` warning count | INFO |
@@ -50,6 +52,7 @@ Exit code: 0 = every check PASS/XFAIL/SKIP/INFO; 1 = at least one unexpected FAI
 
 ## Layout
 `v231/` acceptance runner, scenarios, oracle, locks, and reports · `stubs/` Arduino/Wire host stubs · `issue106/` t106 and its multi-bus stubs · `reset_freq/` `reset_freq()` regression ·
-`equiv/` harness, goldens snapshot, compare.py · `reference/master_1ddd43e/` reference source · `python/` golden/spec suites and refs ·
+`equiv/` harness, goldens snapshot, compare.py · `reference/v242_f885fca/` pinned v2.4.2 source (the hard gate) · `reference/master_1ddd43e/` historical source, not the gate ·
+`ctrl/` `plan/` branch locks · `flash/check_flash_budget.sh` Uno byte ceilings (separate CI workflow) · `python/` golden/spec suites and refs ·
 `sketches/` Ctor106 · `boards.txt` board set and Boards Manager URLs · `tools/summarize.py`.
 `v231/Makefile` is the original manual build, kept for reference only; the script does not use it.

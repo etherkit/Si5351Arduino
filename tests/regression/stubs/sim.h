@@ -9,6 +9,7 @@ struct Si5351Sim {
   uint8_t ptr;              // device register pointer (auto-increments)
   uint8_t dev_addr;         // address the simulated device answers on
   bool present;             // device ACKs?
+  bool empty_read;          // requestFrom returns no bytes after a successful write ACK
   // current transmission
   bool in_tx;
   uint8_t tx_addr;

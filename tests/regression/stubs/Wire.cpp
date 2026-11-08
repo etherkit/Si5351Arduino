@@ -22,7 +22,7 @@ void Si5351Sim::reset(int pattern, bool present_) {
   for (int i = 0; i < 256; i++)
     regs[i] = pattern ? (uint8_t)((i * 37 + 11) ^ 0xA5) : 0;
   regs[0] &= 0x7F;  // SYS_INIT clear => device ready (init() polls bit 7)
-  ptr = 0; dev_addr = 0x60; present = present_;
+  ptr = 0; dev_addr = 0x60; present = present_; empty_read = false;
   in_tx = false; tx_addr = 0; tx_buf.clear();
   rx_buf.clear(); rx_pos = 0;
   events.clear(); n_writes = n_reads = 0;
@@ -73,9 +73,11 @@ uint8_t TwoWire::requestFrom(uint8_t addr, uint8_t quantity) {
   Si5351Sim &s = g_sim;
   s.rx_buf.clear(); s.rx_pos = 0;
   bool ack = s.present && addr == s.dev_addr;
-  if (ack) {
+  if (ack && !s.empty_read) {
     for (uint8_t i = 0; i < quantity; i++) s.rx_buf.push_back(s.regs[(uint8_t)(s.ptr + i)]);
     s.ptr = (uint8_t)(s.ptr + quantity);
+    s.n_reads++;
+  } else if (ack && s.empty_read) {
     s.n_reads++;
   }
   char line[48];

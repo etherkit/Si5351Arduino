@@ -1,4 +1,6 @@
-# Report-only regression tests (not a required check; never gates merges).
+# Regression harness. The harness step has no continue-on-error: a nonzero
+# exit from run_v231_checks.sh fails the job. "Report-only" in the workflow
+# name means branch protection does not require this check to merge.
 # Harness: tests/regression, from Test Lab's Si5351 regression suite.
 name: Regression tests (report-only)
 
@@ -23,6 +25,11 @@ jobs:
       - name: Run regression harness (native g++ against src/si5351.cpp)
         working-directory: tests/regression
         run: ./run_v231_checks.sh --src "$GITHUB_WORKSPACE" --out "$RUNNER_TEMP/regression"
+      - name: Prove the pinned v2.4.2 gate rejects a one-line library mutation
+        working-directory: tests/regression
+        run: ./reference/prove_v242_negative.sh
+        env:
+          NEG_OUT: ${{ runner.temp }}/v242-negative
       - name: Summary
         if: always()
         run: |
