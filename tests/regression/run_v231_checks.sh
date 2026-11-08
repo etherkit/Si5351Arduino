@@ -146,6 +146,15 @@ if [[ $HAS_TWOWIRE == 1 ]]; then
   else record t106_twowire FAIL "compile error" logs/build_t106.log; fi
 else record t106_twowire SKIP "source has no TwoWire* constructor (pre-#106)"; fi
 
+# ---------------------------------------------------------------- 3b. R-divider bands (issue #89) and XTAL_CL (AN619 Register 183)
+if $CXX -std=gnu++17 -Dprivate=public -I"$CI_DIR/stubs" -I"$LIB/src" \
+    "$CI_DIR/rdiv/t_rdiv.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" \
+    -o "$BUILD/t_rdiv" > "$LOGS/build_t_rdiv.log" 2>&1; then
+  if "$BUILD/t_rdiv" > "$LOGS/t_rdiv.log" 2>&1 && grep -q '^ALL PASS' "$LOGS/t_rdiv.log"; then
+    record rdiv_xtal PASS "$(grep -c '^PASS' "$LOGS/t_rdiv.log") checks, $(tail -1 "$LOGS/t_rdiv.log")" logs/t_rdiv.log
+  else record rdiv_xtal FAIL "$(grep -c '^FAIL' "$LOGS/t_rdiv.log" || true) failing checks" logs/t_rdiv.log; fi
+else record rdiv_xtal FAIL "compile error" logs/build_t_rdiv.log; fi
+
 # ---------------------------------------------------------------- 4. goldens + equivalence vs master 1ddd43e (C++ harness)
 EQ="$CI_DIR/equiv"
 if $CXX $CXXFLAGS -I"$EQ" -I"$CI_DIR/stubs" -I"$LIB/src" "$EQ/harness.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" -o "$BUILD/h_lib" > "$LOGS/build_harness_lib.log" 2>&1 \

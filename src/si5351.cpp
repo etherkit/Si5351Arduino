@@ -185,9 +185,10 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t xo_freq, int32_t corr)
 			status_reg = si5351_read(SI5351_DEVICE_STATUS);
 		} while (status_reg >> 7 == 1);
 
-		// Set crystal load capacitance. XTAL_CL = 00b (SI5351_CRYSTAL_LOAD_0PF)
-		// is reserved ("do not select", AN619 reg 183) and 0 pF is not
-		// supported, so keep the chip default of 10 pF instead.
+		// Register 183. AN619: XTAL_CL[1:0] 00b is "Reserved. Do not select
+		// this option." 01b = 6 pF, 10b = 8 pF, 11b = 10 pF (default).
+		// Bits 5:0 must be written as 010010b. SI5351_CRYSTAL_LOAD_0PF is
+		// that reserved code; keep the 10 pF default instead of writing it.
 		xtal_load_c &= SI5351_CRYSTAL_LOAD_MASK;
 		if(xtal_load_c == SI5351_CRYSTAL_LOAD_0PF)
 		{
@@ -1872,10 +1873,16 @@ void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 
 uint8_t Si5351::select_r_div(uint64_t *freq, uint32_t min_freq)
 {
-	/* Unified R-divider selection for CLK0-5 (min_freq = CLKOUT_MIN_FREQ)
-	 * and CLK6-7 (min_freq = CLKOUT67_MIN_FREQ). Same band thresholds as
-	 * the former select_r_div / select_r_div_ms67 pair.
-	 * SI5351_OUTPUT_CLK_DIV_n enum values equal log2(n). */
+	/* Output R divider, AN619 Register 44 R0_DIV[2:0] (same encoding on
+	 * R1-R7): 000 /1, 001 /2, 010 /4, 011 /8, 100 /16, 101 /32, 110 /64,
+	 * 111 /128. One octave per code. With floor F (CLKOUT_MIN_FREQ on
+	 * CLK0-5, CLKOUT67_MIN_FREQ on CLK6-7), low edge inclusive:
+	 *   [F, 2F) /128, [2F, 4F) /64, [4F, 8F) /32, [8F, 16F) /16,
+	 *   [16F, 32F) /8, [32F, 64F) /4, [64F, 128F) /2, and /1 from 128F up.
+	 * Divide-by-64 is only [2F, 4F). The next band is divide-by-32
+	 * (issue #89). For F = 4 kHz the multisynth lands in
+	 * [512 kHz, 1.024 MHz), above the 500 kHz floor in AN619 section 2.
+	 * SI5351_OUTPUT_CLK_DIV_n equals log2(n), which is the Rx_DIV field. */
 	uint64_t lower = (uint64_t)min_freq * SI5351_FREQ_MULT;
 	int8_t shift;
 
