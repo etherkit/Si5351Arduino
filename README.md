@@ -34,7 +34,7 @@ The public interface to the v2 library is similar to the v1 library, but a few o
 
 The _init()_ method now has three parameters: the crystal load capacitance, the reference frequency, and the frequency correction value (with this last parameter being a new addition). You'll need to add that third parameter to your old _init()_ calls, but then you can delete any _set_correction()_ calls after that (unless you explicitly are changing the frequency correction after the initialization).
 
-The _set_freq()_ method is now more streamlined and only requires two parameters: the desired output frequency (from 4 kHz to 225 MHz) and clock output. In your old code, you can delete the 2nd parameter in _set_freq()_, which was the PLL frequency. In case you want to do things manually, there is now a new method called _set_freq_manual()_ (see below for details).
+The _set_freq()_ method is now more streamlined and only requires two parameters: the desired output frequency (from 4 kHz to 200 MHz on CLK0 through CLK5) and clock output. In your old code, you can delete the 2nd parameter in _set_freq()_, which was the PLL frequency. In case you want to do things manually, there is now a new method called _set_freq_manual()_ (see below for details).
 
 Those two changes should cover nearly all upgrade scenarios, unless you were doing some lower-level use of the Si5351.
 
@@ -321,7 +321,7 @@ The datasheet (rev. 1.3) specifies 2.5 kHz to 200 MHz. AN619 section 2 also says
 | 256 kHz up to 512 kHz | 2 | 001b | 512 kHz up to 1.024 MHz |
 | 512 kHz and above | 1 | 000b | the output frequency |
 
-CLK6 and CLK7 are even-integer dividers, so their floor is higher. `SI5351_CLKOUT67_MIN_FREQ` is 18454 Hz, from 600 MHz / 254 / 128 using integer division. `set_freq()` clamps them to `SI5351_CLKOUT67_MIN`, which is 18454.73 Hz, so the ratio stays inside 6..254 and the VCO stays at or above 600 MHz. Their upper end is just under 150 MHz, because MS6 and MS7 have no divide-by-4 mode.
+CLK6 and CLK7 are even-integer dividers, so their floor is higher. `SI5351_CLKOUT67_MIN_FREQ` is 18454 Hz, from 600 MHz / 254 / 128 using integer division. `set_freq()` clamps a request below `SI5351_CLKOUT67_MIN` up to 18454.73 Hz. It then picks the smallest R divider that brings the multisynth up to at least 600 MHz / 254, so the ratio stays inside 6..254 and the VCO stays at or above 600 MHz. That choice is not the CLK0–CLK5 octave table (36908 Hz is still divide-by-128). `set_freq()` also clamps CLK6 and CLK7 to just under 150 MHz, because MS6 and MS7 have no divide-by-4 mode. `set_freq_manual()` does not apply that clamp.
 
 ### Minimum quadrature frequency
 
@@ -331,7 +331,7 @@ The lowest VCO is 600 MHz (`SI5351_PLL_VCO_MIN`). The lowest 90&deg; output on t
 
 ### 200 MHz cap on CLK0–CLK5 (v2.4.1)
 
-The datasheet maximum is 200 MHz. AN619 section 4.1.3 covers 150 MHz &lt; Fout &le; 200 MHz on multisynths 0–5 with divide-by-4. v2.4.1 defines `SI5351_FOUT_MAX` as 200000000 and `set_freq()` / `set_freq_manual()` clamp a CLK0–CLK5 request above 200 MHz to 200 MHz. `SI5351_CLKOUT_MAX_FREQ` and `SI5351_MULTISYNTH_MAX_FREQ` are still 225000000; those macros are what older code compared against, and they are not the frequency `set_freq()` programs. CLK6 and CLK7 are clamped to 149,999,999.99 Hz.
+The datasheet maximum is 200 MHz. AN619 section 4.1.3 covers 150 MHz &lt; Fout &le; 200 MHz on multisynths 0–5 with divide-by-4. v2.4.1 defines `SI5351_FOUT_MAX` as 200000000 and `set_freq()` / `set_freq_manual()` clamp a CLK0–CLK5 request above 200 MHz to 200 MHz. `SI5351_CLKOUT_MAX_FREQ` and `SI5351_MULTISYNTH_MAX_FREQ` are still 225000000; those macros are what older code compared against, and they are not the frequency `set_freq()` programs. `set_freq()` clamps CLK6 and CLK7 to 149,999,999.99 Hz. `set_freq_manual()` does not: `set_freq_manual(150 MHz, 900 MHz PLL, CLK6)` is ratio 6 and returns 0.
 
 Public Methods
 --------------
@@ -785,7 +785,7 @@ Changelog
 
 * Unreleased
 
-    * Lock the R-divider octave table in `select_r_div()` with a regression test. Divide-by-64 is only the [2F, 4F) band; the next band is divide-by-32 (#89)
+    * Lock the CLK0–CLK5 R-divider octave table in `select_r_div()` with a regression test. Divide-by-64 is only the [2F, 4F) band; the next band is divide-by-32. CLK6/CLK7 edges are what `set_freq()` writes to register 92 (#89)
     * Document `SI5351_CRYSTAL_LOAD_0PF`: AN619 Register 183 says XTAL_CL 00b is reserved, and `init()` keeps the 10 pF default
     * Document multisynth ratio limits, the 4 kHz CLK0–CLK5 floor, the 600 MHz/127 quadrature floor, and the v2.4.1 200 MHz CLK0–CLK5 cap
     * Replace the dead etherkit.com links with this GitHub repository (#102)

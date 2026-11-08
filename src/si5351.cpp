@@ -1873,16 +1873,21 @@ void Si5351::ms_div(enum si5351_clock clk, uint8_t r_div, uint8_t div_by_4)
 
 uint8_t Si5351::select_r_div(uint64_t *freq, uint32_t min_freq)
 {
-	/* Output R divider, AN619 Register 44 R0_DIV[2:0] (same encoding on
-	 * R1-R7): 000 /1, 001 /2, 010 /4, 011 /8, 100 /16, 101 /32, 110 /64,
-	 * 111 /128. One octave per code. With floor F (CLKOUT_MIN_FREQ on
-	 * CLK0-5, CLKOUT67_MIN_FREQ on CLK6-7), low edge inclusive:
+	/* CLK0-5 output R divider (callers pass min_freq = CLKOUT_MIN_FREQ).
+	 * AN619 Register 44 R0_DIV[2:0], same encoding on R1-R5:
+	 *   000 /1, 001 /2, 010 /4, 011 /8, 100 /16, 101 /32, 110 /64, 111 /128.
+	 * One octave per code. Floor F = CLKOUT_MIN_FREQ, low edge inclusive:
 	 *   [F, 2F) /128, [2F, 4F) /64, [4F, 8F) /32, [8F, 16F) /16,
 	 *   [16F, 32F) /8, [32F, 64F) /4, [64F, 128F) /2, and /1 from 128F up.
 	 * Divide-by-64 is only [2F, 4F). The next band is divide-by-32
 	 * (issue #89). For F = 4 kHz the multisynth lands in
 	 * [512 kHz, 1.024 MHz), above the 500 kHz floor in AN619 section 2.
-	 * SI5351_OUTPUT_CLK_DIV_n equals log2(n), which is the Rx_DIV field. */
+	 * SI5351_OUTPUT_CLK_DIV_n equals log2(n), which is the Rx_DIV field.
+	 * CLK6 and CLK7 do not use this helper. set_freq() chooses the smallest
+	 * R that brings the output up to SI5351_MS67_MIN_FREQ (600 MHz / 254,
+	 * rounded up) so an even ratio 6..254 can reach the VCO minimum.
+	 * That is a different edge than this octave table: 36908 Hz is still
+	 * /128 there, because /64 would leave the multisynth under 600 MHz. */
 	uint64_t lower = (uint64_t)min_freq * SI5351_FREQ_MULT;
 	int8_t shift;
 

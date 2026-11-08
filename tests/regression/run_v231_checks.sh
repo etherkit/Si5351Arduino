@@ -150,7 +150,7 @@ else record t106_twowire SKIP "source has no TwoWire* constructor (pre-#106)"; f
 if $CXX -std=gnu++17 -Dprivate=public -I"$CI_DIR/stubs" -I"$LIB/src" \
     "$CI_DIR/rdiv/t_rdiv.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" \
     -o "$BUILD/t_rdiv" > "$LOGS/build_t_rdiv.log" 2>&1; then
-  if "$BUILD/t_rdiv" > "$LOGS/t_rdiv.log" 2>&1 && grep -q '^ALL PASS' "$LOGS/t_rdiv.log"; then
+  if "$BUILD/t_rdiv" "$LIB/README.md" "$LIB/src/si5351.cpp" > "$LOGS/t_rdiv.log" 2>&1 && grep -q '^ALL PASS' "$LOGS/t_rdiv.log"; then
     record rdiv_xtal PASS "$(grep -c '^PASS' "$LOGS/t_rdiv.log") checks, $(tail -1 "$LOGS/t_rdiv.log")" logs/t_rdiv.log
   else record rdiv_xtal FAIL "$(grep -c '^FAIL' "$LOGS/t_rdiv.log" || true) failing checks" logs/t_rdiv.log; fi
 else record rdiv_xtal FAIL "compile error" logs/build_t_rdiv.log; fi
