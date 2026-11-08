@@ -25,3 +25,8 @@ min_runtime_no_clk67 9836
 # min_runtime_sketch_no_clk67: same program with #define SI5351_NO_CLK67 in the
 # sketch (no compiler flag). A library that ignores the define builds 10930.
 min_runtime_sketch_no_clk67 9870
+# min_runtime_sketch_no_vcxo: same program with #define SI5351_NO_VCXO in the
+# sketch (no compiler flag). A library that ignores the define builds 10868.
+min_runtime_sketch_no_vcxo 10428
+# Both sketch defines. A library that honors only SI5351_NO_CLK67 builds 9870.
+min_runtime_sketch_no_clk67_no_vcxo 9390

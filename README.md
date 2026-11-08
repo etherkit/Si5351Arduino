@@ -321,6 +321,35 @@ Measured flash on an Arduino Uno (arduino-cli 1.5.1, arduino:avr 1.8.6), in byte
 | `init()` + one `set_freq()`, runtime clock index | 10,868 | 9,870 | 9,836 |
 | `init()` + one `set_freq()` on CLK0 | 10,140 | 9,778 | 9,740 |
 
+Leaving out the VCXO
+--------------------
+If your sketch never uses the Si5351B VCXO, you can leave that code out and save about 440 bytes of flash on an AVR board (472 bytes if you pass the macro as a compiler flag). In the Arduino IDE, put the define above the include in your sketch's .ino file:
+
+```cpp
+#define SI5351_NO_VCXO
+#include <si5351.h>
+```
+
+Put it in the .ino file only. If more than one file in the sketch defines it before including `si5351.h`, the link fails with a duplicate definition. The define has to come before the `#include`. It can sit next to `SI5351_NO_CLK67`.
+
+With the opt-out, `set_vcxo()` returns 1 and writes nothing. It does not store a pull range, and later PLL updates use the non-VCXO denominator (`c` is 1 when the numerator is 0, otherwise 10^6). `reset()` still clears the VCXO parameter registers. Without the define, register programming is unchanged. `set_vcxo()` returns 0 after it writes the PLL and VCXO registers, and 1 when the reference is not usable (it writes nothing in that case, as before).
+
+How it works: the VCXO functions in `si5351.cpp` are weak symbols. The sketch define makes `si5351.h` add small stubs that replace them, and the linker drops the originals. This needs a GCC or Clang toolchain, which every common Arduino core uses.
+
+You can also pass the macro as a compiler definition. This leaves the code out when `si5351.cpp` is compiled:
+
+* Arduino CLI: `--build-property compiler.cpp.extra_flags=-DSI5351_NO_VCXO`
+* PlatformIO: `build_flags = -DSI5351_NO_VCXO`
+
+Measured flash on an Arduino Uno (arduino-cli 1.5.1, arduino:avr 1.8.6), in bytes:
+
+| Sketch | Default | Sketch `#define` | Compiler flag |
+|---|---|---|---|
+| `init()` + one `set_freq()`, runtime clock index | 10,868 | 10,428 | 10,396 |
+| `init()` + one `set_freq()` on CLK0 | 10,140 | 9,700 | 9,668 |
+
+Defining both `SI5351_NO_CLK67` and `SI5351_NO_VCXO` in that runtime sketch is 9,390 bytes (9,362 with both compiler flags). The same pair on the CLK0 sketch is 9,298 bytes (9,266 with both flags).
+
 Frequency Limits
 ----------------
 Numbers below are what v2.4.1 programs, checked against `src/si5351.cpp`, `src/si5351.h`, AN619 rev. 0.8, and the Si5351A/B/C-B datasheet rev. 1.3. Frequencies passed to `set_freq()` are in units of 0.01 Hz.
@@ -709,8 +738,10 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
  * ppm - VCXO pull limit in ppm
  *
  * Set the parameters for the VCXO on the Si5351B.
+ * Returns 0 when the PLL and VCXO registers are written, 1 when nothing
+ * is written (reference not usable, or SI5351_NO_VCXO).
  */
-void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
+uint8_t Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 ```
 ### set_ref_freq()
 ```

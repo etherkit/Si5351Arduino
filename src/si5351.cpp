@@ -716,7 +716,14 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 	// PLLB keeps c = 10^6 while the VCXO is in use (AN619 sec. 3.2, 7).
 	// set_vcxo() stores the pull range and calls back here, so this path
 	// is the only copy of pll_calc / pack / write / pll_update.
-	uint8_t vcxo = (target_pll == SI5351_PLLB && vcxo_pull) ? 1 : 0;
+	// vcxo_active() and write_vcxo() are weak so SI5351_NO_VCXO can
+	// replace them (see si5351.h). With that macro, vcxo stays 0 and this
+	// function programs the PLL exactly as a non-VCXO update.
+#ifndef SI5351_NO_VCXO
+	uint8_t vcxo = vcxo_active(target_pll);
+#else
+	uint8_t vcxo = 0;
+#endif
 	enum si5351_pll_input ref = (target_pll == SI5351_PLLA) ? plla_ref_osc : pllb_ref_osc;
 
 	if(!ref_ok(xtal_freq[(uint8_t)ref]))
@@ -733,20 +740,14 @@ void Si5351::set_pll(uint64_t pll_freq, enum si5351_pll target_pll)
 	si5351_write_bulk((target_pll == SI5351_PLLA) ? SI5351_PLLA_PARAMETERS : SI5351_PLLB_PARAMETERS,
 		SI5351_PARAMETERS_LENGTH, params);
 
+#ifndef SI5351_NO_VCXO
 	if(vcxo)
 	{
-		uint8_t temp;
-		uint8_t ppm = vcxo_pull;
-
-		vcxo_param = ((vcxo_param * ppm * SI5351_VCXO_MARGIN) / 100ULL) / 1000000ULL;
-
-		temp = (uint8_t)(vcxo_param & 0xFF);
-		si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
-		temp = (uint8_t)((vcxo_param >> 8) & 0xFF);
-		si5351_write(SI5351_VXCO_PARAMETERS_MID, temp);
-		temp = (uint8_t)((vcxo_param >> 16) & 0x3F);
-		si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
+		write_vcxo(vcxo_param);
 	}
+#else
+	(void)vcxo_param;
+#endif
 
 	pll_update(target_pll, pll_freq);
 }
@@ -1424,8 +1425,13 @@ void Si5351::set_pll_input(enum si5351_pll pll, enum si5351_pll_input input)
  * ppm - VCXO pull limit in ppm
  *
  * Set the parameters for the VCXO on the Si5351B.
+ * Returns 0 when the PLL and VCXO registers are written, 1 when nothing
+ * is written (reference not usable, or SI5351_NO_VCXO).
  */
-void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
+#ifndef SI5351_NO_VCXO
+// Weak: a sketch that defines SI5351_NO_VCXO before #include <si5351.h>
+// replaces this with a stub that returns 1 and writes nothing.
+SI5351_VCXO_WEAK uint8_t Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 {
 	// Bounds check
 	if(ppm < SI5351_VCXO_PULL_MIN)
@@ -1440,14 +1446,38 @@ void Si5351::set_vcxo(uint64_t pll_freq, uint8_t ppm)
 
 	if(!ref_ok(xtal_freq[(uint8_t)pllb_ref_osc]))
 	{
-		return;
+		return 1;
 	}
 
 	// Remember the VCXO setting so later PLLB updates keep c = 10^6.
 	// set_pll() writes the PLL and the VCXO parameter registers.
 	vcxo_pull = ppm;
 	set_pll(pll_freq, SI5351_PLLB);
+	return 0;
 }
+
+// 1 when target_pll is PLLB and set_vcxo() has stored a pull range.
+SI5351_VCXO_WEAK uint8_t Si5351::vcxo_active(enum si5351_pll target_pll)
+{
+	return (target_pll == SI5351_PLLB && vcxo_pull) ? 1 : 0;
+}
+
+// Registers 162..164 from the pll_calc() VCXO word and vcxo_pull.
+SI5351_VCXO_WEAK void Si5351::write_vcxo(uint64_t vcxo_param)
+{
+	uint8_t temp;
+	uint8_t ppm = vcxo_pull;
+
+	vcxo_param = ((vcxo_param * ppm * SI5351_VCXO_MARGIN) / 100ULL) / 1000000ULL;
+
+	temp = (uint8_t)(vcxo_param & 0xFF);
+	si5351_write(SI5351_VXCO_PARAMETERS_LOW, temp);
+	temp = (uint8_t)((vcxo_param >> 8) & 0xFF);
+	si5351_write(SI5351_VXCO_PARAMETERS_MID, temp);
+	temp = (uint8_t)((vcxo_param >> 16) & 0x3F);
+	si5351_write(SI5351_VXCO_PARAMETERS_HIGH, temp);
+}
+#endif
 
 /*
  * set_ref_freq(uint32_t ref_freq, enum si5351_pll_input ref_osc)
@@ -1630,10 +1660,12 @@ uint64_t Si5351::pll_calc(enum si5351_pll pll, uint64_t freq, struct Si5351RegSe
 	// Calculate parameters
 	frac_to_reg(a, b, c, reg);
 
+#ifndef SI5351_NO_VCXO
 	if(vcxo)
 	{
 		return (uint64_t)(128 * a * RFRAC_DENOM + b);
 	}
+#endif
 
 	// Recalculate frequency as fIN * (a + b/c)
 	lltmp = ref_freq;
