@@ -800,7 +800,7 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
-* Unreleased
+* v2.4.2
 
     * Lock the CLK0–CLK5 R-divider octave table in `select_r_div()` with a regression test. Divide-by-64 is only the [2F, 4F) band; the next band is divide-by-32. CLK6/CLK7 edges are what `set_freq()` writes to register 92 (#89)
     * Document `SI5351_CRYSTAL_LOAD_0PF`: AN619 Register 183 says XTAL_CL 00b is reserved, and `init()` keeps the 10 pF default
