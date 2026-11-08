@@ -183,7 +183,14 @@
 
 #define SI5351_CRYSTAL_LOAD             183
 #define SI5351_CRYSTAL_LOAD_MASK        (3<<6)
-#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)   /* reserved in AN619, unsupported: init() keeps 10 pF */
+/* Deprecated. AN619 Register 183, XTAL_CL[1:0]: "00: Reserved. Do not select
+ * this option." 01 is 6 pF, 10 is 8 pF, 11 is 10 pF (the power-up default).
+ * Bits 5:0 of that register are reserved and must be written as 010010b.
+ * This macro is still the reserved 00b code so older sketches compile. It is
+ * not an alias of a legal load: init() substitutes the 10 pF default and
+ * still writes bits 5:0 as 010010b. Prefer SI5351_CRYSTAL_LOAD_6PF, _8PF,
+ * or _10PF. */
+#define SI5351_CRYSTAL_LOAD_0PF         (0<<6)
 #define SI5351_CRYSTAL_LOAD_6PF         (1<<6)
 #define SI5351_CRYSTAL_LOAD_8PF         (2<<6)
 #define SI5351_CRYSTAL_LOAD_10PF        (3<<6)

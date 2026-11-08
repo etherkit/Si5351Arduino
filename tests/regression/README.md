@@ -31,6 +31,7 @@ Exit code: 0 = every check PASS/XFAIL/SKIP/INFO; 1 = at least one unexpected FAI
 | `acceptance_A01..A25` | `v231/test_v231.py` AN619/datasheet oracle. **Default mode: a failing test is XFAIL** (master is expected to fail all 25). `--require-fixed`: a failing test is FAIL | per mode |
 | `must_not_break` | 776 register/state/return/reg177 locks from `v231/must_not_break.json` | yes |
 | `t106_twowire` | issue #106 TwoWire bus-selection test (`issue106/t106.cpp`, multi-bus stub). SKIP when the source has no `TwoWire*` constructor | yes |
+| `rdiv_xtal` | CLK0-5 R-divider octaves and CLK6/7 `set_freq()` register 92 edges (`rdiv/t_rdiv.cpp`, issue #89), Register 183 XTAL_CL, and README numbers vs the header / `SI5351_FOUT_MAX` | yes |
 | `reset_freq` | `reset_freq()` host test (`reset_freq/t_reset_freq.cpp`): re-enable on the next `set_freq()`, invalid index is a no-op, other clocks untouched. SKIP when the source has no `reset_freq()` | yes |
 | `goldens27_vs_lib` | C++ equivalence harness (`equiv/harness.cpp`) on the pinned source vs the 27 original golden cases | yes (INFO under `--require-fixed`) |
 | `equiv_vs_master_1ddd43e` | Full harness transcript diff against vendored master 1ddd43e (`reference/`). 0 means behaviourally identical | INFO |

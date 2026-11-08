@@ -8,7 +8,7 @@ This library is focused towards usage in RF/amateur radio applications, but it m
 
 Thanks For Your Support!
 ------------------------
-If you would like to support my library development efforts, I would ask that you please consider purchasing a Si5351A Breakout Board from my [online store at etherkit.com](https://www.etherkit.com) sending a [one-time PayPal tip](https://paypal.me/NT7S), or [subscribe to me on Substack](https://nt7s.substack.com) for an ongoing contribution. Thank you!
+If you would like to support development of this library, please consider a [one-time PayPal tip](https://paypal.me/NT7S) or [subscribing on Substack](https://nt7s.substack.com). Source, issues, and examples are at [github.com/etherkit/Si5351Arduino](https://github.com/etherkit/Si5351Arduino). Thank you!
 
 Library Installation
 ---------------------
@@ -26,13 +26,15 @@ Wire the SDA and SCL pins of the Si5351 to the corresponding pins on the Arduino
 
 Connect a 25 MHz or 27 MHz crystal with a load capacitance of 6, 8, or 10 pF to the Si5351 XA and XB pins. Locate the crystal as close to the Si5351 as possible and keep the traces as short as possible. Please use a SMT crystal. A crystal with leads will have too much stray capacitance.
 
+AN619 Register 183 selects that load in XTAL_CL[1:0]: 01b is 6 pF (`SI5351_CRYSTAL_LOAD_6PF`), 10b is 8 pF (`SI5351_CRYSTAL_LOAD_8PF`), and 11b is 10 pF (`SI5351_CRYSTAL_LOAD_10PF`, the power-up default). 00b is reserved ("Do not select this option"). Bits 5:0 of register 183 are reserved and this library writes them as 010010b. `SI5351_CRYSTAL_LOAD_0PF` is deprecated: it is that reserved 00b code, kept so older sketches still compile, and `init()` substitutes the 10 pF default instead of writing it.
+
 Changes from v1 to v2
 ---------------------
 The public interface to the v2 library is similar to the v1 library, but a few of the most-used methods have had their signatures changed, so your old programs won't compile right out-of-the-box after a library upgrade. Most importantly, the _init()_ and _set_freq()_ methods are different, so you'll at least need to change these calls in your old sketches.
 
 The _init()_ method now has three parameters: the crystal load capacitance, the reference frequency, and the frequency correction value (with this last parameter being a new addition). You'll need to add that third parameter to your old _init()_ calls, but then you can delete any _set_correction()_ calls after that (unless you explicitly are changing the frequency correction after the initialization).
 
-The _set_freq()_ method is now more streamlined and only requires two parameters: the desired output frequency (from 4 kHz to 225 MHz) and clock output. In your old code, you can delete the 2nd parameter in _set_freq()_, which was the PLL frequency. In case you want to do things manually, there is now a new method called _set_freq_manual()_ (see below for details).
+The _set_freq()_ method is now more streamlined and only requires two parameters: the desired output frequency (from 4 kHz to 200 MHz on CLK0 through CLK5) and clock output. In your old code, you can delete the 2nd parameter in _set_freq()_, which was the PLL frequency. In case you want to do things manually, there is now a new method called _set_freq_manual()_ (see below for details).
 
 Those two changes should cover nearly all upgrade scenarios, unless you were doing some lower-level use of the Si5351.
 
@@ -83,7 +85,7 @@ The nominal status for each of those flags is a 0. When the program indicates 1,
 
 A Brief Word about the Si5351 Architecture
 ------------------------------------------
-The Si5351 consists of two main stages: two PLLs which are locked to the reference oscillator (a 25/27 MHz crystal) and which can be set from 600 to 900 MHz, and the output (multisynth) clocks which are locked to a PLL of choice and can be set from 500 kHz to 200 MHz (per the datasheet, although it does seem to be possible to set an output up to 225 MHz).
+The Si5351 consists of two main stages: two PLLs which are locked to the reference oscillator (a 25/27 MHz crystal) and which can be set from 600 to 900 MHz, and the output (multisynth) clocks which are locked to a PLL of choice and can be set from 500 kHz to 200 MHz. As of v2.4.1, `set_freq()` and `set_freq_manual()` clamp CLK0 through CLK5 to 200 MHz. See _Frequency Limits_ below. The compatibility macros `SI5351_CLKOUT_MAX_FREQ` and `SI5351_MULTISYNTH_MAX_FREQ` still contain 225000000.
 
 The B variant has an additional VCXO stage with control voltage pin which can be used as a reference synth for a clock output (PLLB must be used as the source for any VCXO output clock).
 
@@ -109,9 +111,11 @@ Instead of letting the library choose a PLL frequency for your chosen output fre
 
 When you are setting the PLL manually you need to be mindful of the limits of the IC. The multisynth (MS0 through MS5) is a fractional PLL, with limits described in AN619 as:
 
->Valid Multisynth divider ratios are 4, 6, 8, and any fractional value between 8 + 1/1,048,575 and 900 + 0/1.
-This means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
+>Valid Multisynth divider ratios are 4, 6, 8, and any fractional value between 8 + 1/1,048,575 and 2048. This
+means that if any output is greater than 112.5 MHz (900 MHz/8), then this output frequency sets one
 of the VCO frequencies.
+
+That quote is AN619 rev. 0.8, section 2.1.1. In this library, `set_freq_manual()` accepts ratio 4 (divide-by-4, output at least 150 MHz), exactly 6, or at least 8, and returns 1 without writing otherwise. `SI5351_MULTISYNTH_A_MAX` is 1800.
 
 To put this in other words, if you want to manually set the PLL and wish to have an output frequency greater than 100 MHz (changed in this library from the stated 112.5 MHz due to stability issues which were noticed), then the choice of PLL frequency is dictated by the choice of output frequency, and will need to be an even multiple of 4, 6, or 8.
 
@@ -286,9 +290,48 @@ Default drive strength is 2 mA on each output.
 Constraints
 -----------
 * Two multisynths cannot share a PLL with when both outputs are >= 100 MHz. The library will refuse to set another multisynth to a frequency in that range if another multisynth sharing the same PLL is already within that frequency range.
-* Setting phase will be limited in the extreme edges of the output tuning ranges. Because the phase register is 7-bits in size and is denominated in units representing 1/4 the PLL period, not all phases can be set for all output frequencies. For example, if you need a 90&deg; phase shift, the lowest frequency you can set it at is 4.6875 MHz (600 MHz PLL/128).
+* Setting phase will be limited in the extreme edges of the output tuning ranges. The phase register is PHOFF[6:0] (AN619 Register 165; bit 7 is reserved), and one count is 1/4 of the PLL period. `set_phase()` keeps only those 7 bits, so the largest word is 127. A 90&deg; output shift needs a phase word equal to the PLL/output ratio. At the lowest PLL frequency, 600 MHz, the lowest such output is 600 MHz / 127 (4.724409 MHz). The divider must be greater than 8, and the multisynth integer-mode bit must be clear (AN619 section 6).
 * The frequency range of Multisynth 6 and 7 is ~18.45 kHz to 150 MHz. The library assigns PLLB to these two multisynths, so if you choose to use both, then both frequencies must be an even divisor of the PLL frequency (between 6 and 254), so plan accordingly. You can see the current PLLB frequency by accessing the _pllb_freq_ public member.
 * VCXO pull range can be &plusmn;30 to &plusmn;240 ppm
+
+Frequency Limits
+----------------
+Numbers below are what v2.4.1 programs, checked against `src/si5351.cpp`, `src/si5351.h`, AN619 rev. 0.8, and the Si5351A/B/C-B datasheet rev. 1.3. Frequencies passed to `set_freq()` are in units of 0.01 Hz.
+
+### Multisynth ratios
+
+AN619 section 2.1.1 and section 4.1.2: MS0 through MS5 may use 4, 6, 8, or any fractional ratio from 8 + 1/1,048,575 through 2048. Section 4.1.3: for 150 MHz &lt; Fout &le; 200 MHz the ratio is 4 (divide-by-4) and the VCO is 4 times the output. Section 2.2: MS6 and MS7 are even integers from 6 through 254 only. The PLL feedback ratio is 15 through 90, and the VCO is 600 to 900 MHz (sections 2 and 3.2).
+
+`set_freq_manual()` returns 1 and writes nothing unless the CLK0–CLK5 ratio is 4 (divide-by-4, output at least 150 MHz), exactly 6, or at least 8. `SI5351_MULTISYNTH_A_MIN` is 6 and `SI5351_MULTISYNTH_A_MAX` is 1800 (900 MHz / 500 kHz), which is below the AN619 maximum of 2048. `SI5351_MULTISYNTH67_A_MAX` is 254. `SI5351_PLL_A_MIN` is 15, `SI5351_PLL_A_MAX` is 90, `SI5351_PLL_VCO_MIN` is 600 MHz, and `SI5351_PLL_VCO_MAX` is 900 MHz.
+
+### Minimum output frequency
+
+The datasheet (rev. 1.3) specifies 2.5 kHz to 200 MHz. AN619 section 2 also says the R divider reaches 2.5 kHz; section 4.2.2 still says 8 kHz. The output multisynth itself is specified from 500 kHz (AN619 section 2), and the largest R divider is 128 (AN619 Register 44, R0_DIV = 111b), so 500 kHz / 128 = 3.90625 kHz.
+
+`SI5351_CLKOUT_MIN_FREQ` is 4000. On CLK0–CLK5, `set_freq()` and `set_freq_manual()` raise a non-zero request below 4 kHz to 4 kHz. 4 kHz times 128 is 512 kHz, which is above the 500 kHz multisynth floor. `select_r_div()` then uses one R divider per octave (low edge inclusive). Divide-by-64 is only 8 kHz up to 16 kHz; the next octave, 16 kHz up to 32 kHz, is divide-by-32.
+
+| CLK0–CLK5 output | R divider | Rx_DIV | Multisynth frequency |
+| --- | --- | --- | --- |
+| 4 kHz up to 8 kHz | 128 | 111b | 512 kHz up to 1.024 MHz |
+| 8 kHz up to 16 kHz | 64 | 110b | 512 kHz up to 1.024 MHz |
+| 16 kHz up to 32 kHz | 32 | 101b | 512 kHz up to 1.024 MHz |
+| 32 kHz up to 64 kHz | 16 | 100b | 512 kHz up to 1.024 MHz |
+| 64 kHz up to 128 kHz | 8 | 011b | 512 kHz up to 1.024 MHz |
+| 128 kHz up to 256 kHz | 4 | 010b | 512 kHz up to 1.024 MHz |
+| 256 kHz up to 512 kHz | 2 | 001b | 512 kHz up to 1.024 MHz |
+| 512 kHz and above | 1 | 000b | the output frequency |
+
+CLK6 and CLK7 are even-integer dividers, so their floor is higher. `SI5351_CLKOUT67_MIN_FREQ` is 18454 Hz, from 600 MHz / 254 / 128 using integer division. `set_freq()` clamps a request below `SI5351_CLKOUT67_MIN` up to 18454.73 Hz. It then picks the smallest R divider that brings the multisynth up to at least 600 MHz / 254, so the ratio stays inside 6..254 and the VCO stays at or above 600 MHz. That choice is not the CLK0–CLK5 octave table (36908 Hz is still divide-by-128). `set_freq()` also clamps CLK6 and CLK7 to just under 150 MHz, because MS6 and MS7 have no divide-by-4 mode. `set_freq_manual()` does not apply that clamp.
+
+### Minimum quadrature frequency
+
+AN619 Register 165 defines CLK0_PHOFF[6:0]. Bit 7 is reserved ("Only write 0 to this bit"). One count is Tvco/4. A 90&deg; shift of the output is one quarter of the output period, which is Fvco/Fout counts. The 14.1 MHz example above uses 705 MHz / 14.1 MHz = 50. `set_phase()` masks the word with 0b01111111, so 127 is the largest value it will write. Phase offset applies only when the output divider is greater than 8 and MSx_INT is 0 (AN619 section 6).
+
+The lowest VCO is 600 MHz (`SI5351_PLL_VCO_MIN`). The lowest 90&deg; output on that VCO is 600 MHz / 127, which is 4.724409 MHz. Integer division of those two constants is 4,724,409 Hz.
+
+### 200 MHz cap on CLK0–CLK5 (v2.4.1)
+
+The datasheet maximum is 200 MHz. AN619 section 4.1.3 covers 150 MHz &lt; Fout &le; 200 MHz on multisynths 0–5 with divide-by-4. v2.4.1 defines `SI5351_FOUT_MAX` as 200000000 and `set_freq()` / `set_freq_manual()` clamp a CLK0–CLK5 request above 200 MHz to 200 MHz. `SI5351_CLKOUT_MAX_FREQ` and `SI5351_MULTISYNTH_MAX_FREQ` are still 225000000; those macros are what older code compared against, and they are not the frequency `set_freq()` programs. `set_freq()` clamps CLK6 and CLK7 to 149,999,999.99 Hz. `set_freq_manual()` does not: `set_freq_manual(150 MHz, 900 MHz PLL, CLK6)` is ratio 6 and returns 0.
 
 Public Methods
 --------------
@@ -759,6 +802,10 @@ Changelog
 
 * Unreleased
 
+    * Lock the CLK0–CLK5 R-divider octave table in `select_r_div()` with a regression test. Divide-by-64 is only the [2F, 4F) band; the next band is divide-by-32. CLK6/CLK7 edges are what `set_freq()` writes to register 92 (#89)
+    * Document `SI5351_CRYSTAL_LOAD_0PF`: AN619 Register 183 says XTAL_CL 00b is reserved, and `init()` keeps the 10 pF default
+    * Document multisynth ratio limits, the 4 kHz CLK0–CLK5 floor, the 600 MHz/127 quadrature floor, and the v2.4.1 200 MHz CLK0–CLK5 cap
+    * Replace the dead etherkit.com links with this GitHub repository (#102)
     * Add `reset_freq()` to set one CLK output back to 0 Hz, disable it, and clear its first-set flag so the next `set_freq()` enables it again, the same as the first call. Pass a valid `si5351_clock` value (`SI5351_CLK0`..`SI5351_CLK7`); out-of-range values are not supported. Other outputs are left unchanged. Thanks to KT315AM (#104)
 
 * v2.4.1
@@ -882,4 +929,4 @@ Changelog
 
 
   [1]: http://www.silabs.com
-  [2]: https://www.etherkit.com
+  [2]: https://github.com/etherkit/Si5351Arduino
