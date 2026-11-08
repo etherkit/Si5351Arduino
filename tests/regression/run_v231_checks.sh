@@ -146,6 +146,17 @@ if [[ $HAS_TWOWIRE == 1 ]]; then
   else record t106_twowire FAIL "compile error" logs/build_t106.log; fi
 else record t106_twowire SKIP "source has no TwoWire* constructor (pre-#106)"; fi
 
+# ---------------------------------------------------------------- 3b. reset_freq() (SKIP when the pinned source has no such method)
+if grep -q 'void reset_freq' "$LIB/src/si5351.h"; then
+  if $CXX -std=gnu++17 -Dprivate=public -I"$CI_DIR/stubs" -I"$LIB/src" \
+      "$CI_DIR/reset_freq/t_reset_freq.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" \
+      -o "$BUILD/t_reset_freq" > "$LOGS/build_t_reset_freq.log" 2>&1; then
+    if "$BUILD/t_reset_freq" > "$LOGS/t_reset_freq.log" 2>&1 && grep -q '^ALL PASS' "$LOGS/t_reset_freq.log"; then
+      record reset_freq PASS "$(grep -c '^PASS' "$LOGS/t_reset_freq.log") checks, $(tail -1 "$LOGS/t_reset_freq.log")" logs/t_reset_freq.log
+    else record reset_freq FAIL "$(grep -c '^FAIL' "$LOGS/t_reset_freq.log" || true) failing checks" logs/t_reset_freq.log; fi
+  else record reset_freq FAIL "compile error" logs/build_t_reset_freq.log; fi
+else record reset_freq SKIP "source has no Si5351::reset_freq()"; fi
+
 # ---------------------------------------------------------------- 4. goldens + equivalence vs master 1ddd43e (C++ harness)
 EQ="$CI_DIR/equiv"
 if $CXX $CXXFLAGS -I"$EQ" -I"$CI_DIR/stubs" -I"$LIB/src" "$EQ/harness.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" -o "$BUILD/h_lib" > "$LOGS/build_harness_lib.log" 2>&1 \

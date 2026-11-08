@@ -322,6 +322,22 @@ bool Si5351::init(uint8_t xtal_load_c, uint32_t ref_osc_freq, uint32_t ref_osc_f
  */
 void Si5351::reset(void)
 ```
+### reset_freq()
+```
+/*
+ * reset_freq(enum si5351_clock clk)
+ *
+ * Sets one CLK output back to the initial frequency state: stored
+ * frequency 0 Hz and the output disabled. Clears the first-set flag so
+ * the next set_freq() on that output enables it automatically, the same
+ * as the first call. Other outputs are not modified. An invalid clock
+ * index is ignored.
+ *
+ * clk - Clock output
+ *   (use the si5351_clock enum)
+ */
+void Si5351::reset_freq(enum si5351_clock clk)
+```
 ### set_freq()
 ```
 /*
@@ -739,6 +755,10 @@ This library does not currently support the spread spectrum function of the Si53
 
 Changelog
 ---------
+
+* Unreleased
+
+    * Add `reset_freq()` to set one CLK output back to 0 Hz, disable it, and clear its first-set flag so the next `set_freq()` enables it again, the same as the first call. An invalid clock index is ignored and other outputs are left unchanged. Thanks to KT315AM (#104)
 
 * v2.4.1
 
