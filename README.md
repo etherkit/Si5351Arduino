@@ -858,6 +858,13 @@ This library does not currently support the spread spectrum function of the Si53
 Changelog
 ---------
 
+* v2.5.0
+
+    * Smaller default AVR flash, with the same register programming as v2.4.2: one shared PLL program path, and one copy of the `init()`/`reset()` output loops. On an Uno (arduino-cli 1.5.1, arduino:avr 1.8.6) the minimal `init()` + `set_freq()` sketch is 10,140 bytes for a constant CLK0 (was 10,830) and 10,868 bytes for a runtime clock index (was 11,558)
+    * Leave out CLK6/CLK7 with `#define SI5351_NO_CLK67` before `#include <si5351.h>`, or `-DSI5351_NO_CLK67`. `set_freq()` and `set_freq_manual()` return 1 for CLK6 and CLK7 and write nothing, and `set_ms()` writes nothing for those outputs. The `si5351_clock` enumerators stay, and `reset()` still initializes all eight clock-control registers. About 1 KB less flash on that Uno runtime-clock sketch (9,870 bytes with the sketch define, 9,836 with the compiler flag)
+    * Leave out the Si5351B VCXO the same way with `SI5351_NO_VCXO`, alone or with `SI5351_NO_CLK67`. `set_vcxo()` returns 1 and writes nothing, and later PLL updates use the non-VCXO denominator. `reset()` still clears the VCXO parameter registers. On that same sketch the define saves 440 bytes (10,428) and the compiler flag saves 472 bytes (10,396). Both defines together are 9,390 bytes
+    * `set_vcxo()` returns `uint8_t`: 0 when the PLL and VCXO registers are written, 1 when nothing is written (reference not usable, or `SI5351_NO_VCXO`). Sketches that ignore the return still compile. Without the macro, register writes match v2.4.2
+
 * v2.4.2
 
     * Lock the CLK0–CLK5 R-divider octave table in `select_r_div()` with a regression test. Divide-by-64 is only the [2F, 4F) band; the next band is divide-by-32. CLK6/CLK7 edges are what `set_freq()` writes to register 92 (#89)
