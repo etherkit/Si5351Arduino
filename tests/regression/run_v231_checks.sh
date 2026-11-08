@@ -166,25 +166,54 @@ if grep -q 'void reset_freq' "$LIB/src/si5351.h"; then
   else record reset_freq FAIL "compile error" logs/build_t_reset_freq.log; fi
 else record reset_freq SKIP "source has no Si5351::reset_freq()"; fi
 
-# ---------------------------------------------------------------- 4. goldens + equivalence vs master 1ddd43e (C++ harness)
+# ---------------------------------------------------------------- 3d. control registers, status bits, I2C error paths
+if $CXX -std=gnu++17 -Dprivate=public -I"$CI_DIR/stubs" -I"$LIB/src" \
+    "$CI_DIR/ctrl/t_ctrl.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" \
+    -o "$BUILD/t_ctrl" > "$LOGS/build_t_ctrl.log" 2>&1; then
+  if "$BUILD/t_ctrl" > "$LOGS/t_ctrl.log" 2>&1 && grep -q '^ALL PASS' "$LOGS/t_ctrl.log"; then
+    record ctrl_status PASS "$(grep -c '^PASS' "$LOGS/t_ctrl.log") checks, $(tail -1 "$LOGS/t_ctrl.log")" logs/t_ctrl.log
+  else record ctrl_status FAIL "$(grep -c '^FAIL  ' "$LOGS/t_ctrl.log" || true) failing checks" logs/t_ctrl.log; fi
+else record ctrl_status FAIL "compile error" logs/build_t_ctrl.log; fi
+
+# ---------------------------------------------------------------- 3e. planning branches (CLK6/7, set_ms, set_vcxo, set_pll clamp)
+if $CXX -std=gnu++17 -Dprivate=public -I"$CI_DIR/stubs" -I"$LIB/src" \
+    "$CI_DIR/plan/t_plan.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" \
+    -o "$BUILD/t_plan" > "$LOGS/build_t_plan.log" 2>&1; then
+  if "$BUILD/t_plan" > "$LOGS/t_plan.log" 2>&1 && grep -q '^ALL PASS' "$LOGS/t_plan.log"; then
+    record plan_branches PASS "$(grep -c '^PASS' "$LOGS/t_plan.log") checks, $(tail -1 "$LOGS/t_plan.log")" logs/t_plan.log
+  else record plan_branches FAIL "$(grep -c '^FAIL  ' "$LOGS/t_plan.log" || true) failing checks" logs/t_plan.log; fi
+else record plan_branches FAIL "compile error" logs/build_t_plan.log; fi
+
+# ---------------------------------------------------------------- 4. goldens + hard gate vs pinned v2.4.2 (not the old 1ddd43e INFO diff)
 EQ="$CI_DIR/equiv"
-if $CXX $CXXFLAGS -I"$EQ" -I"$CI_DIR/stubs" -I"$LIB/src" "$EQ/harness.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" -o "$BUILD/h_lib" > "$LOGS/build_harness_lib.log" 2>&1 \
- && $CXX $CXXFLAGS -I"$EQ" -I"$CI_DIR/stubs" -I"$CI_DIR/reference/master_1ddd43e" "$EQ/harness.cpp" "$CI_DIR/stubs/Wire.cpp" "$CI_DIR/reference/master_1ddd43e/si5351.cpp" -o "$BUILD/h_ref" > "$LOGS/build_harness_ref.log" 2>&1; then
-  "$BUILD/h_lib" "$LOGS/harness_lib.jsonl" 2> "$LOGS/run_harness_lib.log" || record run_harness_lib FAIL "harness crashed" logs/run_harness_lib.log
-  "$BUILD/h_ref" "$LOGS/harness_master1ddd43e.jsonl" 2> "$LOGS/run_harness_ref.log" || record run_harness_ref FAIL "harness crashed" logs/run_harness_ref.log
-  set +e; $PY "$EQ/compare.py" "$LOGS/harness_lib.jsonl" "$LOGS/harness_master1ddd43e.jsonl" "$LOGS/equiv_report.txt" > "$LOGS/compare.log" 2>&1; set -e
-  G="$(grep -E '^Goldens vs ORIGINAL C\+\+' "$LOGS/equiv_report.txt" || true)"
-  if [[ $G =~ ([0-9]+)\ field\ checks,\ ([0-9]+)\ mismatches ]]; then
-    if [[ ${BASH_REMATCH[2]} == 0 ]]; then record goldens27_vs_lib PASS "27 golden cases, ${BASH_REMATCH[1]} field checks, 0 mismatches" logs/equiv_report.txt
-    elif [[ $REQUIRE_FIXED == 1 ]]; then record goldens27_vs_lib INFO "${BASH_REMATCH[2]} golden mismatches (goldens lock v2.2.0/2.3.0 behaviour; fixes may change some, review the list)" logs/equiv_report.txt
-    else record goldens27_vs_lib FAIL "${BASH_REMATCH[2]} mismatches of ${BASH_REMATCH[1]} field checks" logs/equiv_report.txt; fi
-  else record goldens27_vs_lib FAIL "compare.py produced no golden summary" logs/compare.log; fi
-  EQL="$(grep -E '^Equivalence:' "$LOGS/equiv_report.txt" || true)"
-  if [[ $EQL =~ differing\ runs:\ ([0-9]+) ]]; then
-    record equiv_vs_master_1ddd43e INFO "${BASH_REMATCH[1]} differing runs vs master 1ddd43e (0 = behaviourally identical; fixes are expected to differ)" logs/equiv_report.txt
-  else record equiv_vs_master_1ddd43e FAIL "no equivalence summary" logs/compare.log; fi
-  NB="$(grep -E '^Bonus' "$LOGS/equiv_report.txt" || true)"; [[ -n $NB ]] && record goldens_newer_vs_lib INFO "${NB#Bonus - }" logs/equiv_report.txt
-else record harness_build FAIL "compile error (see build_harness_*.log)" logs/build_harness_lib.log; fi
+V242="$CI_DIR/reference/v242_f885fca"
+if ( cd "$V242" && sha256sum -c SHA256SUMS ) > "$LOGS/v242_sha256.log" 2>&1; then
+  record v242_provenance PASS "reference/v242_f885fca matches SHA256SUMS" logs/v242_sha256.log
+  if $CXX $CXXFLAGS -I"$EQ" -I"$CI_DIR/stubs" -I"$LIB/src" "$EQ/harness.cpp" "$CI_DIR/stubs/Wire.cpp" "$LIB/src/si5351.cpp" -o "$BUILD/h_lib" > "$LOGS/build_harness_lib.log" 2>&1 \
+   && $CXX $CXXFLAGS -I"$EQ" -I"$CI_DIR/stubs" -I"$V242" "$EQ/harness.cpp" "$CI_DIR/stubs/Wire.cpp" "$V242/si5351.cpp" -o "$BUILD/h_v242" > "$LOGS/build_harness_v242.log" 2>&1; then
+    "$BUILD/h_lib" "$LOGS/harness_lib.jsonl" 2> "$LOGS/run_harness_lib.log" || record run_harness_lib FAIL "harness crashed" logs/run_harness_lib.log
+    "$BUILD/h_v242" "$LOGS/harness_v242.jsonl" 2> "$LOGS/run_harness_v242.log" || record run_harness_v242 FAIL "harness crashed" logs/run_harness_v242.log
+    set +e; $PY "$EQ/compare.py" "$LOGS/harness_lib.jsonl" "$LOGS/harness_v242.jsonl" "$LOGS/equiv_report.txt" > "$LOGS/compare.log" 2>&1; set -e
+    G="$(grep -E '^Goldens vs ORIGINAL C\+\+' "$LOGS/equiv_report.txt" || true)"
+    if [[ $G =~ ([0-9]+)\ field\ checks,\ ([0-9]+)\ mismatches ]]; then
+      if [[ ${BASH_REMATCH[2]} == 0 ]]; then record goldens27_vs_lib PASS "27 golden cases, ${BASH_REMATCH[1]} field checks, 0 mismatches" logs/equiv_report.txt
+      elif [[ $REQUIRE_FIXED == 1 ]]; then record goldens27_vs_lib INFO "${BASH_REMATCH[2]} golden mismatches (goldens lock v2.2.0/2.3.0 behaviour; fixes may change some, review the list)" logs/equiv_report.txt
+      else record goldens27_vs_lib FAIL "${BASH_REMATCH[2]} mismatches of ${BASH_REMATCH[1]} field checks" logs/equiv_report.txt; fi
+    else record goldens27_vs_lib FAIL "compare.py produced no golden summary" logs/compare.log; fi
+    EQL="$(grep -E '^Equivalence:' "$LOGS/equiv_report.txt" || true)"
+    if [[ $EQL =~ differing\ runs:\ ([0-9]+) ]]; then
+      if [[ ${BASH_REMATCH[1]} == 0 ]]; then
+        record equiv_vs_v242 PASS "0 differing runs vs pinned v2.4.2 f885fca" logs/equiv_report.txt
+      else
+        record equiv_vs_v242 FAIL "${BASH_REMATCH[1]} differing runs vs pinned v2.4.2 f885fca" logs/equiv_report.txt
+      fi
+    else record equiv_vs_v242 FAIL "no equivalence summary" logs/compare.log; fi
+    NB="$(grep -E '^Bonus' "$LOGS/equiv_report.txt" || true)"; [[ -n $NB ]] && record goldens_newer_vs_lib INFO "${NB#Bonus - }" logs/equiv_report.txt
+  else record harness_build FAIL "compile error (see build_harness_*.log)" logs/build_harness_lib.log; fi
+else
+  record v242_provenance FAIL "reference/v242_f885fca failed sha256sum -c" logs/v242_sha256.log
+  record equiv_vs_v242 FAIL "provenance failed; pinned reference was not built" logs/v242_sha256.log
+fi
 
 # ---------------------------------------------------------------- 5. Python golden/spec suites (oracle self-consistency)
 for t in test_golden test_spec; do

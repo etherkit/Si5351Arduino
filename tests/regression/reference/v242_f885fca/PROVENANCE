@@ -1,0 +1,16 @@
+Pinned Si5351Arduino v2.4.2 library sources for the hard equivalence gate.
+Do not edit these files. tests/regression/run_v231_checks.sh runs
+`sha256sum -c SHA256SUMS` in this directory before it compiles them, and a
+mismatch is a FAIL. This copy is not part of the coverage measurement.
+
+commit: f885fca853b9365d4f2e633267971b2b758b05ae
+subject: Merge pull request #115 from etherkit/release-2.4.2
+library.properties version: 2.4.2
+extracted: git show f885fca853b9365d4f2e633267971b2b758b05ae:src/si5351.cpp
+           git show f885fca853b9365d4f2e633267971b2b758b05ae:src/si5351.h
+sha256 si5351.cpp: f14fa6275391403ce085a10cc007f679d61faab38dec69d660942ae704e9fcdb
+sha256 si5351.h:   f934e91d084d1c76ab45ec7a502c6e7cea2838102f23b33dcbb233f85ccddaa6
+
+The gate compares the harness transcript of the library under test with the
+transcript of this exact source. Zero differing runs is PASS. It does not
+fetch master, and it does not use reference/master_1ddd43e.

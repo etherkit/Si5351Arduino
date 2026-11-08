@@ -1,0 +1,46 @@
+# Uno flash ceilings for the two minimal sketches. A missing tool, a failed
+# compile, an unparsed size line, or a sketch over its budget fails the job.
+# The numbers are the measured text+data sizes of the fixtures in
+# tests/regression/flash/sketches. Each fixture is its own baseline.
+# min_runtime is a new sketch; the audit runtime sketch was not saved.
+name: Uno flash budget
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flash-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned arduino-cli 1.5.1
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/arduino-cli.tar.gz \
+            https://downloads.arduino.cc/arduino-cli/arduino-cli_1.5.1_Linux_64bit.tar.gz
+          mkdir -p "$HOME/bin"
+          tar -xzf /tmp/arduino-cli.tar.gz -C "$HOME/bin" arduino-cli
+          "$HOME/bin/arduino-cli" version | grep -q 'Version: 1.5.1'
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Install pinned arduino:avr 1.8.6 (avr-gcc 7.3.0)
+        run: |
+          set -euo pipefail
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr@1.8.6
+          test -x "$HOME/.arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/bin/avr-gcc"
+      - name: Check flash budgets and the over-budget probe
+        run: tests/regression/flash/check_flash_budget.sh
+        env:
+          FLASH_OUT: ${{ runner.temp }}/flash-budget
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flash-budget
+          path: ${{ runner.temp }}/flash-budget

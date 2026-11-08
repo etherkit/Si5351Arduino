@@ -1,0 +1,24 @@
+# Flash ceilings for arduino:avr:uno. A sketch larger than its budget FAILs.
+# A smaller sketch still passes: this is a non-regression ceiling, not a claim
+# that the library got faster.
+#
+# Reproduced 2026-11-08 with:
+#   arduino-cli 1.5.1 (commit 01f3d4f2b)
+#   arduino:avr 1.8.6
+#   avr-gcc 7.3.0-atmel3.6.1-arduino7
+#   fqbn arduino:avr:uno
+#   core flags from platform.txt: -Os -flto -fpermissive -std=gnu++11
+#     -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics
+# Size method: arduino-cli "Sketch uses N bytes", which is avr-size text+data.
+# The checker also requires avr-size text+data == N. A parse miss is a FAIL.
+#
+# Both numbers below are baselines of the fixtures in sketches/. The audit
+# runtime-clock sketch was not saved (REPORT only, no .ino), so its reported
+# 12604 bytes cannot be compared with min_runtime and is not a target.
+# min_const measures 10830 on this pin. The audit reported 10830 for a sketch
+# described the same way; that .ino was not saved either, so 10830 is this
+# fixture's measurement.
+# min_runtime is a new fixture: global volatile uint8_t clock index, constant
+# 14 MHz. Its own baseline on this pin is 11558.
+min_const 10830
+min_runtime 11558
